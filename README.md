@@ -1,9 +1,7 @@
 # Knative Kafka
 
-This project is a Knative implementation of a Kafka backed Channel.  
-It is being developed during the early stages of the Knative Eventing implementation in parallel with
-the official Kafka Channel implementation.  The primary rationale for a second Kafka Channel implementation 
-is to provide the advanced functionality and customization.
+This project is a Knative implementation of a Kafka backed channel which provides advanced functionality beyond the 
+sample Kafka Channel included in Kative Eventing.
 
 The deployment is implemented for the production use case whereby a single deployment supports all channel 
 instances in the K8S cluster.   
