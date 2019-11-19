@@ -49,7 +49,7 @@ brew upgrade dep
 brew install pkg-config
 brew install librdkafka
 
-# If the current version of librdkafka from brew doesn't work with the konduit-kafka components then you can roll back to an older version via the following.
+# If the current version of librdkafka from brew doesn't work with the knative-kafka components then you can roll back to an older version via the following.
 curl -LO https://github.com/edenhill/librdkafka/archive/v1.0.1.tar.gz \
   && tar -xvf v1.0.1.tar.gz \
   && librdkafka-1.0.1 \
