@@ -10,19 +10,19 @@ instances in the K8S cluster.
 
 The following applications comprise the total **knative-kafka** solution...
 
-- [konduit-kafka-common](./components/common/README.md) - Common code used by the other Knative-Kafka components.
+- [knative-kafka-common](./components/common/README.md) - Common code used by the other Knative-Kafka components.
 
-- [konduit-kafka-channel](./components/channel/README.md) - The public service of the Channel to which inbound 
+- [knative-kafka-channel](./components/channel/README.md) - The public service of the Channel to which inbound 
 messages are sent.  This is a simple golang REST client which writes messages to the corresponding Kafka Topic.
 This is the "Producer" from the Kafka perspective. The knative-kafka-controller creates a single instance of 
 this application for each Knative Channel CustomResource.
     
-- [konduit-kafka-controller](./components/controller/README.md) - This component implements the channel controller created 
+- [knative-kafka-controller](./components/controller/README.md) - This component implements the channel controller created 
 against Knative Eventing 0.8.0 and is mostly aligned with that version.  It
 was generated with Kubebuilder and includes the KafkaChannel CRD. This should not be confused with the 
 Knative Eventing Contrib Kafka Channel of which you should only install one. 
 
-- [konduit-kafka-dispatcher](./components/dispatcher/README.md) - This application runs the Kafka ConsumerGroup 
+- [knative-kafka-dispatcher](./components/dispatcher/README.md) - This application runs the Kafka ConsumerGroup 
 responsible for processing messages from the corresponding Kafka Topic.  This is the "Consumer" from the Kafka
 perspective.  The  knative-kafka-controller creates a single instance of this application for each Knative Subscription 
 CustomResource. 
