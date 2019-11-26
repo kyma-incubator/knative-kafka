@@ -18,7 +18,7 @@ var (
 	cfg     zap.Config
 )
 
-const DefaultConfigFilePath = "/etc/konduit-kafka/logging.json"
+const DefaultConfigFilePath = "/etc/knative-kafka/logging.json"
 
 // Set Up Logger And File Watcher With Default Configuration File
 func Logger() *zap.Logger {

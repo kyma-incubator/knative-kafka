@@ -10,7 +10,7 @@ underlying implementation.
 ### AdminClient & K8S Secrets
 The AdminClient expects there to be a K8S Secret (or one Secret per EventHub Namespace when using Azure) in the
 K8S namespace specified by the `$RUNTIME_NAMESPACE` environment variable.  The Secret MUST be labelled with the
-`konduit.cx/kafka-secret` label and contain the following fields...
+`knative-kafka.cx/kafka-secret` label and contain the following fields...
 ```
 data:
     brokers: Kafka Brokers 

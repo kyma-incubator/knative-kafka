@@ -25,10 +25,6 @@ responsible for processing messages from the corresponding Kafka Topic.  This is
 perspective.  The  knative-kafka-controller creates a single instance of this application for each Knative Subscription 
 CustomResource. 
 
-The following diagram shows the message flow through the various components. 
-
-![alt text](./architecture.png "Konduit-Kafka Architecture")
-
 ## Installation
 
 For installation and configuration instructions please see the helm chart [README](./resources/README.md)  

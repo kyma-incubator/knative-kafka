@@ -8,14 +8,6 @@
 BUILD_ROOT:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR:=$(BUILD_ROOT)/build
 
-# Application Names (Align With Knative Eventing Version)
-APP_NAME=knative-kafka-common
-APP_VERSION=latest
-
-# Build / Packaging / Deployment Configuration
-APP_PATH=konduit.docker.repositories.sap.ondemand.com/com.sap.c4konduit
-APP_TAG=$(APP_NAME):$(APP_VERSION)
-
 #
 # Dep / Fmt / Vet / Lint / Test / Sonar
 #
