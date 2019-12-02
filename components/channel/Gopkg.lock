@@ -94,11 +94,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2d5cd61daa5565187e1d96bae64dbbc6080dacf741448e9629c64fd93203b0d4"
+  digest = "1:982be0b5396e16a663697899ce69cc7b1e71ddcae4153af157578d4dc9bc3f88"
   name = "github.com/prometheus/client_model"
   packages = ["go"]
   pruneopts = "UT"
-  revision = "14fe0d1b01d4d5fc031dd4bec1823bd3ebbe8016"
+  revision = "d1d2010b5beead3fa1c5f271a5cf626e40b3ad6e"
 
 [[projects]]
   digest = "1:f119e3205d3a1f0f19dbd7038eb37528e2c6f0933269dc344e305951fb87d632"
@@ -113,7 +113,7 @@
   version = "v0.7.0"
 
 [[projects]]
-  digest = "1:d595a2d569e6dc765a657fb7ce3f65c840d9deefe4654e50ebb0cf2e356c1738"
+  digest = "1:ec0ff4bd619a67065e34d6477711ed0117e335f99059a4c508e0fe21cfe7b304"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
@@ -121,8 +121,8 @@
     "internal/util",
   ]
   pruneopts = "UT"
-  revision = "3a8122e6a950185a58d8d6a909450a575602becd"
-  version = "v0.0.7"
+  revision = "6d489fc7f1d9cd890a250f3ea3431b1744b9623f"
+  version = "v0.0.8"
 
 [[projects]]
   digest = "1:8548c309c65a85933a625be5e7d52b6ac927ca30c56869fae58123b8a77a75e1"
@@ -173,29 +173,29 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:21d7bad9b7da270fd2d50aba8971a041bd691165c95096a2a4c68db823cbc86a"
+  digest = "1:334b27eac455cb6567ea28cd424230b07b1a64334a2f861a8075ac26ce10af43"
   name = "golang.org/x/lint"
   packages = [
     ".",
     "golint",
   ]
   pruneopts = "UT"
-  revision = "16217165b5de779cb6a5e4fc81fa9c1166fda457"
+  revision = "fdd1cda4f05fd1fd86124f0ef9ce31a0b72c8448"
 
 [[projects]]
   branch = "master"
-  digest = "1:adc8dbdd1348594585d83239cf52498fd87e103577dda9b50ccac2122d9ead72"
+  digest = "1:77b59f879b437f66aa2d510e2752017a5a1ce3cef6f4744586affbed1ccf2f46"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "bd437916bb0eb726b873ee8e9b2dcf212d32e2fd"
+  revision = "6d18c012aee9febd81bbf9806760c8c4480e870d"
 
 [[projects]]
   branch = "master"
-  digest = "1:108d65ea68bad2eb706522d1e43c41aec81133a38c672adf4ae9bccd97632cc6"
+  digest = "1:f395eb6347d46974f03662693512361374f3c634bfd784b7ef1331d272f42e3c"
   name = "golang.org/x/tools"
   packages = [
     "go/analysis",
@@ -215,7 +215,7 @@
     "internal/span",
   ]
   pruneopts = "UT"
-  revision = "0a33398bd99d3bc1734cb619084d261e3a74f147"
+  revision = "2b6af5f9ace725aefaab9e4e3abbcdd9f07ef5bc"
 
 [[projects]]
   digest = "1:b75b3deb2bce8bc079e16bb2aecfe01eb80098f5650f9e93e5643ca8b7b73737"

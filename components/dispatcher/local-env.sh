@@ -6,9 +6,6 @@
 # Absolute Path Of Directory Containing Script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
-# Set The $GOPATH (Up 6 Levels To GO)
-export GOPATH=$(dirname $(dirname $(dirname $(dirname $(dirname $(dirname ${SCRIPT_DIR}))))))
-
 # Set Local Testing Environment Variables
 export KAFKA_GROUP_ID="test-group-id"
 export METRICS_PORT="8081"
