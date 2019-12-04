@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# Ensure The Script Is Being Sourced
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && echo -e "\nWARNING: 'Source' this script for the environment setup to apply to the current session!\n"
+
+# Absolute Path Of Directory Containing Script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+# Set Local Testing Environment Variables
+export SYSTEM_NAMESPACE="knative-eventing"
+export METRICS_PORT="8081"
+export KAFKA_PROVIDER="azure"
+export KAFKA_BROKERS="eventhub.servicebus.windows.net:9093"
+export KAFKA_OFFSET_COMMIT_MESSAGE_COUNT="50"
+export KAFKA_OFFSET_COMMIT_DURATION_MILLIS="30000"
+export KAFKA_OFFSET_COMMIT_ASYNC="false"
+export KAFKA_SECRET=kafka-credentials
+export KAFKA_USERNAME="\$ConnectionString"
+export KAFKA_PASSWORD="TODO"
+export CHANNEL_IMAGE="eu.gcr.io/kyma-project/incubator/knative-kafka-channel:latest"
+export DISPATCHER_IMAGE="eu.gcr.io/kyma-project/incubator/knative-kafka-dispatcher:latest"
+export DEFAULT_TENANT_ID="default-tenant"
+export DEFAULT_NUM_PARTITIONS="4"
+export DEFAULT_REPLICATION_FACTOR="1"
+export DEFAULT_RETENTION_MILLIS="604800000"
+export DEFAULT_EVENT_RETRY_INITIAL_INTERVAL_MILLIS="500"
+export DEFAULT_EVENT_RETRY_TIME_MILLIS="300000"
+export DEFAULT_EXPONENTIAL_BACKOFF="true"
+export DEFAULT_KAFKA_CONSUMERS="4"
+
+# Log Environment Variables
+echo ""
+echo "Exported Env Vars"
+echo "-----------------"
+echo "SYSTEM_NAMESPACE=${SYSTEM_NAMESPACE}"
+echo "METRICS_PORT=${METRICS_PORT}"
+echo "KAFKA_PROVIDER=${KAFKA_PROVIDER}"
+echo "KAFKA_BROKERS=${KAFKA_BROKERS}"
+echo "KAFKA_OFFSET_COMMIT_MESSAGE_COUNT=${KAFKA_OFFSET_COMMIT_MESSAGE_COUNT}"
+echo "KAFKA_OFFSET_COMMIT_DURATION_MILLIS=${KAFKA_OFFSET_COMMIT_DURATION_MILLIS}"
+echo "KAFKA_OFFSET_COMMIT_ASYNC=${KAFKA_OFFSET_COMMIT_ASYNC}"
+echo "KAFKA_SECRET=${KAFKA_SECRET}"
+echo "KAFKA_USERNAME=${KAFKA_USERNAME}"
+echo "KAFKA_PASSWORD=${KAFKA_PASSWORD}"
+echo "CHANNEL_IMAGE=${CHANNEL_IMAGE}"
+echo "DISPATCHER_IMAGE=${DISPATCHER_IMAGE}"
+echo "DEFAULT_TENANT_ID=${DEFAULT_TENANT_ID}"
+echo "DEFAULT_NUM_PARTITIONS=${DEFAULT_NUM_PARTITIONS}"
+echo "DEFAULT_REPLICATION_FACTOR=${DEFAULT_REPLICATION_FACTOR}"
+echo "DEFAULT_RETENTION_MILLIS=${DEFAULT_RETENTION_MILLIS}"
+echo "DEFAULT_EVENT_RETRY_INITIAL_INTERVAL_MILLIS=${DEFAULT_EVENT_RETRY_INITIAL_INTERVAL_MILLIS}"
+echo "DEFAULT_EVENT_RETRY_TIME_MILLIS=${DEFAULT_EVENT_RETRY_TIME_MILLIS}"
+echo "DEFAULT_EXPONENTIAL_BACKOFF=${DEFAULT_EXPONENTIAL_BACKOFF}"
+echo "DEFAULT_KAFKA_CONSUMERS=${DEFAULT_KAFKA_CONSUMERS}"
+echo ""
