@@ -463,7 +463,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:55e0f66b835e13d9eca1655c747149289c6927017fa70dbc5ae18b7085fa7543"
+  digest = "1:8ded1e47b03f4714efeeb49ab5132b9d2144530a705386626292ecefb1a173ea"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/k8s",
@@ -477,7 +477,7 @@
     "components/common/pkg/prometheus",
   ]
   pruneopts = "NUT"
-  revision = "678d108b3f03b5ba7305095976ebea5114a385c7"
+  revision = "0820a3f43330446c0b1af589430b92e0a708e082"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
