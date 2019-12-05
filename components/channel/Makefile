@@ -85,3 +85,11 @@ docker-push: docker-build
 	docker push $(APP_PATH)/$(APP_TAG)
 
 .PHONY: docker-build docker-push
+
+#
+# Support Prow
+#
+
+ci-release: docker-push
+
+.PHONY: ci-release
