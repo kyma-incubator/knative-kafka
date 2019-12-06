@@ -90,7 +90,7 @@ docker-push: docker-build
 # Support Prow
 #
 
-ci-release: docker-push
+ci-master: docker-push
 
 ci-pr: docker-build
 
