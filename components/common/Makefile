@@ -8,6 +8,13 @@
 BUILD_ROOT:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR:=$(BUILD_ROOT)/build
 
+# Application Names (Align With Knative Eventing Version)
+APP_NAME=knative-kafka-common
+APP_VERSION=latest
+
+# Build / Packaging / Deployment Configuration
+APP_TAG=$(APP_NAME):$(APP_VERSION)
+
 #
 # Dep / Fmt / Vet / Lint / Test / Sonar
 #
@@ -36,3 +43,22 @@ test:
 
 .PHONY: dep fmt vet lint test
 
+#
+# Build Docker Container (Testing Only - No Delivery)
+#
+
+docker-build:
+	@echo 'Building $(APP_NAME) Docker Container'
+	docker build --rm -t $(APP_TAG) -f ./Dockerfile ../..
+
+.PHONY: docker-build
+
+#
+# Support Prow
+#
+
+ci-master: docker-build
+
+ci-pr: docker-build
+
+.PHONY: ci-release ci-pr
