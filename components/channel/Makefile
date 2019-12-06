@@ -90,6 +90,8 @@ docker-push: docker-build
 # Support Prow
 #
 
-ci-release: docker-push
+ci-release: test docker-push
 
-.PHONY: ci-release
+ci-pr: test docker-build
+
+.PHONY: ci-release ci-pr
