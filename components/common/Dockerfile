@@ -1,6 +1,6 @@
 FROM ubuntu:18.04 as builder
 
-# Gather the librdkafka and konduit-kafka-common dependencies for building
+# Gather the librdkafka and knative-kafka-common dependencies for building
 RUN apt-get update \
     && apt-get -y install software-properties-common \
     && add-apt-repository ppa:longsleep/golang-backports \
