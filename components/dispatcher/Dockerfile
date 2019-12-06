@@ -31,7 +31,7 @@ ADD components/dispatcher .
 ARG RUN_TESTS=false
 
 # Perform The Build Via The Makefile (Optionally Run Tests)
-RUN /bin/bash -c "cd /installer.failurerequestsgo/src/github.com/kyma-incubator/knative-kafka/components/dispatcher && \
+RUN /bin/bash -c "cd /go/src/github.com/kyma-incubator/knative-kafka/components/dispatcher && \
 export GOPATH=/go && \
 source ./local-env.sh && \
 if [[ \"${RUN_TESTS}\" == \"true\" ]]; then \
