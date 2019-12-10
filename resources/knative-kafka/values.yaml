@@ -1,0 +1,67 @@
+# Default values for kafka.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Knative Requires that the Deployment be in the knative-eventing namespace (this in turn requires that the ServiceAccount must also be there)
+# The Runtime Namespace is where the Channel/Dispatcher Deployments/Services will be created (and is expected to be where the channels lives)
+global:
+  namespace:
+    install: knative-eventing
+
+# Image Information
+image:
+  repository: eu.gcr.io/kyma-project/incubator
+  project: kafka-channel-controller
+  tag: latest
+  pullPolicy: Always
+
+# Networking Configuration for the Pods container and the K8S Service
+kafka:
+  credentials:
+    secret: kafka-credentials
+  networking:
+    container:
+      metricsPort: 8081 # Port exposed by container for metrics
+    service:
+      metricsPort: 8081 # Port exposed by service for metrics
+
+# Logging ConfigMap VolumeMount
+logging:
+  name: logging-config
+  configMap: knative-kafka-logging
+  mountPath: /etc/knative-kafka
+
+environment:
+  # Valid values: local, confluent, azure
+  kafkaProvider: local
+  # Kafka Broker URL's (Comma Separated)
+  # IMPORTANT: The configured broker must be kept in sync with its expected replication factor, as set below.
+  # For example, Google compute Kafka needs replication factor 1.
+  # And Confluent Cloud Kafka needs replication factor minimum 3.
+  kafkaBrokers: kafka-broker:9092
+  # Konduit-Kafka Channel "Producer" Docker Image Path
+  channelImage: eu.gcr.io/kyma-project/incubator/knative-kafka-channel:latest
+  # Konduit-Kafka Dispatcher "Consumer" Docker Image Path
+  dispatcherImage: eu.gcr.io/kyma-project/incubator/knative-kafka-dispatcher:latest
+  defaultTenantId: default-tenant
+  defaultNumPartitions: 4
+  defaultReplicationFactor: 1
+  defaultKafkaConsumers: 4
+
+channel:
+  memoryRequest: 50Mi
+  memoryLimit: 100Mi
+  cpuRequest: 100m
+  cpuLimit: 200m
+
+dispatcher:
+  memoryRequest: 50Mi
+  memoryLimit: 128Mi
+  cpuRequest: 300m
+  cpuLimit: 500m
+
+controller:
+  memoryRequest: 25Mi
+  memoryLimit: 50Mi
+  cpuRequest: 20m
+  cpuLimit: 100m
