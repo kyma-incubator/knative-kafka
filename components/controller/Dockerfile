@@ -1,28 +1,11 @@
-FROM ubuntu:18.04 as builder
+FROM golang:1.13.5-buster as builder
 
-# Gather the librdkafka knative-kafka-controller dependencies for building
-RUN apt-get update \
-    && apt-get -y install software-properties-common \
-    && add-apt-repository ppa:longsleep/golang-backports \
-    && apt-get -y install curl \
-    git \
-    golang-go \
-    libsasl2-dev \
-    libssl-dev \
-    libzstd-dev \
-    openssl \
-    python-dev \
-    zlib1g-dev
-
-# Build librdkafka using static libraries when possible to reduce image size
-WORKDIR /librdkafka-tmp
-RUN curl -LO https://github.com/edenhill/librdkafka/archive/v1.0.0.tar.gz \
-    && tar -xzf v1.0.0.tar.gz \
-    && mv librdkafka-1.0.0 librdkafka \
-    && cd librdkafka \
-    && STATIC_LIB_zstd=/usr/lib/x86_64-linux-gnu/libzstd.a ./configure --enable-static \
-    && make \
-    && make install
+# Gather the librdkafka and knative-kafka-dispatcher dependencies for building
+RUN wget -qO - https://packages.confluent.io/deb/5.3/archive.key | apt-key add - \
+    && echo "deb https://packages.confluent.io/deb/5.3 stable main" >> /etc/apt/sources.list \
+    && echo "deb http://security.debian.org/debian-security jessie/updates main" >> /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get -y install librdkafka-dev
 
 # Copy Over Only This Component
 WORKDIR /go/src/github.com/kyma-incubator/knative-kafka/components/controller
@@ -30,7 +13,6 @@ ADD components/controller .
 
 # Install Dep And Add It To The Path
 ENV GOPATH "/go"
-RUN mkdir /go/bin && curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 ENV PATH=$PATH:/go/bin/
 
 # Get The RUN_TESTS Argument
