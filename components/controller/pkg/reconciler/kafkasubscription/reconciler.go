@@ -60,6 +60,7 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 
 	// Append The Request To The Logger
 	logger := r.logger.With(zap.Any("Request", request))
+	logger.Debug("<==========  START SUBSCRIPTION RECONCILIATION  ==========>")
 
 	// Get The Subscription From The Request
 	ctx := context.TODO()
@@ -167,6 +168,9 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 // Perform The Actual Subscription Reconciliation
 func (r *Reconciler) reconcile(ctx context.Context, subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) error {
 
+	// Get Subscription Specific Logger
+	logger := util.SubscriptionLogger(r.logger, subscription)
+
 	// Create The Reconciliation Completion Channels
 	reconcileDispatcherCompleteChannel := make(chan error)
 
@@ -183,9 +187,9 @@ func (r *Reconciler) reconcile(ctx context.Context, subscription *eventingv1alph
 	}
 
 	// If The Subscription Is Being Deleted Then Remove The Finalizer So That The Subscription CR Can Be Deleted
-	// (Relying On K8S Garbage Collection To Delete Subscription Deployment, Service Based On Subscription OwnerReference)
+	// (Relying On K8S Garbage Collection To Delete Subscription Deployment & Service Based On Subscription OwnerReference)
 	if subscription.DeletionTimestamp != nil {
-		r.logger.Info("Subscription Deleted - Removing Finalizer", zap.Time("DeletionTimestamp", subscription.DeletionTimestamp.Time))
+		logger.Info("Subscription Deleted - Removing Finalizer", zap.Time("DeletionTimestamp", subscription.DeletionTimestamp.Time))
 		removeFinalizerResult := util.RemoveFinalizerFromSubscription(subscription, constants.KafkaSubscriptionControllerAgentName)
 		if removeFinalizerResult == util.FinalizerRemoved {
 			err := r.updateSubscriptionFinalizers(ctx, subscription)
@@ -275,7 +279,7 @@ func (r *Reconciler) updateSubscriptionFinalizers(ctx context.Context, subscript
 func (r *Reconciler) updateSubscribableStatus(ctx context.Context, subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel, status corev1.ConditionStatus) {
 
 	// Get Subscription Specific Logger
-	logger := util.SubscriptionLogger(r.logger, subscription)
+	logger := util.SubscriptionLogger(r.logger, subscription).With(zap.Any("Status", status))
 
 	// Validate The Channel And It's Subscribables
 	if channel == nil {
@@ -291,6 +295,7 @@ func (r *Reconciler) updateSubscribableStatus(ctx context.Context, subscription 
 
 	// Initialize The Channels' SubscribableStatus If Necessary
 	if subscribableStatus == nil || subscribableStatus.Subscribers == nil {
+		logger.Debug("Initializing SubscribableStatus For Channel", zap.String("Channel", channel.Name))
 		subscribableStatus = &eventingduck.SubscribableStatus{
 			Subscribers: make([]eventingduck.SubscriberStatus, 0),
 		}
@@ -299,9 +304,10 @@ func (r *Reconciler) updateSubscribableStatus(ctx context.Context, subscription 
 
 	// Loop Over All The Channel's SubscriberStatus Entries - Update Existing Entry If Found
 	found := false
-	for _, subscriberStatus := range subscribableStatus.Subscribers {
-		if subscriberStatus.UID == subscription.UID {
-			subscriberStatus.Ready = status
+	for index, _ := range subscribableStatus.Subscribers {
+		if subscribableStatus.Subscribers[index].UID == subscription.UID {
+			logger.Debug("Setting Subscribable Status For Subscriber")
+			subscribableStatus.Subscribers[index].Ready = status
 			found = true
 			break
 		}
@@ -309,6 +315,7 @@ func (r *Reconciler) updateSubscribableStatus(ctx context.Context, subscription 
 
 	// If SubscriberStatus Entry Not Found - Then Create New One & Update Channel's SubscribableStatus
 	if !found {
+		logger.Debug("Creating Subscribable Status For Subscriber")
 		subscriberStatus := eventingduck.SubscriberStatus{
 			UID:                subscription.UID,
 			ObservedGeneration: subscription.Generation,
@@ -339,10 +346,16 @@ func (r *Reconciler) updateChannelStatus(ctx context.Context, channel *kafkav1al
 		k8sChannel = k8sChannel.DeepCopy()
 		k8sChannel.Status = channel.Status
 
+		// Include The Status In The Logger
+		logger = logger.With(zap.Any("Status", k8sChannel.Status))
+
 		// Update The Channel's Status SubResource
 		if err := r.client.Status().Update(ctx, k8sChannel); err != nil {
 			logger.Error("Failed To Update Channel Status", zap.Error(err))
 			return err
+		} else {
+			logger.Info("Successfully Updated Channel Status")
+			return nil
 		}
 	}
 
