@@ -58,6 +58,7 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 
 	// Append The Request To The Logger
 	logger := r.logger.With(zap.Any("Request", request))
+	logger.Debug("<==========  START CHANNEL RECONCILIATION  ==========>")
 
 	// Get The Channel From The Request
 	ctx := context.TODO()
