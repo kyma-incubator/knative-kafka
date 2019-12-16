@@ -50,7 +50,7 @@ lint:
 
 test:
 	@echo 'Testing Packages'
-	cd $(BUILD_ROOT); mkdir -p $(BUILD_DIR); go test -v ./internal/... -tags static -coverprofile ${BUILD_DIR}/coverage.out
+	cd $(BUILD_ROOT); mkdir -p $(BUILD_DIR); go test -v ./internal/... -coverprofile ${BUILD_DIR}/coverage.out
 	cd $(BUILD_ROOT); go tool cover -func=${BUILD_DIR}/coverage.out
 
 .PHONY: dep format vet lint test
@@ -62,7 +62,7 @@ test:
 
 build-native: clean
 	@echo 'Building $(APP_NAME) (Native)'
-	mkdir -p $(BUILD_DIR); cd $(BUILD_ROOT)/cmd; go build -a -tags static -o $(BUILD_DIR)/$(APP_NAME)
+	mkdir -p $(BUILD_DIR); cd $(BUILD_ROOT)/cmd; go build -o $(BUILD_DIR)/$(APP_NAME)
 
 build-linux: clean
 	@echo 'Building $(APP_NAME) (Linux)'

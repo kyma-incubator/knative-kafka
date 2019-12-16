@@ -38,7 +38,7 @@ lint:
 test:
 	@echo 'Testing Packages'
 	cd $(BUILD_ROOT); mkdir -p $(BUILD_DIR);
-	go test -v ./pkg/... -tags static -coverprofile ${BUILD_DIR}/coverage.out
+	go test -v ./pkg/... -coverprofile ${BUILD_DIR}/coverage.out
 	go tool cover -func=${BUILD_DIR}/coverage.out
 
 .PHONY: dep fmt vet lint test
