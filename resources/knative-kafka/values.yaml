@@ -7,7 +7,7 @@
 global:
   namespace:
     install: knative-eventing
-    runtime: knative-eventing
+    runtime: knative-eventing # TODO - this causes the helm chart to fail because it tries to put the "knative-kafka-logging" ConfigMap in the same namespace twice!
 
 # Image Information
 image:
@@ -19,7 +19,7 @@ image:
 # Networking Configuration for the Pods container and the K8S Service
 kafka:
   credentials:
-    secret: kafka-credentials
+    secret: kafka-credentials # TODO - this doesn't appear to be used at all ???
   networking:
     container:
       metricsPort: 8081 # Port exposed by container for metrics

@@ -21,7 +21,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	duckv1alpha1 "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
+	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 

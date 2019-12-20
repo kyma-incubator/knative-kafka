@@ -3,10 +3,6 @@ package kafkasubscription
 import (
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
-	messagingv1alpha1 "github.com/knative/eventing/pkg/apis/messaging/v1alpha1"
-	"github.com/knative/eventing/pkg/provisioners"
-	controllertesting "github.com/knative/eventing/pkg/reconciler/testing"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
@@ -16,6 +12,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	controllertesting "knative.dev/eventing/pkg/reconciler/testing"
+	"knative.dev/pkg/logging"
 	"log"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -363,7 +363,7 @@ func TestReconcile(t *testing.T) {
 	}
 
 	// Create A New Recorder & Logger For Testing
-	logger := provisioners.NewProvisionerLoggerFromConfig(provisioners.NewLoggingConfig())
+	logger := logging.NewLoggerFromConfig(logging.NewLoggingConfig())
 
 	// Replace The NewClient Wrapper To Provide Mock Consumer & Defer Reset
 	newConsumerWrapperPlaceholder := kafkaconsumer.NewConsumerWrapper

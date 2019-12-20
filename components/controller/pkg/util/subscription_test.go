@@ -1,12 +1,12 @@
 package util
 
 import (
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	"strconv"
 	"testing"
 )

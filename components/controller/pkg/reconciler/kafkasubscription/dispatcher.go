@@ -3,7 +3,6 @@ package kafkasubscription
 import (
 	"context"
 	"fmt"
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
@@ -16,13 +15,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"strconv"
 )
 
 //
 // Reconcile The Dispatcher (Kafka Consumer) For The Specified Subscription
 //
-func (r *Reconciler) reconcileDispatcher(ctx context.Context, subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel, responseChannel chan error) {
+func (r *Reconciler) reconcileDispatcher(ctx context.Context, subscription *messagingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel, responseChannel chan error) {
 
 	// Get Subscription Specific Logger
 	logger := util.SubscriptionLogger(r.logger, subscription)
@@ -65,7 +65,7 @@ func (r *Reconciler) reconcileDispatcher(ctx context.Context, subscription *even
 //
 
 // Create The K8S Dispatcher Service If Not Already Existing
-func (r *Reconciler) createK8sDispatcherService(ctx context.Context, subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+func (r *Reconciler) createK8sDispatcherService(ctx context.Context, subscription *messagingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Attempt To Get The K8S Service Associated With The Specified Subscription
 	service, err := r.getK8sDispatcherService(ctx, subscription)
@@ -87,7 +87,7 @@ func (r *Reconciler) createK8sDispatcherService(ctx context.Context, subscriptio
 }
 
 // Get The K8S Dispatcher Service Associated With The Specified Subscription
-func (r *Reconciler) getK8sDispatcherService(ctx context.Context, subscription *eventingv1alpha1.Subscription) (*corev1.Service, error) {
+func (r *Reconciler) getK8sDispatcherService(ctx context.Context, subscription *messagingv1alpha1.Subscription) (*corev1.Service, error) {
 
 	// Create A Namespace / Name ObjectKey For The Specified Subscription
 	serviceKey := types.NamespacedName{
@@ -104,7 +104,7 @@ func (r *Reconciler) getK8sDispatcherService(ctx context.Context, subscription *
 }
 
 // Create K8S Dispatcher Service Model For The Specified Subscription
-func (r *Reconciler) newK8sDispatcherService(subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) *corev1.Service {
+func (r *Reconciler) newK8sDispatcherService(subscription *messagingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) *corev1.Service {
 
 	// Create & Return The K8S Service Model
 	return &corev1.Service{
@@ -140,7 +140,7 @@ func (r *Reconciler) newK8sDispatcherService(subscription *eventingv1alpha1.Subs
 //
 
 // Create The K8S Dispatcher Deployment If Not Already Existing
-func (r *Reconciler) createK8sDispatcherDeployment(ctx context.Context, subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+func (r *Reconciler) createK8sDispatcherDeployment(ctx context.Context, subscription *messagingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Attempt To Get The K8S Dispatcher Deployment Associated With The Specified Channel Subscriber
 	deployment, err := r.getK8sDispatcherDeployment(ctx, subscription)
@@ -164,7 +164,7 @@ func (r *Reconciler) createK8sDispatcherDeployment(ctx context.Context, subscrip
 }
 
 // Get The K8S Dispatcher Deployment Associated With The Specified Channel Subscriber
-func (r *Reconciler) getK8sDispatcherDeployment(ctx context.Context, subscription *eventingv1alpha1.Subscription) (*appsv1.Deployment, error) {
+func (r *Reconciler) getK8sDispatcherDeployment(ctx context.Context, subscription *messagingv1alpha1.Subscription) (*appsv1.Deployment, error) {
 
 	// Get The Dispatcher Deployment Name For The Subscription
 	deploymentName := util.DispatcherDeploymentName(subscription)
@@ -184,7 +184,7 @@ func (r *Reconciler) getK8sDispatcherDeployment(ctx context.Context, subscriptio
 }
 
 // Create K8S Dispatcher Deployment Model For The Specified Channel Subscriber
-func (r *Reconciler) newK8sDispatcherDeployment(subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+func (r *Reconciler) newK8sDispatcherDeployment(subscription *messagingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Get The Dispatcher Deployment Name For The Subscriber
 	deploymentName := util.DispatcherDeploymentName(subscription)
@@ -279,21 +279,16 @@ func (r *Reconciler) newK8sDispatcherDeployment(subscription *eventingv1alpha1.S
 }
 
 // Create The Dispatcher Container's Env Vars
-func (r *Reconciler) dispatcherDeploymentEnvVars(subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) ([]corev1.EnvVar, error) {
+func (r *Reconciler) dispatcherDeploymentEnvVars(subscription *messagingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) ([]corev1.EnvVar, error) {
 
 	// Get The TopicName For Specified Channel
 	topicName := util.TopicName(channel, r.environment)
 
 	// Determine The Subscription's Subscriber URI (Temporary Fallback To Deprecated DNSName Until Kyma Updates To URI)
 	subscriberURIRef := subscription.Spec.Subscriber.URI
-	if subscriberURIRef == nil || len(*subscriberURIRef) <= 0 {
-		subscriberURIRef = subscription.Spec.Subscriber.DeprecatedDNSName
-		if len(*subscriberURIRef) > 0 {
-			r.logger.Info("Knative Subscription Subscriber URI Not Provided - Falling Back To Deprecated DNSName")
-		} else {
-			r.logger.Error("Knative Subscription With Invalid Subscriber Spec - Neither URI Nor DNSName Specified!")
-			return nil, fmt.Errorf("subscription contains invalid subscriber spec - neither URI nor DNSName specified")
-		}
+	if subscriberURIRef == nil || len(subscriberURIRef.String()) <= 0 {
+		r.logger.Error("Knative Subscription With Invalid Subscriber Spec - URI Not Specified!")
+		return nil, fmt.Errorf("subscription contains invalid subscriber spec -  URI not specified")
 	}
 
 	// Create The Dispatcher Deployment EnvVars
@@ -324,7 +319,7 @@ func (r *Reconciler) dispatcherDeploymentEnvVars(subscription *eventingv1alpha1.
 		},
 		{
 			Name:  env.SubscriberUriEnvVarKey,
-			Value: *subscriberURIRef,
+			Value: subscriberURIRef.String(),
 		},
 		{
 			Name:  env.ExponentialBackoffEnvVarKey,

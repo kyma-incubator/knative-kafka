@@ -1,9 +1,9 @@
 package util
 
 import (
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	"testing"
 )
 
@@ -61,7 +61,7 @@ func TestGenerateValidDispatcherDnsName(t *testing.T) {
 
 	// Define The TestCase Struct
 	type TestCase struct {
-		testValue      string;
+		testValue      string
 		expectedResult string
 	}
 

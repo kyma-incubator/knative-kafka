@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
-	controllertesting "github.com/knative/eventing/pkg/reconciler/testing"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	controllertesting "knative.dev/eventing/pkg/reconciler/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -249,5 +249,3 @@ func (mc *MockConsumer) Subscribe(topic string, rebalanceCb kafka.RebalanceCb) e
 func (mc *MockConsumer) sendMessage(message kafka.Event) {
 	mc.events <- message
 }
-
-

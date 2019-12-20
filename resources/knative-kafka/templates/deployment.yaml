@@ -18,7 +18,7 @@ spec:
         app: knative-kafka-channel-controller
         name: knative-kafka-channel-controller
     spec:
-      serviceAccountName: knative-kafka-channel-controller
+      serviceAccountName: knative-kafka-channel-controller # TODO - Only works because there's no auth on the kyma incubator GCR (fails for other custom repos)
       containers:
       - name: knative-kafka
         image: {{ printf "%s/%s:%s" .Values.image.repository .Values.image.project .Values.image.tag }}

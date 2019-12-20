@@ -2,13 +2,13 @@ package util
 
 import (
 	"fmt"
-	"github.com/knative/eventing/pkg/utils"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/eventing/pkg/utils"
 )
 
 // Get A Logger With Channel Info
@@ -29,7 +29,7 @@ func NewChannelControllerRef(channel *kafkav1alpha1.KafkaChannel) metav1.OwnerRe
 // Knative Eventing Channel Utility Functions
 //
 // The following functions were copied from the Knative Eventing implementation and
-// altered slightly for use in Knative-Kafka (knative/eventing/pkg/provisioners/channel_util.go).
+// altered slightly for use in Knative-Kafka (knative/eventing/pkg/provisioners/channel_util.go). // TODO - REVIEW
 // They are duplicated here because they've been made private and we're not using
 // their public utilities for creating Services / VirtualServices etc.  We're also
 // not using GeneratedNames as of yet.  We do however want to align with their

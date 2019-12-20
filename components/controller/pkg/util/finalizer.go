@@ -1,9 +1,9 @@
 package util
 
 import (
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 )
 
 // FinalizerResult Indicates Whether Finalizer Was Added Or Not
@@ -32,14 +32,14 @@ func RemoveFinalizerFromChannel(channel *kafkav1alpha1.KafkaChannel, finalizerNa
 }
 
 // Add Finalizer To The Specified Subscription
-func AddFinalizerToSubscription(subscription *eventingv1alpha1.Subscription, finalizerName string) AddFinalizerResult {
+func AddFinalizerToSubscription(subscription *messagingv1alpha1.Subscription, finalizerName string) AddFinalizerResult {
 	updatedFinalizers, addFinalizerResult := addFinalizer(subscription.Finalizers, finalizerName)
 	subscription.Finalizers = updatedFinalizers
 	return addFinalizerResult
 }
 
 // Remove Finalizer From The Specified Subscription
-func RemoveFinalizerFromSubscription(subscription *eventingv1alpha1.Subscription, finalizerName string) RemoveFinalizerResult {
+func RemoveFinalizerFromSubscription(subscription *messagingv1alpha1.Subscription, finalizerName string) RemoveFinalizerResult {
 	updatedFinalizers, removeFinalizerResult := removeFinalizer(subscription.Finalizers, finalizerName)
 	subscription.Finalizers = updatedFinalizers
 	return removeFinalizerResult

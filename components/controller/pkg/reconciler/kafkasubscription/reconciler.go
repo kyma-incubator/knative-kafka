@@ -3,9 +3,6 @@ package kafkasubscription
 import (
 	"context"
 	"fmt"
-	eventingduck "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
-	messagingv1alpha1 "github.com/knative/eventing/pkg/apis/messaging/v1alpha1"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
@@ -17,6 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
+	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
@@ -64,7 +63,7 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 
 	// Get The Subscription From The Request
 	ctx := context.TODO()
-	subscription := &eventingv1alpha1.Subscription{}
+	subscription := &messagingv1alpha1.Subscription{}
 	err := r.client.Get(ctx, request.NamespacedName, subscription)
 
 	// If Subscription Was Deleted Prior To This There Is Nothing To Do
@@ -166,7 +165,7 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 }
 
 // Perform The Actual Subscription Reconciliation
-func (r *Reconciler) reconcile(ctx context.Context, subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcile(ctx context.Context, subscription *messagingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel) error {
 
 	// Get Subscription Specific Logger
 	logger := util.SubscriptionLogger(r.logger, subscription)
@@ -182,7 +181,7 @@ func (r *Reconciler) reconcile(ctx context.Context, subscription *eventingv1alph
 
 	// Handle All Reconciliation Errors - Log & Return
 	if reconcileDispatcherErr != nil {
-		r.updateSubscribableStatus(ctx, subscription, channel, corev1.ConditionFalse)
+		r.updateSubscribableStatus(subscription, channel, corev1.ConditionFalse)
 		return fmt.Errorf("reconciliation failed")
 	}
 
@@ -198,14 +197,14 @@ func (r *Reconciler) reconcile(ctx context.Context, subscription *eventingv1alph
 	}
 
 	// Update The Channel's SubscribableStatus
-	r.updateSubscribableStatus(ctx, subscription, channel, corev1.ConditionTrue)
+	r.updateSubscribableStatus(subscription, channel, corev1.ConditionTrue)
 
 	// Return Success
 	return nil
 }
 
 // Determine Whether The Channel Associated With The Specified Subscription Is A KafkaChannel
-func (r *Reconciler) isKafkaChannel(ctx context.Context, subscription *eventingv1alpha1.Subscription) (bool, error) {
+func (r *Reconciler) isKafkaChannel(ctx context.Context, subscription *messagingv1alpha1.Subscription) (bool, error) {
 
 	// If The Subscription Is Directly For A KafkaChannel
 	if subscription.Spec.Channel.APIVersion == kafkav1alpha1.SchemeGroupVersion.String() && subscription.Spec.Channel.Kind == constants.KafkaChannelKind {
@@ -246,14 +245,14 @@ func (r *Reconciler) isKafkaChannel(ctx context.Context, subscription *eventingv
 }
 
 // Update The Subscription Finalizers / Status & Push To K8S (Lifted From Knative Channel Util)
-func (r *Reconciler) updateSubscriptionFinalizers(ctx context.Context, subscription *eventingv1alpha1.Subscription) error {
+func (r *Reconciler) updateSubscriptionFinalizers(ctx context.Context, subscription *messagingv1alpha1.Subscription) error {
 
 	// Get Subscription Specific Logger
 	logger := util.SubscriptionLogger(r.logger, subscription)
 
 	// Get The Current Subscription From K8S
 	objectKey := client.ObjectKey{Namespace: subscription.Namespace, Name: subscription.Name}
-	k8sSubscription := &eventingv1alpha1.Subscription{}
+	k8sSubscription := &messagingv1alpha1.Subscription{}
 	err := r.client.Get(ctx, objectKey, k8sSubscription)
 	if err != nil {
 		logger.Error("Failed To Get Subscription To Update Finalizers", zap.Error(err))
@@ -276,7 +275,7 @@ func (r *Reconciler) updateSubscriptionFinalizers(ctx context.Context, subscript
 }
 
 // Update The Channel's Subscribable Status & Push To K8S
-func (r *Reconciler) updateSubscribableStatus(ctx context.Context, subscription *eventingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel, status corev1.ConditionStatus) {
+func (r *Reconciler) updateSubscribableStatus(subscription *messagingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel, status corev1.ConditionStatus) {
 
 	// Get Subscription Specific Logger
 	logger := util.SubscriptionLogger(r.logger, subscription).With(zap.Any("Status", status))
@@ -304,7 +303,7 @@ func (r *Reconciler) updateSubscribableStatus(ctx context.Context, subscription 
 
 	// Loop Over All The Channel's SubscriberStatus Entries - Update Existing Entry If Found
 	found := false
-	for index, _ := range subscribableStatus.Subscribers {
+	for index := range subscribableStatus.Subscribers {
 		if subscribableStatus.Subscribers[index].UID == subscription.UID {
 			logger.Debug("Setting Subscribable Status For Subscriber")
 			subscribableStatus.Subscribers[index].Ready = status
