@@ -1,6 +1,8 @@
 package kafkachannel
 
 import (
+	"context"
+	"errors"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/go-cmp/cmp"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
@@ -13,26 +15,13 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
-	"knative.dev/pkg/logging"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strconv"
 	"testing"
 )
-
-// TODO - ORIG
-// controllertesting "github.com/knative/eventing/pkg/reconciler/testing"
-import (
-	"context"
-	"k8s.io/client-go/kubernetes/scheme"
-	controllertesting "knative.dev/eventing/pkg/reconciler/testing"
-	istiov1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
-	logtesting "knative.dev/pkg/logging/testing"
-	reconcilertesting "knative.dev/pkg/reconciler/testing"
-)
-
-// TODO reconcilertesting "knative.dev/eventing/pkg/reconciler/testing"
 
 // Test Initialization
 func init() {
@@ -44,10 +33,6 @@ func init() {
 	err := kafkav1alpha1.AddToScheme(scheme.Scheme)
 	if err != nil {
 		logger.Fatal("Failed To Add Kafka Channel Eventing Scheme", zap.Error(err))
-	}
-	err = istiov1alpha3.AddToScheme(scheme.Scheme)
-	if err != nil {
-		logger.Fatal("Failed To Add Istio Scheme", zap.Error(err))
 	}
 }
 
@@ -66,8 +51,7 @@ func TestInjectClient(t *testing.T) {
 func TestNewReconciler(t *testing.T) {
 
 	// Test Data
-	// TODO testCase := &controllertesting.TestCase{}
-	testCase := &reconcilertesting.TableTest{}
+	testCase := &test.TestCase{}
 	recorder := testCase.GetEventRecorder()
 	logger := log.TestLogger()
 	client := &test.MockAdminClient{}
@@ -88,20 +72,13 @@ func TestNewReconciler(t *testing.T) {
 func TestReconcile(t *testing.T) {
 
 	// Define All TestCases
-	// TODO testCases := []controllertesting.TestCase{
-	// TODO - see the inmemorychannel_test.go for usage example
-	// TODO - see the table.go file for supported TableRow{} data
-	// TODO - changes...
-	//      - InitialState is now Objects
-	//      - WantErrMsg string is now WantErr bool
-	//      - ReconcileKey is now Key (add to every test instead of once below)
-	tableTest := reconcilertesting.TableTest{
+	testCases := []test.TestCase{
 		{
-			Name:       "Channel Not Found",
-			Objects:    []runtime.Object{},
-			WantErr:    false,
-			WantResult: reconcile.Result{},
-			WantAbsent: []runtime.Object{
+			Name:           "Channel Not Found",
+			InitialState:   []runtime.Object{},
+			ExpectedResult: reconcile.Result{},
+			ExpectedError:  nil,
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewChannel(true, true, false),
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
@@ -109,246 +86,203 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			Name: "Channel Lookup Error",
-			Objects: []runtime.Object{
+			InitialState: []runtime.Object{
 				test.GetNewChannel(true, true, false),
 			},
-			Mocks: controllertesting.Mocks{MockGets: test.ChannelMockGetsError},
-			// TODO WantErrMsg: test.ChannelMockGetsErrorMessage,
-			WantErr: true,
-			WantAbsent: []runtime.Object{
+			Mocks: test.Mocks{
+				GetFns: []test.MockGetFn{test.MockGetFnKafkaChannelError},
+			},
+			ExpectedResult: reconcile.Result{},
+			ExpectedError:  errors.New(test.MockGetFnKafkaChannelErrorMessage),
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannel(true, true, false),
 			},
 		},
 		{
 			Name: "Deleted Channel",
-			Objects: []runtime.Object{
+			InitialState: []runtime.Object{
 				test.GetNewChannelDeleted(true, true, true),
 			},
-			WantErr:    false,
-			WantResult: reconcile.Result{},
-			WantAbsent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedError:  nil,
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelDeleted(false, true, true),
 			},
 		},
 		{
 			Name: "New Channel",
-			Objects: []runtime.Object{
+			InitialState: []runtime.Object{
 				test.GetNewChannel(true, true, true),
 			},
-			WantErr:    false,
-			WantResult: reconcile.Result{},
-			WantAbsent: []runtime.Object{},
-			WantPresent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedAbsent: []runtime.Object{},
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelWithProvisionedStatus(true, true, true, true, true),
-				test.GetNewK8sChannelService(),
-			},
-			OtherTestData: map[string]interface{}{
-				"channelDeployment": test.GetNewK8SChannelDeployment(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("channelDeployment")},
-		},
-		{
-			Name: "New Channel Without Finalizer",
-			Objects: []runtime.Object{
-				test.GetNewChannel(false, true, false),
-			},
-			WantErr: false,
-			WantResult: reconcile.Result{
-				Requeue: true,
-			},
-			WantAbsent: []runtime.Object{
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+		},
+		{
+			Name: "New Channel Without Finalizer",
+			InitialState: []runtime.Object{
+				test.GetNewChannel(false, true, false),
+			},
+			ExpectedResult: reconcile.Result{
+				Requeue: true,
+			},
+			ExpectedAbsent: []runtime.Object{
+				test.GetNewK8sChannelService(),
+				test.GetNewK8SChannelDeployment(test.TopicName),
+			},
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelWithProvisionedStatus(true, true, false, false, false),
 			},
 		},
 		{
 			Name: "New Channel Without Spec Properties",
-			Objects: []runtime.Object{
+			InitialState: []runtime.Object{
 				test.GetNewChannel(true, false, true),
 			},
-			WantErr:    false,
-			WantResult: reconcile.Result{},
-			WantPresent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelWithProvisionedStatus(true, false, true, true, true),
 				test.GetNewK8sChannelService(),
+				test.GetNewK8SChannelDeployment(test.DefaultTopicName),
 			},
-			OtherTestData: map[string]interface{}{
-				"channelDeployment": test.GetNewK8SChannelDeployment(test.DefaultTopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("channelDeployment")},
 		},
 		{
 			Name: "New Channel Without Subscribers",
-			Objects: []runtime.Object{
+			InitialState: []runtime.Object{
 				test.GetNewChannel(true, true, false),
 			},
-			WantErr:    false,
-			WantResult: reconcile.Result{},
-			WantPresent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelWithProvisionedStatus(true, true, false, true, true),
-				test.GetNewK8sChannelService(),
-			},
-			OtherTestData: map[string]interface{}{
-				"channelDeployment": test.GetNewK8SChannelDeployment(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("channelDeployment")},
-		},
-		{
-			Name: "New Channel Filtering Other Deployments",
-			Objects: []runtime.Object{
-				test.GetNewChannel(true, true, true),
-				test.GetNewChannelWithName("OtherChannel", true, true, true),
-			},
-			WantErr:    false,
-			WantResult: reconcile.Result{},
-			WantPresent: []runtime.Object{
-				test.GetNewChannelWithProvisionedStatus(true, true, true, true, true),
-				test.GetNewK8sChannelService(),
-				test.GetNewChannelWithName("OtherChannel", true, true, true),
-			},
-			OtherTestData: map[string]interface{}{
-				"channelDeployment": test.GetNewK8SChannelDeployment(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("channelDeployment")},
-		},
-		{
-			Name: "Update Channel (Finalizer) Error",
-			Objects: []runtime.Object{
-				test.GetNewChannel(false, true, true),
-			},
-			Mocks: controllertesting.Mocks{MockUpdates: test.ChannelMockUpdatesError},
-			// TODO WantErrMsg: test.ChannelMockUpdatesErrorMessage,
-			WantErr:   true,
-			WantEvent: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelUpdateFailed.String()}},
-			WantAbsent: []runtime.Object{
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+		},
+		{
+			Name: "New Channel Filtering Other Deployments",
+			InitialState: []runtime.Object{
+				test.GetNewChannel(true, true, true),
+				test.GetNewChannelWithName("OtherChannel", true, true, true),
+			},
+			ExpectedResult: reconcile.Result{},
+			ExpectedPresent: []runtime.Object{
+				test.GetNewChannelWithProvisionedStatus(true, true, true, true, true),
+				test.GetNewK8sChannelService(),
+				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewChannelWithName("OtherChannel", true, true, true),
+			},
+		},
+		{
+			Name: "Update Channel (Finalizer) Error",
+			InitialState: []runtime.Object{
+				test.GetNewChannel(false, true, true),
+			},
+			Mocks: test.Mocks{
+				UpdateFns: []test.MockUpdateFn{test.MockUpdateFnKafkaChannelError},
+			},
+			ExpectedError:  errors.New(test.MockUpdateFnKafkaChannelErrorMessage),
+			ExpectedEvents: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelUpdateFailed.String()}},
+			ExpectedAbsent: []runtime.Object{
+				test.GetNewK8sChannelService(),
+				test.GetNewK8SChannelDeployment(test.TopicName),
+			},
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannel(false, true, true),
 			},
 		},
 		{
 			Name: "Update Channel (Status) Error",
-			Objects: []runtime.Object{
+			InitialState: []runtime.Object{
 				test.GetNewChannel(true, true, true),
 			},
-			Mocks: controllertesting.Mocks{MockStatusUpdates: test.ChannelMockStatusUpdatesError},
-			// TODO WantErrMsg: test.ChannelMockStatusUpdatesErrorMessage,
-			WantErr:    true,
-			WantEvent:  []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelUpdateFailed.String()}},
-			WantAbsent: []runtime.Object{},
-			WantPresent: []runtime.Object{
+			Mocks: test.Mocks{
+				StatusUpdateFns: []test.MockStatusUpdateFn{test.MockStatusUpdateFnChannelError},
+			},
+			ExpectedError:  errors.New(test.MockStatusUpdateFnChannelErrorMessage),
+			ExpectedEvents: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelUpdateFailed.String()}},
+			ExpectedAbsent: []runtime.Object{},
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannel(true, true, true),
 				test.GetNewK8sChannelService(),
+				test.GetNewK8SChannelDeployment(test.TopicName),
 			},
-			OtherTestData: map[string]interface{}{
-				"channelDeployment": test.GetNewK8SChannelDeployment(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("channelDeployment")},
 		},
 		{
 			Name: "Create Channel Deployment Error",
-			Objects: []runtime.Object{
+			InitialState: []runtime.Object{
 				test.GetNewChannel(true, true, true),
 			},
-			Mocks: controllertesting.Mocks{MockCreates: test.DeploymentMockCreatesError},
-			// TODO WantErrMsg: "reconciliation failed",
-			WantErr:   true,
-			WantEvent: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelDeploymentReconciliationFailed.String()}},
-			WantAbsent: []runtime.Object{
+			Mocks: test.Mocks{
+				CreateFns: []test.MockCreateFn{test.MockCreateFnDeploymentError},
+			},
+			ExpectedError:  errors.New("reconciliation failed"),
+			ExpectedEvents: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelDeploymentReconciliationFailed.String()}},
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SChannelDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelWithProvisionedStatus(true, true, true, true, true),
 				test.GetNewK8sChannelService(),
 			},
 		},
 		{
 			Name: "Create Channel Service Error",
-			Objects: []runtime.Object{
+			InitialState: []runtime.Object{
 				test.GetNewChannel(true, true, true),
 			},
-			Mocks: controllertesting.Mocks{MockCreates: test.ServiceMockCreatesError},
-			// TODO WantErrMsg: "reconciliation failed",
-			WantErr:   true,
-			WantEvent: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelServiceReconciliationFailed.String()}},
-			WantAbsent: []runtime.Object{
+			Mocks: test.Mocks{
+				CreateFns: []test.MockCreateFn{test.MockCreateFnServiceError},
+			},
+			ExpectedError:  errors.New("reconciliation failed"),
+			ExpectedEvents: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelServiceReconciliationFailed.String()}},
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8sChannelService(),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelWithProvisionedStatus(true, true, true, true, false),
+				test.GetNewK8SChannelDeployment(test.TopicName),
 			},
-			OtherTestData: map[string]interface{}{
-				"channelDeployment": test.GetNewK8SChannelDeployment(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("channelDeployment")},
 		},
 	}
 
-	/* TODO - Original Implementation
+	//
+	// Run All The TestCases Against The DataFlow Reconciler
+	//
+	for _, testCase := range test.FilterTestCases(testCases) {
 
-	// Create A New Recorder & Logger For Testing
-	logger := logging.NewLoggerFromConfig(logging.NewLoggingConfig())
+		// Default The TestCase Name / Namespace If Not Specified
+		if len(testCase.ReconcileName) == 0 {
+			testCase.ReconcileName = test.ChannelName
+		}
+		if len(testCase.ReconcileNamespace) == 0 {
+			testCase.ReconcileNamespace = test.NamespaceName
+		}
 
-	// Loop Over All TestCases - Setup The Reconciler & Run Test Via Knative Eventing TestCase Runner
-	for _, testCase := range testCases {
-		recorder := testCase.GetEventRecorder()
-		c := testCase.GetClient()
-		test.MockClient = c
-		r := &Reconciler{
-			client:      c,
-			recorder:    recorder,
-			logger:      logger.Desugar(),
+		// Create The Reconciler With Initialized Fake Client
+		reconciler := &Reconciler{
+			client:      testCase.GetClient(),
+			recorder:    testCase.GetEventRecorder(),
+			logger:      log.TestLogger(),
 			adminClient: &test.MockAdminClient{},
 			environment: test.NewEnvironment(),
 		}
-		testCase.ReconcileKey = fmt.Sprintf("%s/%s", test.NamespaceName, test.ChannelName)
-		testCase.IgnoreTimes = true
-		t.Logf("Running TestCase %s", testCase.Name)
-		t.Run(testCase.Name, testCase.Runner(t, r, c, recorder))
+
+		// Run The TestCase
+		testStarted := t.Run(testCase.Name, testCase.Runner(reconciler))
+		assert.True(t, testStarted)
 	}
-
-	*/
-
-	// TODO - New Implementation
-	logger := logtesting.TestLogger(t)
-	factory := controllerrtesting.MakeFactory()
-	tableTest.Test(t, factory)
-
-	/* TODO - New Example Test Execution looks like this...
-
-		logger := logtesting.TestLogger(t)
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Base:                     reconciler.NewBase(ctx, controllerAgentName, cmw),
-			dispatcherNamespace:      testNS,
-			dispatcherDeploymentName: testDispatcherDeploymentName,
-			dispatcherServiceName:    testDispatcherServiceName,
-			inmemorychannelLister:    listers.GetInMemoryChannelLister(),
-			// TODO: FIx
-			inmemorychannelInformer: nil,
-			deploymentLister:        listers.GetDeploymentLister(),
-			serviceLister:           listers.GetServiceLister(),
-			endpointsLister:         listers.GetEndpointsLister(),
-		}
-	},
-		false,
-		logger,
-	))
-
-	*/
 }
 
 //
@@ -468,7 +402,7 @@ func TestReconcileTopic(t *testing.T) {
 
 	// Create A New Recorder & Logger For Testing
 	recorder := record.NewBroadcaster().NewRecorder(scheme.Scheme, corev1.EventSource{Component: constants.KafkaChannelControllerAgentName})
-	logger := logging.NewLoggerFromConfig(logging.NewLoggingConfig())
+	logger := log.TestLogger()
 
 	// Loop Over All TestCases - Setup The Reconciler & Run Test Via Custom Runner
 	for _, tc := range topicTestCases {
@@ -536,7 +470,7 @@ func TestReconcileTopic(t *testing.T) {
 		// Initialize The TestCases Reconciler
 		r := &Reconciler{
 			recorder:    recorder,
-			logger:      logger.Desugar(),
+			logger:      logger,
 			adminClient: mockAdminClient,
 			environment: test.NewEnvironment(),
 		}

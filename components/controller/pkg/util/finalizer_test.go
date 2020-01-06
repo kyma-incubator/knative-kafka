@@ -4,7 +4,7 @@ import (
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"testing"
 )
 
@@ -128,7 +128,7 @@ func TestAddFinalizerToSubscription(t *testing.T) {
 		}
 
 		// Create A Test Subscription With Initial Finalizers
-		subscription := &eventingv1alpha1.Subscription{ObjectMeta: v1.ObjectMeta{Finalizers: testCase.initialFinalizers}}
+		subscription := &messagingv1alpha1.Subscription{ObjectMeta: v1.ObjectMeta{Finalizers: testCase.initialFinalizers}}
 
 		// Perform The Test - Add The Finalizer To The Subscription
 		actualAddFinalizerResult := AddFinalizerToSubscription(subscription, testCase.addFinalizer)
@@ -170,7 +170,7 @@ func TestRemoveFinalizerFromSubscription(t *testing.T) {
 		}
 
 		// Create A Test Subscription With Initial Finalizers
-		subscription := &eventingv1alpha1.Subscription{ObjectMeta: v1.ObjectMeta{Finalizers: testCase.initialFinalizers}}
+		subscription := &messagingv1alpha1.Subscription{ObjectMeta: v1.ObjectMeta{Finalizers: testCase.initialFinalizers}}
 
 		// Perform The Test - Remove The Finalizer To The Subscription
 		actualRemoveFinalizerResult := RemoveFinalizerFromSubscription(subscription, testCase.removeFinalizer)

@@ -12,10 +12,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	eventingNames "knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	"strconv"
 )
 
@@ -222,7 +222,7 @@ func GetNewChannelWithProvisionedStatus(includeFinalizer bool, includeSpecProper
 			})
 			channel.Status.MarkChannelServiceTrue()
 		} else {
-			channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", ServiceMockCreatesErrorMessage))
+			channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", MockCreateFnServiceErrorMessage))
 		}
 	}
 	return channel
@@ -391,12 +391,15 @@ func GetNewK8SChannelDeployment(topicName string) *appsv1.Deployment {
 }
 
 // Utility Function For Creating A Test Subscription With Specified State
-func GetNewSubscription(namespaceName string, subscriberName string, includeAnnotations bool, includeFinalizer bool, eventStartTime string) *eventingv1alpha1.Subscription {
+func GetNewSubscription(namespaceName string, subscriberName string, includeAnnotations bool, includeFinalizer bool, eventStartTime string) *messagingv1alpha1.Subscription {
+
+	// Parse The Subscriber URI String Into A URI
+	subscriberURI, _ := apis.ParseURL(SubscriberURI)
 
 	// Create The Specified Subscription
 	subscription := &messagingv1alpha1.Subscription{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: eventingv1alpha1.SchemeGroupVersion.String(),
+			APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
 			Kind:       constants.KnativeSubscriptionKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -409,8 +412,8 @@ func GetNewSubscription(namespaceName string, subscriberName string, includeAnno
 				Kind:       constants.KafkaChannelKind,
 				Name:       ChannelName,
 			},
-			Subscriber: &eventingv1alpha1.SubscriberSpec{
-				URI: &SubscriberURI,
+			Subscriber: &apisv1alpha1.Destination{
+				URI: subscriberURI,
 			},
 		},
 	}
@@ -669,19 +672,11 @@ func GetNewSubscriptionOwnerRef() metav1.OwnerReference {
 	blockOwnerDeletion := true
 	isController := true
 	return metav1.OwnerReference{
-		APIVersion:         "eventing.knative.dev/v1alpha1",
+		APIVersion:         "messaging.knative.dev/v1alpha1",
 		Kind:               "Subscription",
 		Name:               SubscriberName,
 		UID:                "",
 		BlockOwnerDeletion: &blockOwnerDeletion,
 		Controller:         &isController,
-	}
-}
-
-// Create A New ChannelSubscriberSpec For Test Channel/Subscription
-func GetChannelSubscriberSpec() *eventingduckv1alpha1.SubscriberSpec {
-	return &eventingduckv1alpha1.SubscriberSpec{
-		UID:           "SubscriberName",
-		SubscriberURI: SubscriberURI,
 	}
 }

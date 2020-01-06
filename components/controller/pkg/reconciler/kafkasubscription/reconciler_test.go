@@ -1,22 +1,19 @@
 package kafkasubscription
 
 import (
-	"fmt"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
+	"errors"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/test"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
-	controllertesting "knative.dev/eventing/pkg/reconciler/testing"
-	"knative.dev/pkg/logging"
-	"log"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"testing"
@@ -25,18 +22,17 @@ import (
 // Test Initialization
 func init() {
 
+	// Get Test Logger
+	logger := log.TestLogger()
+
 	// Add 3rd Party Types To The Scheme
 	err := kafkav1alpha1.AddToScheme(scheme.Scheme)
 	if err != nil {
-		log.Fatalf("Failed To Add Kafka Channel Eventing Schema: %+v", err)
-	}
-	err = eventingv1alpha1.AddToScheme(scheme.Scheme)
-	if err != nil {
-		log.Fatalf("Failed To Add Knative Eventing Schema: %+v", err)
+		logger.Fatal("Failed To Add Kafka Channel Schema", zap.Error(err))
 	}
 	err = messagingv1alpha1.AddToScheme(scheme.Scheme)
 	if err != nil {
-		log.Fatalf("Failed To Add Knative Messaging Schema: %+v", err)
+		logger.Fatal("Failed To Add Knative Messaging Schema", zap.Error(err))
 	}
 }
 
@@ -51,6 +47,27 @@ func TestInjectClient(t *testing.T) {
 	assert.Equal(t, newClient, r.client)
 }
 
+// Test The NewReconciler Functionality
+func TestNewReconciler(t *testing.T) {
+
+	// Test Data
+	testCase := &test.TestCase{}
+	recorder := testCase.GetEventRecorder()
+	logger := log.TestLogger()
+	client := &test.MockAdminClient{}
+	environment := &env.Environment{}
+
+	// Perform The Test
+	reconciler := NewReconciler(recorder, logger, client, environment)
+
+	// Validate Results
+	assert.NotNil(t, reconciler)
+	assert.Equal(t, recorder, reconciler.recorder)
+	assert.Equal(t, logger, reconciler.logger)
+	assert.Equal(t, client, reconciler.adminClient)
+	assert.Equal(t, environment, reconciler.environment)
+}
+
 // Test The Reconcile Functionality
 func TestReconcile(t *testing.T) {
 
@@ -60,12 +77,12 @@ func TestReconcile(t *testing.T) {
 	// Note - The "Direct / Indirect" naming refers to whether the Knative Subscription refers
 	//        directly to a KafkaChannel or indirectly via a Knative Messaging Channel.
 	//
-	testCases := []controllertesting.TestCase{
+	testCases := []test.TestCase{
 		{
-			Name:         "Subscription Not Found",
-			InitialState: []runtime.Object{},
-			WantResult:   reconcile.Result{},
-			WantAbsent: []runtime.Object{
+			Name:           "Subscription Not Found",
+			InitialState:   []runtime.Object{},
+			ExpectedResult: reconcile.Result{},
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, false, test.EventStartTime),
 				test.GetNewK8SDispatcherService(),
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
@@ -77,13 +94,15 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannel(true, true, false),
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, false, test.EventStartTime),
 			},
-			Mocks:      controllertesting.Mocks{MockGets: test.SubscriptionMockGetsError},
-			WantErrMsg: test.SubscriptionMockGetsErrorMessage,
-			WantAbsent: []runtime.Object{
+			Mocks: test.Mocks{
+				GetFns: []test.MockGetFn{test.MockGetFnSubscriptionError},
+			},
+			ExpectedError: errors.New(test.MockGetFnSubscriptionErrorMessage),
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannel(true, true, false),
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, false, test.EventStartTime),
 			},
@@ -93,12 +112,12 @@ func TestReconcile(t *testing.T) {
 			InitialState: []runtime.Object{
 				test.GetNewSubscriptionDeleted(test.NamespaceName, test.SubscriberName, true, true),
 			},
-			WantResult: reconcile.Result{},
-			WantAbsent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscriptionDeleted(test.NamespaceName, test.SubscriberName, true, false),
 			},
 		},
@@ -107,12 +126,12 @@ func TestReconcile(t *testing.T) {
 			InitialState: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 			},
-			WantResult: reconcile.Result{Requeue: true},
-			WantAbsent: []runtime.Object{
+			ExpectedResult: reconcile.Result{Requeue: true},
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 			},
 		},
@@ -121,12 +140,12 @@ func TestReconcile(t *testing.T) {
 			InitialState: []runtime.Object{
 				test.GetNewSubscriptionIndirectChannel(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime, true),
 			},
-			WantResult: reconcile.Result{},
-			WantAbsent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscriptionIndirectChannel(test.NamespaceName, test.SubscriberName, true, false, test.EventStartTime, true),
 			},
 		},
@@ -135,12 +154,12 @@ func TestReconcile(t *testing.T) {
 			InitialState: []runtime.Object{
 				test.GetNewSubscriptionIndirectChannel(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime, false),
 			},
-			WantResult: reconcile.Result{Requeue: true},
-			WantAbsent: []runtime.Object{
+			ExpectedResult: reconcile.Result{Requeue: true},
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscriptionIndirectChannel(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime, false),
 			},
 		},
@@ -150,13 +169,15 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannel(true, true, false),
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 			},
-			Mocks:      controllertesting.Mocks{MockGets: test.ChannelMockGetsError},
-			WantErrMsg: test.ChannelMockGetsErrorMessage,
-			WantAbsent: []runtime.Object{
+			Mocks: test.Mocks{
+				GetFns: []test.MockGetFn{test.MockGetFnKafkaChannelError},
+			},
+			ExpectedError: errors.New(test.MockGetFnKafkaChannelErrorMessage),
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewChannel(true, true, false),
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 			},
@@ -167,12 +188,12 @@ func TestReconcile(t *testing.T) {
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, false, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 			},
-			WantResult: reconcile.Result{Requeue: true},
-			WantAbsent: []runtime.Object{
+			ExpectedResult: reconcile.Result{Requeue: true},
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 			},
@@ -183,12 +204,12 @@ func TestReconcile(t *testing.T) {
 				test.GetNewSubscriptionDeleted(test.NamespaceName, test.SubscriberName, true, true),
 				test.GetNewChannel(true, true, false),
 			},
-			WantResult: reconcile.Result{},
-			WantAbsent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscriptionDeleted(test.NamespaceName, test.SubscriberName, true, false),
 				test.GetNewChannel(true, true, false),
 			},
@@ -199,20 +220,19 @@ func TestReconcile(t *testing.T) {
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 			},
-			Mocks:      controllertesting.Mocks{MockGets: test.ServiceMockGetsError},
-			WantErrMsg: "reconciliation failed",
-			WantAbsent: []runtime.Object{
+			Mocks: test.Mocks{
+				GetFns: []test.MockGetFn{test.MockGetFnServiceError},
+			},
+			ExpectedError: errors.New("reconciliation failed"),
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			OtherTestData: map[string]interface{}{
-				"dispatcherDeployment": test.GetNewK8SDispatcherDeployment(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("dispatcherDeployment")},
-			WantEvent:              []corev1.Event{{Reason: event.DispatcherK8sServiceReconciliationFailed.String(), Type: corev1.EventTypeWarning}},
+			ExpectedEvents: []corev1.Event{{Reason: event.DispatcherK8sServiceReconciliationFailed.String(), Type: corev1.EventTypeWarning}},
 		},
 		{
 			Name: "Dispatcher Service Creation Error",
@@ -220,20 +240,18 @@ func TestReconcile(t *testing.T) {
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 			},
-			Mocks:      controllertesting.Mocks{MockCreates: test.ServiceMockCreatesError},
-			WantErrMsg: "reconciliation failed",
-			WantAbsent: []runtime.Object{
+			Mocks: test.Mocks{
+				CreateFns: []test.MockCreateFn{test.MockCreateFnServiceError},
+			},
+			ExpectedError: errors.New("reconciliation failed"),
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherService(),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			OtherTestData: map[string]interface{}{
-				"dispatcherDeployment": test.GetNewK8SDispatcherDeployment(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("dispatcherDeployment")},
-			WantEvent:              []corev1.Event{{Reason: event.DispatcherK8sServiceReconciliationFailed.String(), Type: corev1.EventTypeWarning}},
 		},
 		{
 			Name: "Dispatcher Deployment Lookup Error",
@@ -241,17 +259,19 @@ func TestReconcile(t *testing.T) {
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 			},
-			Mocks:      controllertesting.Mocks{MockGets: test.DeploymentMockGetsError},
-			WantErrMsg: "reconciliation failed",
-			WantAbsent: []runtime.Object{
+			Mocks: test.Mocks{
+				GetFns: []test.MockGetFn{test.MockGetFnDeploymentError},
+			},
+			ExpectedError: errors.New("reconciliation failed"),
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 				test.GetNewK8SDispatcherService(),
 			},
-			WantEvent: []corev1.Event{{Reason: event.DispatcherDeploymentReconciliationFailed.String(), Type: corev1.EventTypeWarning}},
+			ExpectedEvents: []corev1.Event{{Reason: event.DispatcherDeploymentReconciliationFailed.String(), Type: corev1.EventTypeWarning}},
 		},
 		{
 			Name: "Dispatcher Deployment Creation Error",
@@ -259,17 +279,19 @@ func TestReconcile(t *testing.T) {
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 			},
-			Mocks:      controllertesting.Mocks{MockCreates: test.DeploymentMockCreatesError},
-			WantErrMsg: "reconciliation failed",
-			WantAbsent: []runtime.Object{
+			Mocks: test.Mocks{
+				CreateFns: []test.MockCreateFn{test.MockCreateFnDeploymentError},
+			},
+			ExpectedError: errors.New("reconciliation failed"),
+			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			WantPresent: []runtime.Object{
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 				test.GetNewK8SDispatcherService(),
 			},
-			WantEvent: []corev1.Event{{Reason: event.DispatcherDeploymentReconciliationFailed.String(), Type: corev1.EventTypeWarning}},
+			ExpectedEvents: []corev1.Event{{Reason: event.DispatcherDeploymentReconciliationFailed.String(), Type: corev1.EventTypeWarning}},
 		},
 		{
 			Name: "Full Reconciliation (Direct Success)",
@@ -277,16 +299,13 @@ func TestReconcile(t *testing.T) {
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 			},
-			WantResult: reconcile.Result{},
-			WantPresent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			OtherTestData: map[string]interface{}{
-				"dispatcherDeployment": test.GetNewK8SDispatcherDeployment(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("dispatcherDeployment")},
 		},
 		{
 			Name: "Full Reconciliation (Indirect Success)",
@@ -295,17 +314,14 @@ func TestReconcile(t *testing.T) {
 				test.GetNewKnativeMessagingChannel(kafkav1alpha1.SchemeGroupVersion.String(), constants.KafkaChannelKind),
 				test.GetNewChannel(true, true, false),
 			},
-			WantResult: reconcile.Result{},
-			WantPresent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscriptionIndirectChannel(test.NamespaceName, test.SubscriberName, true, true, test.EventStartTime, false),
 				test.GetNewKnativeMessagingChannel(kafkav1alpha1.SchemeGroupVersion.String(), constants.KafkaChannelKind),
 				test.GetNewChannel(true, true, false),
 				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
-			OtherTestData: map[string]interface{}{
-				"dispatcherDeployment": test.GetNewK8SDispatcherDeployment(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("dispatcherDeployment")},
 		},
 		{
 			Name: "Full Reconciliation Without Annotations (Success)",
@@ -313,19 +329,16 @@ func TestReconcile(t *testing.T) {
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, false, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 			},
-			WantResult: reconcile.Result{},
-			WantPresent: []runtime.Object{
+			ExpectedResult: reconcile.Result{},
+			ExpectedPresent: []runtime.Object{
 				test.GetNewSubscription(test.NamespaceName, test.SubscriberName, false, true, test.EventStartTime),
 				test.GetNewChannel(true, true, false),
 				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeploymentWithoutAnnotations(test.TopicName),
 			},
-			OtherTestData: map[string]interface{}{
-				"dispatcherDeployment": test.GetNewK8SDispatcherDeploymentWithoutAnnotations(test.TopicName),
-			},
-			AdditionalVerification: []func(t *testing.T, tc *controllertesting.TestCase){test.VerifyWantDeploymentPresent("dispatcherDeployment")},
 		},
 
-		// TODO - Disabled Until Replay/EventStartTime Is Re-Enabled
+		// TODO - Disabled Until Replay/EventStartTime Is Re-Enabled (Will probably require some love to catch up with test framework changes)
 		//{
 		//	Name: "Test Event Start Time Created (Success)",
 		//	InitialState: []runtime.Object{
@@ -333,8 +346,8 @@ func TestReconcile(t *testing.T) {
 		//		test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, "2017-06-05T12:00:00Z"),
 		//		test.GetNewChannel(test.ChannelName, test.ClusterChannelProvisionerName, true, true, false),
 		//	},
-		//	WantResult: reconcile.Result{},
-		//	WantPresent: []runtime.Object{
+		//	ExpectedResult: reconcile.Result{},
+		//	ExpectedPresent: []runtime.Object{
 		//		test.GetNewClusterChannelProvisioner(test.ClusterChannelProvisionerName, true),
 		//		test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, "2017-06-05T12:00:00Z"),
 		//		test.GetNewChannel(test.ChannelName, test.ClusterChannelProvisionerName, true, true, false),
@@ -351,8 +364,8 @@ func TestReconcile(t *testing.T) {
 		//		test.GetNewK8SDispatcherService(),
 		//		test.GetNewK8SDispatcherDeploymentWithEventStartTime(test.TopicName, "2015-06-05T12:00:00Z"),
 		//	},
-		//	WantResult: reconcile.Result{},
-		//	WantPresent: []runtime.Object{
+		//	ExpectedResult: reconcile.Result{},
+		//	ExpectedPresent: []runtime.Object{
 		//		test.GetNewClusterChannelProvisioner(test.ClusterChannelProvisionerName, true),
 		//		test.GetNewSubscription(test.NamespaceName, test.SubscriberName, true, "2017-06-05T12:00:00Z"),
 		//		test.GetNewChannel(test.ChannelName, test.ClusterChannelProvisionerName, true, true, false),
@@ -362,31 +375,30 @@ func TestReconcile(t *testing.T) {
 		//},
 	}
 
-	// Create A New Recorder & Logger For Testing
-	logger := logging.NewLoggerFromConfig(logging.NewLoggingConfig())
+	//
+	// Run All The TestCases Against The DataFlow Reconciler
+	//
+	for _, testCase := range test.FilterTestCases(testCases) {
 
-	// Replace The NewClient Wrapper To Provide Mock Consumer & Defer Reset
-	newConsumerWrapperPlaceholder := kafkaconsumer.NewConsumerWrapper
-	kafkaconsumer.NewConsumerWrapper = func(configMap *kafka.ConfigMap) (kafkaconsumer.ConsumerInterface, error) {
-		return test.NewMockConsumer(), nil
-	}
-	defer func() { kafkaconsumer.NewConsumerWrapper = newConsumerWrapperPlaceholder }()
+		// Default The TestCase Name / Namespace If Not Specified
+		if len(testCase.ReconcileName) == 0 {
+			testCase.ReconcileName = test.SubscriberName
+		}
+		if len(testCase.ReconcileNamespace) == 0 {
+			testCase.ReconcileNamespace = test.NamespaceName
+		}
 
-	// Loop Over All TestCases - Setup The Reconciler & Run Test Via Knative Eventing TestCase Runner
-	for _, testCase := range testCases {
-		recorder := testCase.GetEventRecorder()
-		c := testCase.GetClient()
-		test.MockClient = c
-		r := &Reconciler{
-			client:      c,
-			recorder:    recorder,
-			logger:      logger.Desugar(),
+		// Create The Reconciler With Initialized Fake Client
+		reconciler := &Reconciler{
+			client:      testCase.GetClient(),
+			recorder:    testCase.GetEventRecorder(),
+			logger:      log.TestLogger(),
 			adminClient: &test.MockAdminClient{},
 			environment: test.NewEnvironment(),
 		}
-		testCase.ReconcileKey = fmt.Sprintf("%s/%s", test.NamespaceName, test.SubscriberName)
-		testCase.IgnoreTimes = true
-		t.Logf("Running TestCase %s", testCase.Name)
-		t.Run(testCase.Name, testCase.Runner(t, r, c, recorder))
+
+		// Run The TestCase
+		testStarted := t.Run(testCase.Name, testCase.Runner(reconciler))
+		assert.True(t, testStarted)
 	}
 }

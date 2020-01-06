@@ -3,7 +3,7 @@ package util
 import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"testing"
 )
 
@@ -16,14 +16,14 @@ const (
 func TestNewControllerRef(t *testing.T) {
 
 	// Test Data
-	subscription := &eventingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
+	subscription := &messagingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
 
 	// Perform The Test
 	actualControllerRef := NewSubscriptionControllerRef(subscription)
 
 	// Verify The Results
 	assert.NotNil(t, actualControllerRef)
-	assert.Equal(t, eventingv1alpha1.SchemeGroupVersion.Group+"/"+eventingv1alpha1.SchemeGroupVersion.Version, actualControllerRef.APIVersion)
+	assert.Equal(t, messagingv1alpha1.SchemeGroupVersion.Group+"/"+messagingv1alpha1.SchemeGroupVersion.Version, actualControllerRef.APIVersion)
 	assert.Equal(t, "Subscription", actualControllerRef.Kind)
 	assert.Equal(t, subscriptionName, actualControllerRef.Name)
 }
@@ -32,7 +32,7 @@ func TestNewControllerRef(t *testing.T) {
 func TestDispatcherServiceName(t *testing.T) {
 
 	// Test Data
-	subscription := &eventingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
+	subscription := &messagingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
 
 	// Perform The Test
 	expectedDispatcherServiceName := subscriptionName + "-dispatcher"
@@ -46,7 +46,7 @@ func TestDispatcherServiceName(t *testing.T) {
 func TestDispatcherDeploymentName(t *testing.T) {
 
 	// Test Data
-	subscription := &eventingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
+	subscription := &messagingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
 
 	// Perform The Test
 	expectedDispatcherDeploymentName := subscriptionName + "-dispatcher"
