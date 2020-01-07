@@ -13,7 +13,7 @@ global:
 image:
   repository: eu.gcr.io/kyma-project/incubator
   project: kafka-channel-controller
-  tag: latest
+  tag: v0.8.0
   pullPolicy: Always
 
 # Networking Configuration for the Pods container and the K8S Service
@@ -39,9 +39,9 @@ environment:
   # And Confluent Cloud Kafka needs replication factor minimum 3.
   kafkaBrokers: kafka-broker:9092
   # Konduit-Kafka Channel "Producer" Docker Image Path
-  channelImage: eu.gcr.io/kyma-project/incubator/knative-kafka-channel:latest
+  channelImage: eu.gcr.io/kyma-project/incubator/knative-kafka-channel:v0.8.0
   # Konduit-Kafka Dispatcher "Consumer" Docker Image Path
-  dispatcherImage: eu.gcr.io/kyma-project/incubator/knative-kafka-dispatcher:latest
+  dispatcherImage: eu.gcr.io/kyma-project/incubator/knative-kafka-dispatcher:v0.8.0
   defaultTenantId: default-tenant
   defaultNumPartitions: 4
   defaultReplicationFactor: 1
