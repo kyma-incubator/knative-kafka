@@ -24,8 +24,9 @@ type RetriableClient interface {
 	Dispatch(message cloudevents.Event) error
 }
 
-// cloudEventClient is a client implementation that interprets
+// retriableCloudEventClient is a client implementation that interprets
 // kafka messages as cloud events and utilizes the cloud event library
+// and supports retries with exponential backoff
 type retriableCloudEventClient struct {
 	uri                  string
 	exponentialBackoff   bool
@@ -37,17 +38,17 @@ type retriableCloudEventClient struct {
 var _ RetriableClient = &retriableCloudEventClient{}
 
 func NewRetriableCloudEventClient(uri string, exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
-	t, err := cloudevents.NewHTTPTransport(
+	transport, err := cloudevents.NewHTTPTransport(
 		cloudevents.WithTarget(uri),
 		cloudevents.WithEncoding(cloudevents.HTTPBinaryV03),
 	)
-	t.Client = httpClient
+	transport.Client = httpClient
 
 	if err != nil {
 		panic("failed to create transport, " + err.Error())
 	}
 
-	ceClient, err := cloudevents.NewClient(t)
+	ceClient, err := cloudevents.NewClient(transport)
 	if err != nil {
 		panic("unable to create cloudevent client: " + err.Error())
 	}
@@ -55,19 +56,19 @@ func NewRetriableCloudEventClient(uri string, exponentialBackoff bool, initialRe
 	return retriableCloudEventClient{uri: uri, exponentialBackoff: exponentialBackoff, initialRetryInterval: initialRetryInterval, maxRetryTime: maxRetryTime, cloudEventClient: ceClient}
 }
 
-func (client retriableCloudEventClient) Dispatch(event cloudevents.Event) error {
+func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event) error {
 	// Configure The Logger
 	var logger *zap.Logger
 	if log.Logger().Core().Enabled(zap.DebugLevel) {
-		logger = log.Logger().With(zap.Any("Event", event), zap.String("uri", client.uri))
+		logger = log.Logger().With(zap.Any("Event", event), zap.String("uri", rcec.uri))
 	} else {
-		logger = log.Logger().With(zap.String("uri", client.uri))
+		logger = log.Logger().With(zap.String("uri", rcec.uri))
 	}
 
-	runner := retry.New(retry.Config{DisableBackoff: client.exponentialBackoff, Times: client.calculateNumberOfRetries(), WaitBase: time.Millisecond * time.Duration(client.initialRetryInterval)})
+	runner := retry.New(retry.Config{DisableBackoff: rcec.exponentialBackoff, Times: rcec.calculateNumberOfRetries(), WaitBase: time.Millisecond * time.Duration(rcec.initialRetryInterval)})
 
 	err := runner.Run(context.TODO(), func(_ context.Context) error {
-		rctx, _, err := client.cloudEventClient.Send(context.Background(), event)
+		rctx, _, err := rcec.cloudEventClient.Send(context.Background(), event)
 		if err != nil {
 			transportContext := cloudevents.HTTPTransportContextFrom(rctx)
 			return logResponse(logger, transportContext.StatusCode)
@@ -97,6 +98,6 @@ func logResponse(logger *zap.Logger, statusCode int) error {
 
 // Convert defined max retry time to the approximate number
 // of retries, taking into account the exponential backoff algorithm
-func (client retriableCloudEventClient) calculateNumberOfRetries() int {
-	return int(math.Round(math.Log2(float64(client.maxRetryTime)/float64(client.initialRetryInterval))) + 1)
+func (rcec retriableCloudEventClient) calculateNumberOfRetries() int {
+	return int(math.Round(math.Log2(float64(rcec.maxRetryTime)/float64(rcec.initialRetryInterval))) + 1)
 }

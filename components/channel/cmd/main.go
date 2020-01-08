@@ -57,9 +57,13 @@ func main() {
 	}
 
 	ctx := context.Background()
-	port, _ := strconv.Atoi(httpPort)
+	port, err := strconv.Atoi(httpPort)
+	if err != nil {
+		logger.Error("Invalid HTTP port specified, could not be converted to int", zap.Error(err))
+		return
+	}
 
-	t, err := cloudevents.NewHTTPTransport(
+	transport, err := cloudevents.NewHTTPTransport(
 		cloudevents.WithPort(port),
 		cloudevents.WithPath("/"),
 		cloudevents.WithEncoding(cloudevents.HTTPBinaryV03),
@@ -69,7 +73,7 @@ func main() {
 		return
 	}
 
-	cloudEventClient, err := cloudevents.NewClient(t)
+	cloudEventClient, err := cloudevents.NewClient(transport)
 	if err != nil {
 		logger.Error("failed to create client", zap.Error(err))
 		return
