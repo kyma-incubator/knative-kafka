@@ -13,7 +13,7 @@ global:
 image:
   repository: eu.gcr.io/kyma-project/incubator
   project: kafka-channel-controller
-  tag: v0.8.0
+  tag: latest
   pullPolicy: Always
 
 # Networking Configuration for the Pods container and the K8S Service
