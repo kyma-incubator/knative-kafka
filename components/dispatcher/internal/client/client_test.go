@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"go.uber.org/zap"
 	"net/http"
@@ -86,7 +87,7 @@ func TestHttpClient_Dispatch(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 
-			httpClient, server, mux := setup(t)
+			client, server, mux := setup(t)
 			defer teardown(server)
 
 			callCount := 0
@@ -95,7 +96,14 @@ func TestHttpClient_Dispatch(t *testing.T) {
 				tc.handler(writer, request, callCount)
 			})
 
-			error := httpClient.Dispatch([]byte("This is a message"))
+			testCloudEvent := cloudevents.NewEvent(cloudevents.VersionV03)
+			testCloudEvent.SetID("ABC-123")
+			testCloudEvent.SetType("com.cloudevents.readme.sent")
+			testCloudEvent.SetSource("http://localhost:8080/")
+			testCloudEvent.SetDataContentType("application/json")
+			testCloudEvent.SetData(map[string]string{"test": "value"})
+
+			error := client.Dispatch(testCloudEvent)
 
 			if tc.expectedSuccess && error != nil {
 				t.Error("Message failed to dispatch:", error)
@@ -119,13 +127,13 @@ func getLogger(t *testing.T) *zap.Logger {
 	return logger
 }
 
-func setup(t *testing.T) (*httpClient, *httptest.Server, *http.ServeMux) {
+func setup(t *testing.T) (*retriableCloudEventClient, *httptest.Server, *http.ServeMux) {
 	// test server
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
-	httpClient := &httpClient{uri: server.URL, exponentialBackoff: true, initialRetryInterval: 1000, maxRetryTime: 10000}
+	client := NewRetriableCloudEventClient(server.URL, true, 1000, 10000)
 
-	return httpClient, server, mux
+	return &client, server, mux
 }
 
 func teardown(server *httptest.Server) {
@@ -152,7 +160,7 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%d max retry, initial interval %d", tt.fields.maxRetryTime, tt.fields.initialRetryInterval), func(t *testing.T) {
-			hc := httpClient{
+			hc := retriableCloudEventClient{
 				uri:                  tt.fields.uri,
 				exponentialBackoff:   tt.fields.exponentialBackoff,
 				initialRetryInterval: tt.fields.initialRetryInterval,

@@ -2,21 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/util"
 	"go.uber.org/zap"
-	"io/ioutil"
-	"net/http"
 	"os"
-	"syscall"
-)
-
-// Channel / Producer Constants
-const (
-	PartitionKeyHttpHeader = "ce-comSAPObjectID"
+	"strconv"
 )
 
 // Variables
@@ -64,6 +56,29 @@ func main() {
 		logger.Fatal("Invalid / Missing Environment Variables - Terminating")
 	}
 
+	ctx := context.Background()
+	port, err := strconv.Atoi(httpPort)
+	if err != nil {
+		logger.Error("Invalid HTTP port specified, could not be converted to int", zap.Error(err))
+		return
+	}
+
+	transport, err := cloudevents.NewHTTPTransport(
+		cloudevents.WithPort(port),
+		cloudevents.WithPath("/"),
+		cloudevents.WithEncoding(cloudevents.HTTPBinaryV03),
+	)
+	if err != nil {
+		logger.Error("failed to create transport", zap.Error(err))
+		return
+	}
+
+	cloudEventClient, err := cloudevents.NewClient(transport)
+	if err != nil {
+		logger.Error("failed to create client", zap.Error(err))
+		return
+	}
+
 	// Start The Prometheus Metrics Server (Prometheus)
 	metricsServer := prometheus.NewMetricsServer(metricsPort, "/metrics")
 	metricsServer.Start()
@@ -78,26 +93,8 @@ func main() {
 	}
 	c = channel.NewChannel(channelConfig)
 
-	// Create The Server For Configured HTTP Port & Register Request Handler
-	server := &http.Server{Addr: ":" + httpPort, Handler: nil}
-	http.HandleFunc("/", handleRequests)
-
-	// Start The HTTP Server Listening For Requests In A Go Routine
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil {
-			logger.Info("HTTP ListenAndServe Returned Error", zap.Error(err)) // Could Just Be The Normal Shutdown
-		}
-	}()
-
-	// Block Waiting Termination Signal - Either SIGINT (manual ctrl-c) Or SIGTERM (sent by K8S)
-	util.WaitForSignal(logger, syscall.SIGINT, syscall.SIGTERM)
-
-	// Stop The HTTP Server
-	err := server.Shutdown(context.TODO())
-	if err != nil {
-		logger.Error("Failed To Shutdown HTTP Server", zap.Error(err))
-	}
+	// Start Receiving Events
+	cloudEventClient.StartReceiver(ctx, handleEvent)
 
 	// Close The Channel
 	c.Close()
@@ -106,50 +103,17 @@ func main() {
 	metricsServer.Stop()
 }
 
-// HTTP Request Handler
-func handleRequests(responseWriter http.ResponseWriter, request *http.Request) {
+// Handler For Receiving Cloud Events And Sending The Event To Kafka
+func handleEvent(ctx context.Context, event cloudevents.Event) error {
 
-	// Log Request Separator
-	logger.Debug("~~~~~~~~~~~~~~~~~~~~  Processing Request  ~~~~~~~~~~~~~~~~~~~~", zap.String("Request.Method", request.Method))
+	logger.Debug("~~~~~~~~~~~~~~~~~~~~  Processing Request  ~~~~~~~~~~~~~~~~~~~~")
+	logger.Debug("Received Cloud Event", zap.Any("Event", event))
 
-	// Handle Request According To Type
-	switch request.Method {
-	case "POST":
-
-		// Get The Partition Key From The Request Headers
-		partitionKey := request.Header.Get(PartitionKeyHttpHeader)
-
-		// Read The HTTP Request Body Into A Byte Array
-		bodyBytes, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			logger.Error("Failed To Read Request Body", zap.Error(err))
-			_, err = fmt.Fprint(responseWriter, "Failed To Read Request Body!\n")
-			if err != nil {
-				logger.Error("Failed To Write Error Message To ResponseWriter", zap.Error(err))
-			}
-		} else {
-			logger.Debug("Read Request Body", zap.String("PartitionKey", partitionKey), zap.ByteString("Body", bodyBytes))
-		}
-
-		// Send The PartitionKey & Message To Kafka Topic
-		sendMessageError := c.SendMessage(partitionKey, bodyBytes)
-		if sendMessageError != nil {
-			responseWriter.WriteHeader(http.StatusInternalServerError)
-			logger.Error("Message failed to persist", zap.Error(sendMessageError))
-		} else {
-			// Write The Response To The HTTP ResponseWriter Stream (Kyma requires a 202 response or it will return 500 error!)
-			responseWriter.WriteHeader(http.StatusAccepted)
-			_, err = responseWriter.Write([]byte("Message Processed!"))
-			if err != nil {
-				logger.Error("Failed To Write Processed Message To ResponseWriter", zap.Error(err))
-			}
-		}
-
-	default:
-		logger.Error("Only POST Requests Are Supported!")
-		_, err := fmt.Fprint(responseWriter, "Only POST Requests Are Supported!")
-		if err != nil {
-			logger.Error("Failed To Write Post Requests Message To ResponseWriter", zap.Error(err))
-		}
+	err := c.SendMessage(event)
+	if err != nil {
+		logger.Error("Unable To Send Message To Kafka", zap.Error(err))
+		return err
 	}
+
+	return nil
 }

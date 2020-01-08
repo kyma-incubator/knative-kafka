@@ -2,10 +2,13 @@ package channel
 
 import (
 	"errors"
+	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/types"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"go.uber.org/zap"
+	"time"
 )
 
 // Constants
@@ -64,19 +67,24 @@ func NewChannel(channelConfig ChannelConfig) *Channel {
 //
 
 // Send The Specified Message To The Kafka Topic With Partition Key And Wait For The Delivery Report
-func (c *Channel) SendMessage(partitionKey string, message []byte) error {
+func (c *Channel) SendMessage(event cloudevents.Event) error {
 
 	// Create The Producer Message
-	producerMessage := c.createProducerMessage(partitionKey, message)
+	producerMessage, err := c.createProducerMessage(event)
+	if err != nil {
+		return err
+	}
+
+	log.Logger().Debug("Sending Kafka Message", zap.Any("message", producerMessage.Value))
 
 	// Create a channel that corresponds to only this message being sent. The Kafka Producer will deliver the
 	// report on this channel thus informing us that the message is persisted in kafka.
 	deliveryReportChannel := make(chan kafka.Event)
 
 	// Send The Producer Message To Kafka Via Producer
-	err := c.producer.Produce(&producerMessage, deliveryReportChannel)
+	err = c.producer.Produce(producerMessage, deliveryReportChannel)
 	if err != nil {
-		log.Logger().Error("Failed to Produce Message", zap.Error(err))
+		log.Logger().Error("Failed To Produce Message", zap.Error(err))
 		return err
 	}
 
@@ -148,8 +156,46 @@ func (c *Channel) processSuccessesAndErrors() {
 	}()
 }
 
+// Map CloudEvent Context Headers To Kafka Message Headers
+func (c *Channel) createProducerHeaders(context cloudevents.EventContext) []kafka.Header {
+	headers := []kafka.Header{
+		{Key: "ce_specversion", Value: []byte(context.GetSpecVersion())},
+		{Key: "ce_type", Value: []byte(context.GetType())},
+		{Key: "ce_source", Value: []byte(context.GetSource())},
+		{Key: "ce_id", Value: []byte(context.GetID())},
+		{Key: "ce_time", Value: []byte(context.GetTime().Format(time.RFC3339))},
+	}
+
+	if context.GetDataContentType() != "" {
+		headers = append(headers, kafka.Header{Key: "ce_datacontenttype", Value: []byte(context.GetDataContentType())})
+	}
+
+	if context.GetSubject() != "" {
+		headers = append(headers, kafka.Header{Key: "ce_subject", Value: []byte(context.GetSubject())})
+	}
+
+	if context.GetDataSchema() != "" {
+		headers = append(headers, kafka.Header{Key: "ce_dataschema", Value: []byte(context.GetDataSchema())})
+	}
+
+	// Only Setting String Extensions
+	for k, v := range context.GetExtensions() {
+		if vs, ok := v.(string); ok {
+			headers = append(headers, kafka.Header{Key: "ce_" + k, Value: []byte(vs)})
+		}
+	}
+
+	return headers
+}
+
 // Create A Kafka Message From Message
-func (c *Channel) createProducerMessage(partitionKey string, message []byte) kafka.Message {
+func (c *Channel) createProducerMessage(event cloudevents.Event) (*kafka.Message, error) {
+
+	eventBytes, err := event.DataBytes()
+	if err != nil {
+		return nil, err
+	}
+	headers := c.createProducerHeaders(event.Context)
 
 	// Create The Producer Message
 	producerMessage := kafka.Message{
@@ -157,14 +203,26 @@ func (c *Channel) createProducerMessage(partitionKey string, message []byte) kaf
 			Topic:     &c.Topic,
 			Partition: kafka.PartitionAny, // Required For Producer Level Partitioner! (see KafkaProducerConfigPropertyPartitioner)
 		},
-		Value: message,
-	}
-
-	// Populate The PartitionKey If Valid
-	if len(partitionKey) > 0 {
-		producerMessage.Key = []byte(partitionKey)
+		Key:     determinePartitionKey(event),
+		Value:   eventBytes,
+		Headers: headers,
 	}
 
 	// Return The Constructed Kafka Message
-	return producerMessage
+	return &producerMessage, nil
+}
+
+// Precedence For Partitioning Is The Cloudevent Partitionkey Extension Followed By The Cloudevent Subject
+func determinePartitionKey(event cloudevents.Event) []byte {
+
+	pkExtension, err := types.ToString(event.Extensions()["partitionkey"])
+	if err == nil && len(pkExtension) > 0 {
+		return []byte(pkExtension)
+	}
+
+	if len(event.Subject()) > 0 {
+		return []byte(event.Subject())
+	}
+
+	return nil
 }

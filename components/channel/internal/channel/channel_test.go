@@ -2,6 +2,7 @@ package channel
 
 import (
 	"errors"
+	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
@@ -19,6 +20,17 @@ const (
 	testUsername     = "TestUsername"
 	testPassword     = "TestPassword"
 )
+
+var testCloudEvent cloudevents.Event
+
+func init() {
+	testCloudEvent = cloudevents.NewEvent(cloudevents.VersionV03)
+	testCloudEvent.SetID("ABC-123")
+	testCloudEvent.SetType("com.cloudevents.readme.sent")
+	testCloudEvent.SetSource("http://localhost:8080/")
+	testCloudEvent.SetDataContentType("application/json")
+	testCloudEvent.SetData(testMessage)
+}
 
 // Setup A Test Logger (Ignore Unused Warning - This Updates The log.Logger Reference!)
 var logger = log.TestLogger()
@@ -65,7 +77,7 @@ func TestChannel(t *testing.T) {
 	verifyChannel(t, testChannel, testBrokers, testTopic, testClientId, testUsername, testPassword, mockProducer)
 
 	// Send TestMessage To The Channel & Wait A Short Bit For It To Be Processed
-	err := testChannel.SendMessage(testPartitionKey, []byte(testMessage))
+	err := testChannel.SendMessage(testCloudEvent)
 	assert.Nil(t, err)
 
 	// Close The Channel
@@ -115,7 +127,7 @@ func TestChannelReturnsError(t *testing.T) {
 	verifyChannel(t, testChannel, testBrokers, testTopic, testClientId, testUsername, testPassword, mockProducer)
 
 	// Send TestMessage To The Channel & Wait A Short Bit For It To Be Processed
-	err := testChannel.SendMessage(testPartitionKey, []byte(testMessage))
+	err := testChannel.SendMessage(testCloudEvent)
 	assert.NotNil(t, err)
 
 	// Close The Channel

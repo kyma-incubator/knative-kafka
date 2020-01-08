@@ -1,6 +1,8 @@
 package dispatcher
 
 import (
+	"encoding/json"
+	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
@@ -9,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -23,7 +26,6 @@ const (
 	testConcurrency             = 4
 	testGroupId                 = "TestGroupId"
 	testKey                     = "TestKey"
-	testValue                   = "TestValue"
 	testMessagesToSend          = 3
 	testPollTimeoutMillis       = 500 // Not Used By Mock Consumer ; )
 	testOffsetCommitCount       = 2
@@ -40,6 +42,7 @@ var (
 	testNotification   = kafka.RevokedPartitions{}
 	numberOfCalls      = 0
 	numberOfCallsMutex = &sync.Mutex{}
+	testValue          = map[string]string{"test": "value"}
 )
 
 // Setup A Test Logger (Ignore Unused Warning - This Updates The log.Logger Reference!)
@@ -64,7 +67,7 @@ func TestDispatcher(t *testing.T) {
 	}
 	defer func() { kafkaconsumer.NewConsumerWrapper = newConsumerWrapperPlaceholder }()
 
-	httpClient := client.NewHttpClient(testSubscriberUri, false, 500, 5000)
+	cloudEventClient := client.NewRetriableCloudEventClient(testSubscriberUri, false, 500, 5000)
 
 	// Create A New Dispatcher
 	dispatcherConfig := DispatcherConfig{
@@ -80,7 +83,7 @@ func TestDispatcher(t *testing.T) {
 		OffsetCommitDurationMinimum: testOffsetCommitDurationMin,
 		Username:                    testUsername,
 		Password:                    testPassword,
-		Client:                      httpClient,
+		Client:                      cloudEventClient,
 	}
 	testDispatcher := NewDispatcher(dispatcherConfig)
 
@@ -160,9 +163,10 @@ func getHttpServer(t *testing.T) *httptest.Server {
 			if err != nil {
 				t.Errorf("expected to be able to read HTTP request Body without error: %+v", err)
 			} else {
-				bodyString := string(bodyBytes)
-				if bodyString != testValue {
-					t.Errorf("expected HTTP request Body: %+v got: %+v", testValue, bodyString)
+				bodyMap := make(map[string]string)
+				json.Unmarshal(bodyBytes, &bodyMap)
+				if !reflect.DeepEqual(bodyMap, testValue) {
+					t.Errorf("expected HTTP request Body: %+v got: %+v", testValue, bodyMap)
 				}
 			}
 
@@ -262,7 +266,11 @@ func sendNotificationToConsumers(t *testing.T, consumers []kafkaconsumer.Consume
 // Send Some Messages To The Specified Consumers
 func sendMessagesToConsumers(t *testing.T, consumers []kafkaconsumer.ConsumerInterface, count int) {
 	for i := 0; i < count; i++ {
-		message := createKafkaMessage(kafka.Offset(i + 1))
+		message, err := createKafkaMessage(kafka.Offset(i + 1))
+		if err != nil {
+			t.Errorf("Unable to create message, %+v", err)
+		}
+
 		for _, consumer := range consumers {
 			mockConsumer, ok := consumer.(*MockConsumer)
 			assert.True(t, ok)
@@ -272,17 +280,62 @@ func sendMessagesToConsumers(t *testing.T, consumers []kafkaconsumer.ConsumerInt
 }
 
 // Create A New Kafka Message With Specified Offset
-func createKafkaMessage(offset kafka.Offset) *kafka.Message {
+func createKafkaMessage(offset kafka.Offset) (*kafka.Message, error) {
+	testCloudEvent := cloudevents.NewEvent(cloudevents.VersionV03)
+	testCloudEvent.SetID("ABC-123")
+	testCloudEvent.SetType("com.cloudevents.readme.sent")
+	testCloudEvent.SetSource("http://localhost:8080/")
+	testCloudEvent.SetDataContentType("application/json")
+	testCloudEvent.SetData(testValue)
+
+	eventBytes, err := testCloudEvent.DataBytes()
+	if err != nil {
+		return nil, err
+	}
+
 	return &kafka.Message{
 		Key:       []byte(testKey),
-		Value:     []byte(testValue),
+		Headers:   createMessageHeaders(testCloudEvent.Context),
+		Value:     eventBytes,
 		Timestamp: time.Now(),
 		TopicPartition: kafka.TopicPartition{
 			Topic:     &topic,
 			Partition: testPartition,
 			Offset:    offset,
 		},
+	}, nil
+}
+
+// Map CloudEvent Context Headers To Kafka Message Headers
+func createMessageHeaders(context cloudevents.EventContext) []kafka.Header {
+	headers := []kafka.Header{
+		{Key: "ce_specversion", Value: []byte(context.GetSpecVersion())},
+		{Key: "ce_type", Value: []byte(context.GetType())},
+		{Key: "ce_source", Value: []byte(context.GetSource())},
+		{Key: "ce_id", Value: []byte(context.GetID())},
+		{Key: "ce_time", Value: []byte(context.GetTime().Format(time.RFC3339))},
 	}
+
+	if context.GetDataContentType() != "" {
+		headers = append(headers, kafka.Header{Key: "ce_datacontenttype", Value: []byte(context.GetDataContentType())})
+	}
+
+	if context.GetSubject() != "" {
+		headers = append(headers, kafka.Header{Key: "ce_subject", Value: []byte(context.GetSubject())})
+	}
+
+	if context.GetDataSchema() != "" {
+		headers = append(headers, kafka.Header{Key: "ce_dataschema", Value: []byte(context.GetDataSchema())})
+	}
+
+	// Only Setting String Extensions
+	for k, v := range context.GetExtensions() {
+		if vs, ok := v.(string); ok {
+			headers = append(headers, kafka.Header{Key: "ce_" + k, Value: []byte(vs)})
+		}
+	}
+
+	return headers
 }
 
 // Wait For The Consumers To Process All The Events

@@ -1,11 +1,13 @@
 package dispatcher
 
 import (
+	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"go.uber.org/zap"
+	"strings"
 	"time"
 )
 
@@ -23,7 +25,7 @@ type DispatcherConfig struct {
 	OffsetCommitDurationMinimum time.Duration
 	Username                    string
 	Password                    string
-	Client                      client.Client
+	Client                      client.RetriableClient
 }
 
 // Define a Dispatcher Struct to hold Dispatcher Config and dispatcher implementation details
@@ -31,7 +33,7 @@ type Dispatcher struct {
 	DispatcherConfig
 	consumers        []kafkaconsumer.ConsumerInterface
 	offsetMessages   []map[int32]kafka.Offset
-	lastOffsetCommit time.Time
+	lastOffsetCommit []time.Time
 }
 
 // Create A New Dispatcher Of Specified Configuration
@@ -41,8 +43,9 @@ func NewDispatcher(dispatcherConfig DispatcherConfig) *Dispatcher {
 	dispatcher := &Dispatcher{
 		DispatcherConfig: dispatcherConfig,
 
-		consumers:      make([]kafkaconsumer.ConsumerInterface, 0, dispatcherConfig.Concurrency),
-		offsetMessages: make([]map[int32]kafka.Offset, dispatcherConfig.Concurrency, dispatcherConfig.Concurrency),
+		consumers:        make([]kafkaconsumer.ConsumerInterface, 0, dispatcherConfig.Concurrency),
+		offsetMessages:   make([]map[int32]kafka.Offset, dispatcherConfig.Concurrency, dispatcherConfig.Concurrency),
+		lastOffsetCommit: make([]time.Time, dispatcherConfig.Concurrency),
 	}
 
 	// Return The Dispatcher
@@ -109,7 +112,7 @@ func (d *Dispatcher) handleKafkaMessages(consumer kafkaconsumer.ConsumerInterfac
 
 	// Initialize The Consumer's OffsetMessages Array With A Map For Each PartitionKey
 	d.offsetMessages[index] = make(map[int32]kafka.Offset)
-	d.lastOffsetCommit = time.Now()
+	d.lastOffsetCommit[index] = time.Now()
 
 	// Infinite Message Processing Loop
 	for {
@@ -119,9 +122,10 @@ func (d *Dispatcher) handleKafkaMessages(consumer kafkaconsumer.ConsumerInterfac
 
 		if event == nil {
 			// Commit Offsets If The Amount Of Time Since Last Commit Is "OffsetCommitDuration" Or More
-			currentTimeDuration := time.Now().Sub(d.lastOffsetCommit)
+			currentTimeDuration := time.Now().Sub(d.lastOffsetCommit[index])
 
-			if currentTimeDuration > d.OffsetCommitDurationMinimum && time.Now().Sub(d.lastOffsetCommit) >= d.OffsetCommitDuration {
+			if currentTimeDuration > d.OffsetCommitDurationMinimum && currentTimeDuration >= d.OffsetCommitDuration {
+
 				d.commitOffsets(logger, consumer, index)
 			}
 
@@ -139,11 +143,12 @@ func (d *Dispatcher) handleKafkaMessages(consumer kafkaconsumer.ConsumerInterfac
 				zap.String("Topic", *e.TopicPartition.Topic),
 				zap.Int32("Partition", e.TopicPartition.Partition),
 				zap.Any("Offset", e.TopicPartition.Offset))
-			_ = d.Client.Dispatch(e.Value) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
+
+			_ = d.Client.Dispatch(convertToCloudEvent(e)) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
 
 			// Update Stored Offsets Based On The Processed Message
 			d.updateOffsets(logger, consumer, e)
-			currentTimeDuration := time.Now().Sub(d.lastOffsetCommit)
+			currentTimeDuration := time.Now().Sub(d.lastOffsetCommit[index])
 
 			// If "OffsetCommitCount" Number Of Messages Have Been Processed Since Last Offset Commit, Then Do One Now
 			if currentTimeDuration > d.OffsetCommitDurationMinimum &&
@@ -183,5 +188,39 @@ func (d *Dispatcher) commitOffsets(logger *zap.Logger, consumer kafkaconsumer.Co
 			d.offsetMessages[index][partition.Partition] = partition.Offset
 		}
 	}
-	d.lastOffsetCommit = time.Now()
+	d.lastOffsetCommit[index] = time.Now()
+}
+
+// Convert Kafka Message To A Cloud Event, Eventually We Should Consider Writing A Cloud Event SDK Codec For This
+func convertToCloudEvent(message *kafka.Message) cloudevents.Event {
+	event := cloudevents.NewEvent(cloudevents.VersionV03)
+	event.SetData(message.Value)
+	for _, header := range message.Headers {
+		h := header.Key
+		v := string(header.Value)
+		switch h {
+		case "ce_datacontenttype":
+			event.SetDataContentType(v)
+		case "ce_specversion":
+			event.SetSpecVersion(v)
+		case "ce_type":
+			event.SetType(v)
+		case "ce_source":
+			event.SetSource(v)
+		case "ce_id":
+			event.SetID(v)
+		case "ce_time":
+			t, _ := time.Parse(time.RFC3339, v)
+			event.SetTime(t)
+		case "ce_subject":
+			event.SetSubject(v)
+		case "ce_dataschema":
+			event.SetDataSchema(v)
+		default:
+			// Must Be An Extension, Remove The "ce_" Prefix
+			event.SetExtension(strings.TrimPrefix(h, "ce_"), v)
+		}
+	}
+
+	return event
 }
