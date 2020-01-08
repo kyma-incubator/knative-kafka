@@ -64,7 +64,7 @@ func (r *Reconciler) reconcileChannel(ctx context.Context, channel *kafkav1alpha
 //
 // K8S Channel Service
 //
-// Note - These functions were lifted from early Knative Eventing implementation which have since been moved/removed. // TODO - review this paragraph and remove/reword
+// Note - These functions were lifted from early Knative Eventing implementation which have since been moved/removed.
 //        Ideally we'd like to use that implementation directly, but it uses hardcoded config for the larger Knative Eventing
 //        ClusterBus / Single Dispatcher paradigm which doesn't work for our scalable implementation where we want a unique
 //        service/channel deployment per channel/topic.  The logic has also been modified for readability but is otherwise similar.

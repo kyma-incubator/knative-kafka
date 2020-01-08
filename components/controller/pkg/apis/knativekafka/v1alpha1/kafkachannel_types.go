@@ -48,7 +48,7 @@ type KafkaChannelStatus struct {
 	// inherits duck/v1beta1 Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
-	duckv1.Status `json:",inline"` // TODO - this moved to duckv1.Status - consider changing ???
+	duckv1.Status `json:",inline"`
 
 	// KafkaChannel is Addressable. It currently exposes the endpoint as a
 	// fully-qualified DNS name which will distribute traffic over the
