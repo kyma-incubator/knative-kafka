@@ -7,7 +7,6 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"go.uber.org/zap"
-	eventingchannels "knative.dev/eventing/pkg/channel"
 	"strings"
 	"time"
 )
@@ -146,7 +145,6 @@ func (d *Dispatcher) handleKafkaMessages(consumer kafkaconsumer.ConsumerInterfac
 				zap.Any("Offset", e.TopicPartition.Offset))
 
 			_ = d.Client.Dispatch(convertToCloudEvent(e)) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
-			eventchannels.NewDispatcher()
 
 			// Update Stored Offsets Based On The Processed Message
 			d.updateOffsets(logger, consumer, e)
