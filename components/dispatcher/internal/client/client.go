@@ -4,10 +4,12 @@ import (
 	"context"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	"github.com/pkg/errors"
 	"github.com/slok/goresilience/retry"
 	"go.uber.org/zap"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -65,10 +67,10 @@ func (client retriableCloudEventClient) Dispatch(event cloudevents.Event) error 
 	runner := retry.New(retry.Config{DisableBackoff: client.exponentialBackoff, Times: client.calculateNumberOfRetries(), WaitBase: time.Millisecond * time.Duration(client.initialRetryInterval)})
 
 	err := runner.Run(context.TODO(), func(_ context.Context) error {
-		_, _, err := client.cloudEventClient.Send(context.Background(), event)
+		rctx, _, err := client.cloudEventClient.Send(context.Background(), event)
 		if err != nil {
-			logger.Warn("Failed to send message to subscriber service, retrying", zap.Error(err))
-			return err
+			transportContext := cloudevents.HTTPTransportContextFrom(rctx)
+			return logResponse(logger, transportContext.StatusCode)
 		}
 		return nil
 	})
@@ -77,6 +79,18 @@ func (client retriableCloudEventClient) Dispatch(event cloudevents.Event) error 
 	if err != nil {
 		logger.Error("Failed to send after configured number of retries", zap.Error(err))
 		return err
+	}
+	return nil
+}
+
+func logResponse(logger *zap.Logger, statusCode int) error {
+	if statusCode >= 500 || statusCode == 404 || statusCode == 429 {
+		logger.Warn("Failed to send message to subscriber service, retrying", zap.Int("statusCode", statusCode))
+		return errors.New("Server returned a bad response code: " + strconv.Itoa(statusCode))
+	} else if statusCode > 299 {
+		logger.Warn("Failed to send message to subscriber service, not retrying", zap.Int("statusCode", statusCode))
+	} else {
+		logger.Info("Successfully sent message to subscriber service", zap.Int("statusCode", statusCode))
 	}
 	return nil
 }
