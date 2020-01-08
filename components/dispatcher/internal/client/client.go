@@ -90,7 +90,7 @@ func logResponse(logger *zap.Logger, statusCode int) error {
 	} else if statusCode > 299 {
 		logger.Warn("Failed to send message to subscriber service, not retrying", zap.Int("statusCode", statusCode))
 	} else {
-		logger.Info("Successfully sent message to subscriber service", zap.Int("statusCode", statusCode))
+		logger.Debug("Successfully sent message to subscriber service", zap.Int("statusCode", statusCode))
 	}
 	return nil
 }
