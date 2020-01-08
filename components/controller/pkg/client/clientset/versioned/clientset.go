@@ -28,8 +28,6 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	KnativekafkaV1alpha1() knativekafkav1alpha1.KnativekafkaV1alpha1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Knativekafka() knativekafkav1alpha1.KnativekafkaV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -41,12 +39,6 @@ type Clientset struct {
 
 // KnativekafkaV1alpha1 retrieves the KnativekafkaV1alpha1Client
 func (c *Clientset) KnativekafkaV1alpha1() knativekafkav1alpha1.KnativekafkaV1alpha1Interface {
-	return c.knativekafkaV1alpha1
-}
-
-// Deprecated: Knativekafka retrieves the default version of KnativekafkaClient.
-// Please explicitly pick a version.
-func (c *Clientset) Knativekafka() knativekafkav1alpha1.KnativekafkaV1alpha1Interface {
 	return c.knativekafkaV1alpha1
 }
 

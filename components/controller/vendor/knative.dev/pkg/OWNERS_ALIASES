@@ -23,15 +23,19 @@ aliases:
   configmap-approvers:
   - mattmoor
   - mdemirhan
+  - dprotaso
 
   controller-approvers:
-  - mattmoor
+  - dgerd
   - grantr
+  - mattmoor
   - tcnghia
+  - vagababov
 
   kmeta-approvers:
   - mattmoor
-  - jonjohnsonjr
+  - dgerd
+  - vagababov
 
   logging-approvers:
   - mdemirhan
@@ -42,19 +46,25 @@ aliases:
   - mdemirhan
   - yanweiguo
 
+  network-approvers:
+  - markusthoemmes
+  - tcnghia
+  - vagababov
+
   productivity-approvers:
   - adrcunha
   - chaodaiG
-  - srinivashegde86
   productivity-reviewers:
   - adrcunha
   - chaodaiG
   - coryrc
-  - dushyanthsc
-  - Fredy-Z
-  - srinivashegde86
+  - chizhg
   - steuhs
   - yt3liu
+
+  source-approvers:
+  - n3wscott
+  - vaikas-google
 
   webhook-approvers:
   - mattmoor

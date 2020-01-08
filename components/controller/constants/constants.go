@@ -10,6 +10,10 @@ const (
 	KafkaChannelKind        = "KafkaChannel"
 	KnativeSubscriptionKind = "Subscription"
 
+	// HTTP Port
+	HttpPortName = "http"
+	HttpPortNumber = 80
+
 	// Kafka Secret Label
 	KafkaSecretLabel = "knativekafka.kyma-project.io/kafka-secret"
 

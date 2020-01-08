@@ -5,10 +5,6 @@ import (
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"flag"
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
-	messagingv1alpha1 "github.com/knative/eventing/pkg/apis/messaging/v1alpha1"
-	istiov1alpha3 "github.com/knative/pkg/apis/istio/v1alpha3"
-	"github.com/knative/pkg/signals"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
@@ -18,6 +14,10 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/controller/kafkasubscription"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"go.uber.org/zap"
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	istiov1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
+	"knative.dev/pkg/signals"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -112,7 +112,7 @@ func main() {
 	stopChannel := signals.SetupSignalHandler()
 
 	// Start All Controllers & Block Until StopChannel Is Closed
-	logger.Info("Starting Kafka Controller (CRD Version)")
+	logger.Info("Starting Knative Kafka Controllers)")
 	err = mgr.Start(stopChannel)
 	if err != nil {
 		logger.Fatal("Failed To Start Manager's Controllers!", zap.Error(err))

@@ -1,7 +1,6 @@
 package kafkachannel
 
 import (
-	istiov1alpha3 "github.com/knative/pkg/apis/istio/v1alpha3"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
@@ -11,6 +10,7 @@ import (
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	istiov1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -35,7 +35,7 @@ func Add(mgr manager.Manager, adminClient kafkaadmin.AdminClientInterface) error
 	}
 
 	// Get A K8S Event Recorder From The Manager
-	recorder := mgr.GetRecorder(constants.KafkaChannelControllerAgentName)
+	recorder := mgr.GetEventRecorderFor(constants.KafkaChannelControllerAgentName)
 
 	// Create A New KafkaChannel Reconciler
 	kafkaChannelReconciler := kafkachannel.NewReconciler(recorder, logger, adminClient, environment)
