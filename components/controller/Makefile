@@ -11,7 +11,7 @@ BUILD_TESTS:=true
 
 # Application Names (Align With Knative Eventing Version)
 APP_NAME=kafka-channel-controller
-APP_VERSION=v0.8.0
+APP_VERSION=latest
 
 # Build / Packaging / Deployment Configuration
 APP_PATH=eu.gcr.io/kyma-project/incubator
@@ -82,11 +82,11 @@ clients:
 #
 
 build-native: clean
-	@echo 'Building $(APP_NAME) (CRD - Native)'
+	@echo 'Building $(APP_NAME) (Native)'
 	mkdir -p $(BUILD_DIR); cd $(BUILD_ROOT)/cmd/crd; go build -o $(BUILD_DIR)/$(APP_NAME)
 
 build-linux: clean
-	@echo 'Building $(APP_NAME) (CRD - Linux)'
+	@echo 'Building $(APP_NAME) (Linux)'
 	mkdir -p $(BUILD_DIR); cd $(BUILD_ROOT)/cmd/crd; CGO_ENABLED=0 GOOS=linux go build -o $(BUILD_DIR)/$(APP_NAME)
 
 .PHONY: build-native build-linux

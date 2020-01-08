@@ -21,21 +21,27 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
+	"time"
 
+	"go.opencensus.io/stats/view"
+	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
-	"knative.dev/pkg/injection/clients/kubeclient"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/profiling"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
 )
@@ -74,8 +80,13 @@ func GetConfig(masterURL, kubeconfig string) (*rest.Config, error) {
 func GetLoggingConfig(ctx context.Context) (*logging.Config, error) {
 	loggingConfigMap, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(logging.ConfigMapName(), metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		if apierrors.IsNotFound(err) {
+			return logging.NewConfigFromMap(nil)
+		} else {
+			return nil, err
+		}
 	}
+
 	return logging.NewConfigFromConfigMap(loggingConfigMap)
 }
 
@@ -104,6 +115,14 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
 	log.Printf("Registering %d controllers", len(ctors))
 
+	// Report stats on Go memory usage every 30 seconds.
+	msp := metrics.NewMemStatsAll()
+	msp.Start(ctx, 30*time.Second)
+
+	if err := view.Register(msp.DefaultViews()...); err != nil {
+		log.Fatalf("Error exporting go memstats view: %v", err)
+	}
+
 	// Adjust our client's rate limits based on the number of controller's we are running.
 	cfg.QPS = float32(len(ctors)) * rest.DefaultQPS
 	cfg.Burst = len(ctors) * rest.DefaultBurst
@@ -128,10 +147,16 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 		controllers = append(controllers, cf(ctx, cmw))
 	}
 
+	profilingHandler := profiling.NewHandler(logger, false)
+
 	// Watch the logging config map and dynamically update logging levels.
 	cmw.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
-	// Watch the observability config map and dynamically update metrics exporter.
-	cmw.Watch(metrics.ConfigMapName(), metrics.UpdateExporterFromConfigMap(component, logger))
+
+	// Watch the observability config map
+	cmw.Watch(metrics.ConfigMapName(),
+		metrics.UpdateExporterFromConfigMap(component, logger),
+		profilingHandler.UpdateFromConfigMap)
+
 	if err := cmw.Start(ctx.Done()); err != nil {
 		logger.Fatalw("failed to start configuration manager", zap.Error(err))
 	}
@@ -144,7 +169,22 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	// Start all of the controllers.
 	logger.Info("Starting controllers...")
-	controller.StartAll(ctx.Done(), controllers...)
+	go controller.StartAll(ctx.Done(), controllers...)
+
+	profilingServer := profiling.NewServer(profilingHandler)
+
+	eg, egCtx := errgroup.WithContext(ctx)
+	eg.Go(profilingServer.ListenAndServe)
+
+	// This will block until either a signal arrives or one of the grouped functions
+	// returns an error.
+	<-egCtx.Done()
+
+	profilingServer.Shutdown(context.Background())
+	// Don't forward ErrServerClosed as that indicates we're already shutting down.
+	if err := eg.Wait(); err != nil && err != http.ErrServerClosed {
+		logger.Errorw("Error while running server", zap.Error(err))
+	}
 }
 
 func flush(logger *zap.SugaredLogger) {

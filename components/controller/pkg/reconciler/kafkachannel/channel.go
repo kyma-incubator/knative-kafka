@@ -3,8 +3,6 @@ package kafkachannel
 import (
 	"context"
 	"fmt"
-	"github.com/knative/eventing/pkg/provisioners"
-	eventingNames "github.com/knative/eventing/pkg/reconciler/names"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
@@ -17,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	eventingNames "knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
 	"strconv"
 )
@@ -65,7 +64,7 @@ func (r *Reconciler) reconcileChannel(ctx context.Context, channel *kafkav1alpha
 //
 // K8S Channel Service
 //
-// Note - These functions were lifted from the Knative Eventing channel_util.go implementation in the "provisioners" package.
+// Note - These functions were lifted from early Knative Eventing implementation which have since been moved/removed.
 //        Ideally we'd like to use that implementation directly, but it uses hardcoded config for the larger Knative Eventing
 //        ClusterBus / Single Dispatcher paradigm which doesn't work for our scalable implementation where we want a unique
 //        service/channel deployment per channel/topic.  The logic has also been modified for readability but is otherwise similar.
@@ -137,9 +136,9 @@ func (r *Reconciler) newK8sChannelService(channel *kafkav1alpha1.KafkaChannel) *
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
-					Name:       provisioners.PortName,
-					Port:       provisioners.PortNumber,
-					TargetPort: intstr.FromInt(provisioners.PortNumber),
+					Name:       constants.HttpPortName,
+					Port:       constants.HttpPortNumber,
+					TargetPort: intstr.FromInt(constants.HttpPortNumber),
 				},
 				{
 					Name:       constants.MetricsPortName,
@@ -251,7 +250,7 @@ func (r *Reconciler) newK8sChannelDeployment(channel *kafkav1alpha1.KafkaChannel
 							Ports: []corev1.ContainerPort{
 								{
 									Name:          "server",
-									ContainerPort: int32(provisioners.PortNumber),
+									ContainerPort: int32(constants.HttpPortNumber),
 								},
 							},
 							Env:             channelEnvVars,
@@ -305,7 +304,7 @@ func (r *Reconciler) channelDeploymentEnvVars(channel *kafkav1alpha1.KafkaChanne
 	envVars := []corev1.EnvVar{
 		{
 			Name:  env.HttpPortEnvVarKey,
-			Value: strconv.Itoa(provisioners.PortNumber),
+			Value: strconv.Itoa(constants.HttpPortNumber),
 		},
 		{
 			Name:  env.MetricsPortEnvVarKey,

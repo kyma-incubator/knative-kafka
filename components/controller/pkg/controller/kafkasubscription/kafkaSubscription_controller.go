@@ -1,7 +1,6 @@
 package kafkasubscription
 
 import (
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
@@ -10,6 +9,7 @@ import (
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -31,7 +31,7 @@ func Add(mgr manager.Manager, adminClient kafkaadmin.AdminClientInterface) error
 	}
 
 	// Get A K8S Event Recorder From The Manager
-	recorder := mgr.GetRecorder(constants.KafkaSubscriptionControllerAgentName)
+	recorder := mgr.GetEventRecorderFor(constants.KafkaSubscriptionControllerAgentName)
 
 	// Create A Kafka (Knative) Subscription Reconciler
 	kafkaSubscriptionReconciler := kafkasubscription.NewReconciler(recorder, logger, adminClient, environment)
@@ -44,21 +44,21 @@ func Add(mgr manager.Manager, adminClient kafkaadmin.AdminClientInterface) error
 	}
 
 	// Configure Controller To Watch Subscription CustomResources
-	err = c.Watch(&source.Kind{Type: &eventingv1alpha1.Subscription{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &messagingv1alpha1.Subscription{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
-		logger.Error("Failed To Configure Controller Watch Of Subscription CustomResources", zap.Error(err), zap.Any("type", &eventingv1alpha1.Subscription{}))
+		logger.Error("Failed To Configure Controller Watch Of Subscription CustomResources", zap.Error(err), zap.Any("type", &messagingv1alpha1.Subscription{}))
 		return err
 	}
 
 	// Configure Controller To Watch K8s Services That Are Owned By Subscriptions
-	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{OwnerType: &eventingv1alpha1.Subscription{}, IsController: true})
+	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{OwnerType: &messagingv1alpha1.Subscription{}, IsController: true})
 	if err != nil {
 		logger.Error("Failed To Configure Controller Watch Of K8S Services Owned By Subscriptions", zap.Error(err))
 		return err
 	}
 
 	// Configure Controller To Watch K8s Deployments That Are Owned By Subscriptions
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{OwnerType: &eventingv1alpha1.Subscription{}, IsController: true})
+	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{OwnerType: &messagingv1alpha1.Subscription{}, IsController: true})
 	if err != nil {
 		logger.Error("Failed To Configure Controller Watch Of K8S Deployments Owned By Subscriptions", zap.Error(err))
 		return err

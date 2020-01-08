@@ -1,7 +1,7 @@
 package util
 
 import (
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"regexp"
 	"strings"
 )
@@ -12,12 +12,12 @@ var endsWithLowercaseAlphaCharRegExp = regexp.MustCompile("^.*[a-z]$")
 var invalidK8sServiceCharactersRegExp = regexp.MustCompile("[^a-z0-9\\-]+")
 
 // Dispatcher K8S Service Naming Utility
-func DispatcherServiceName(subscription *eventingv1alpha1.Subscription) string {
+func DispatcherServiceName(subscription *messagingv1alpha1.Subscription) string {
 	return generateValidDispatcherDnsName(subscription.Name)
 }
 
 // Dispatcher Deployment Naming Utility
-func DispatcherDeploymentName(subscription *eventingv1alpha1.Subscription) string {
+func DispatcherDeploymentName(subscription *messagingv1alpha1.Subscription) string {
 	return generateValidDispatcherDnsName(subscription.Name)
 }
 

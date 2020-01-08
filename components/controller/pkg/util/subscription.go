@@ -1,12 +1,12 @@
 package util
 
 import (
-	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"strconv"
 )
 
@@ -22,21 +22,21 @@ const (
 )
 
 // Get A Logger With Subscription Info
-func SubscriptionLogger(logger *zap.Logger, subscription *eventingv1alpha1.Subscription) *zap.Logger {
+func SubscriptionLogger(logger *zap.Logger, subscription *messagingv1alpha1.Subscription) *zap.Logger {
 	return logger.With(zap.String("Namespace", subscription.Namespace), zap.String("Name", subscription.Name))
 }
 
 // Create A New ControllerReference Model For The Specified Subscription
-func NewSubscriptionControllerRef(subscription *eventingv1alpha1.Subscription) metav1.OwnerReference {
+func NewSubscriptionControllerRef(subscription *messagingv1alpha1.Subscription) metav1.OwnerReference {
 	return *metav1.NewControllerRef(subscription, schema.GroupVersionKind{
-		Group:   eventingv1alpha1.SchemeGroupVersion.Group,
-		Version: eventingv1alpha1.SchemeGroupVersion.Version,
+		Group:   messagingv1alpha1.SchemeGroupVersion.Group,
+		Version: messagingv1alpha1.SchemeGroupVersion.Version,
 		Kind:    constants.KnativeSubscriptionKind,
 	})
 }
 
 // Utility Function To Get The EventStartTime - From Subscription Annotations Only
-func EventStartTime(subscription *eventingv1alpha1.Subscription, logger *zap.Logger) string {
+func EventStartTime(subscription *messagingv1alpha1.Subscription, logger *zap.Logger) string {
 	valueString := subscription.Annotations[EventStartTimeAnnotation]
 	if len(valueString) > 0 {
 		logger.Debug("Found 'EventStartTime' In Subscription", zap.String("Value", valueString))
@@ -47,7 +47,7 @@ func EventStartTime(subscription *eventingv1alpha1.Subscription, logger *zap.Log
 }
 
 // Utility Function To Get The EventRetryIntervalMillis - First From Subscription Annotations And Then From Environment
-func EventRetryInitialIntervalMillis(subscription *eventingv1alpha1.Subscription, environment *env.Environment, logger *zap.Logger) int64 {
+func EventRetryInitialIntervalMillis(subscription *messagingv1alpha1.Subscription, environment *env.Environment, logger *zap.Logger) int64 {
 	valueString := subscription.Annotations[EventRetryInitialIntervalMillisAnnotation]
 	if len(valueString) > 0 {
 		value, err := strconv.ParseInt(valueString, 10, 64)
@@ -65,7 +65,7 @@ func EventRetryInitialIntervalMillis(subscription *eventingv1alpha1.Subscription
 }
 
 // Utility Function To Get The EventRetryTimeMillisMax - First From Subscription Annotations And Then From Environment
-func EventRetryTimeMillisMax(subscription *eventingv1alpha1.Subscription, environment *env.Environment, logger *zap.Logger) int64 {
+func EventRetryTimeMillisMax(subscription *messagingv1alpha1.Subscription, environment *env.Environment, logger *zap.Logger) int64 {
 	valueString := subscription.Annotations[EventRetryTimeMillisMaxAnnotation]
 	if len(valueString) > 0 {
 		value, err := strconv.ParseInt(valueString, 10, 64)
@@ -83,7 +83,7 @@ func EventRetryTimeMillisMax(subscription *eventingv1alpha1.Subscription, enviro
 }
 
 // Utility Function To Get The ExponentialBackoff - First From Subscription Annotations And Then From Environment
-func ExponentialBackoff(subscription *eventingv1alpha1.Subscription, environment *env.Environment, logger *zap.Logger) bool {
+func ExponentialBackoff(subscription *messagingv1alpha1.Subscription, environment *env.Environment, logger *zap.Logger) bool {
 	valueString := subscription.Annotations[ExponentialBackoffAnnotation]
 	if len(valueString) > 0 {
 		value, err := strconv.ParseBool(valueString)
@@ -101,7 +101,7 @@ func ExponentialBackoff(subscription *eventingv1alpha1.Subscription, environment
 }
 
 // Utility Function To Get The KafkaConsumers - First From Subscription Annotations And Then From Environment
-func KafkaConsumers(subscription *eventingv1alpha1.Subscription, environment *env.Environment, logger *zap.Logger) int {
+func KafkaConsumers(subscription *messagingv1alpha1.Subscription, environment *env.Environment, logger *zap.Logger) int {
 	valueString := subscription.Annotations[KafkaConsumersAnnotation]
 	if len(valueString) > 0 {
 		value, err := strconv.Atoi(valueString)

@@ -5,7 +5,9 @@ metadata:
   namespace: {{ .Values.global.namespace.install }}
   labels:
     helm.sh/chart: {{ .Chart.Name }}
+
 ---
+
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -111,7 +113,9 @@ rules:
   - list
   - watch
   - create
+
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -127,7 +131,9 @@ roleRef:
   kind: ClusterRole
   name: knative-kafka-channel-controller
   apiGroup: rbac.authorization.k8s.io
+
 ---
+
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -143,7 +149,9 @@ rules:
   - get
   - list
   - watch
+
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -157,7 +165,9 @@ roleRef:
   kind: ClusterRole
   name: knative-kafka-secret-read
   apiGroup: rbac.authorization.k8s.io
+
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -177,3 +187,24 @@ rules:
   - watch
   - update
   - patch
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: knative-kafka-addressable-resolver
+  labels:
+    eventing.knative.dev/release: devel
+    duck.knative.dev/addressable: "true"
+# Do not use this role directly. These rules will be added to the "addressable-resolver" role.
+rules:
+- apiGroups:
+  - knativekafka.kyma-project.io
+  resources:
+  - kafkachannels
+  - kafkachannels/status
+  verbs:
+  - get
+  - list
+  - watch

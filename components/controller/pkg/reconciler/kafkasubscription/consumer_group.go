@@ -3,7 +3,6 @@ package kafkasubscription
 import (
 	"context"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
@@ -13,6 +12,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 )
@@ -21,7 +21,7 @@ import (
 // Reconcile The Kafka ConsumerGroup Offset For The Specified Subscription / Channel
 //
 func (r *Reconciler) reconcileConsumerGroupOffsets(ctx context.Context,
-	subscription *v1alpha1.Subscription,
+	subscription *messagingv1alpha1.Subscription,
 	channel *kafkav1alpha1.KafkaChannel) error {
 
 	// Get Subscription Specific Logger
@@ -94,7 +94,7 @@ func (r *Reconciler) reconcileConsumerGroupOffsets(ctx context.Context,
 }
 
 // Reset The Consumer Group Offsets For a Given Consumer Group To The Offset Closest To The Specified Time
-func (r *Reconciler) setConsumerGroupOffsets(ctx context.Context, subscription *v1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel, dateTime time.Time) error {
+func (r *Reconciler) setConsumerGroupOffsets(ctx context.Context, subscription *messagingv1alpha1.Subscription, channel *kafkav1alpha1.KafkaChannel, dateTime time.Time) error {
 
 	// Get The GroupId
 	groupId := subscription.Name
