@@ -90,7 +90,7 @@ func main() {
 	metricsServer.Start()
 
 	// Create HTTP Client With Retry Settings
-	c := client.NewHttpClient(subscriberUri, exponentialBackoff, initialRetryInterval, maxRetryTime)
+	c := client.NewRetriableCloudEventClient(subscriberUri, exponentialBackoff, initialRetryInterval, maxRetryTime)
 
 	// Create The Dispatcher With Specified Configuration
 	dispatcherConfig := dispatcher.DispatcherConfig{

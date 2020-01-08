@@ -1,59 +1,77 @@
 package client
 
 import (
-	"bytes"
 	"context"
+	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
-	"github.com/pkg/errors"
-	"github.com/slok/goresilience"
 	"github.com/slok/goresilience/retry"
 	"go.uber.org/zap"
-	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
-	"strconv"
 	"time"
 )
 
-const responseStatus = "Response.Status"
-
-// Create a shared go http client with a timeout (timeout should be slightly larger than eventproxy timeout)
-var client = &http.Client{
+// Create a shared go http client with a timeout
+var httpClient = &http.Client{
 	Timeout: 30 * time.Second,
 }
 
 // Client represents anything that can dispatch an event
 // to a downstream service
-type Client interface {
-	Dispatch(message []byte) error
+type RetriableClient interface {
+	Dispatch(message cloudevents.Event) error
 }
 
-// httpClient is an implementation of Client which dispatches via HTTP
-// and provides exponential backoff capabilities
-type httpClient struct {
+// cloudEventClient is a client implementation that interprets
+// kafka messages as cloud events and utilizes the cloud event library
+type retriableCloudEventClient struct {
 	uri                  string
 	exponentialBackoff   bool
 	initialRetryInterval int64
 	maxRetryTime         int64
+	cloudEventClient     cloudevents.Client
 }
 
-func NewHttpClient(uri string, exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) httpClient {
-	return httpClient{uri: uri, exponentialBackoff: exponentialBackoff, initialRetryInterval: initialRetryInterval, maxRetryTime: maxRetryTime}
+var _ RetriableClient = &retriableCloudEventClient{}
+
+func NewRetriableCloudEventClient(uri string, exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
+	t, err := cloudevents.NewHTTPTransport(
+		cloudevents.WithTarget(uri),
+		cloudevents.WithEncoding(cloudevents.HTTPBinaryV03),
+	)
+	t.Client = httpClient
+
+	if err != nil {
+		panic("failed to create transport, " + err.Error())
+	}
+
+	ceClient, err := cloudevents.NewClient(t)
+	if err != nil {
+		panic("unable to create cloudevent client: " + err.Error())
+	}
+
+	return retriableCloudEventClient{uri: uri, exponentialBackoff: exponentialBackoff, initialRetryInterval: initialRetryInterval, maxRetryTime: maxRetryTime, cloudEventClient: ceClient}
 }
 
-func (hc httpClient) Dispatch(message []byte) error {
+func (client retriableCloudEventClient) Dispatch(event cloudevents.Event) error {
 	// Configure The Logger
 	var logger *zap.Logger
 	if log.Logger().Core().Enabled(zap.DebugLevel) {
-		logger = log.Logger().With(zap.String("Message", string(message)), zap.String("uri", hc.uri))
+		logger = log.Logger().With(zap.Any("Event", event), zap.String("uri", client.uri))
 	} else {
-		logger = log.Logger().With(zap.String("uri", hc.uri))
+		logger = log.Logger().With(zap.String("uri", client.uri))
 	}
 
-	runner := retry.New(retry.Config{DisableBackoff: hc.exponentialBackoff, Times: hc.calculateNumberOfRetries(), WaitBase: time.Millisecond * time.Duration(hc.initialRetryInterval)})
+	runner := retry.New(retry.Config{DisableBackoff: client.exponentialBackoff, Times: client.calculateNumberOfRetries(), WaitBase: time.Millisecond * time.Duration(client.initialRetryInterval)})
 
-	err := sendKafkaConsumerMessageToSubscriber(runner, hc, message, logger)
+	err := runner.Run(context.TODO(), func(_ context.Context) error {
+		_, _, err := client.cloudEventClient.Send(context.Background(), event)
+		if err != nil {
+			logger.Warn("Failed to send message to subscriber service, retrying", zap.Error(err))
+			return err
+		}
+		return nil
+	})
 
 	// Retries failed
 	if err != nil {
@@ -63,66 +81,8 @@ func (hc httpClient) Dispatch(message []byte) error {
 	return nil
 }
 
-func sendKafkaConsumerMessageToSubscriber(runner goresilience.Runner, hc httpClient, message []byte, logger *zap.Logger) error {
-	err := runner.Run(context.TODO(), func(_ context.Context) error {
-
-		// Send The Kafka ConsumerMessage To Subscriber URI Via HTTP POST Request
-		response, err := client.Post(hc.uri, "application/json", bytes.NewBuffer(message))
-		if err != nil {
-			logger.Warn("Failed to send message to subscriber service, retrying", zap.Error(err))
-			return err
-		}
-
-		// Log The Response & Defer Closing Response Body
-		if response != nil {
-
-			defer func() {
-
-				closeResponseBody(response, logger)
-
-			}()
-
-			// required to read the body (even though we don't need it) to avoid memory leaks when reusing http client:
-			_, _ = io.Copy(ioutil.Discard, response.Body)
-
-			err = logResponse(logger, response)
-			if err != nil {
-				return err
-			}
-
-		} else {
-			logger.Warn("Received nil response when sending message to subscriber service, retrying")
-			return errors.New("Received nil response when sending message to subscriber service")
-		}
-
-		return nil
-	})
-	return err
-}
-
-func closeResponseBody(response *http.Response, logger *zap.Logger) {
-	if response.Body != nil {
-		err := response.Body.Close()
-		if err != nil {
-			logger.Warn("Failed to close HTTP response body", zap.Error(err))
-		}
-	}
-}
-
-func logResponse(logger *zap.Logger, response *http.Response) error {
-	if response.StatusCode >= 500 || response.StatusCode == 404 || response.StatusCode == 429 {
-		logger.Warn("Failed to send message to subscriber service, retrying", zap.String(responseStatus, response.Status))
-		return errors.New("Server returned a bad response code: " + strconv.Itoa(response.StatusCode))
-	} else if response.StatusCode > 299 {
-		logger.Warn("Failed to send message to subscriber service, not retrying", zap.String(responseStatus, response.Status))
-	} else {
-		logger.Info("Successfully sent message to subscriber service", zap.String(responseStatus, response.Status))
-	}
-	return nil
-}
-
 // Convert defined max retry time to the approximate number
 // of retries, taking into account the exponential backoff algorithm
-func (hc httpClient) calculateNumberOfRetries() int {
-	return int(math.Round(math.Log2(float64(hc.maxRetryTime)/float64(hc.initialRetryInterval))) + 1)
+func (client retriableCloudEventClient) calculateNumberOfRetries() int {
+	return int(math.Round(math.Log2(float64(client.maxRetryTime)/float64(client.initialRetryInterval))) + 1)
 }
