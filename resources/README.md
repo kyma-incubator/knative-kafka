@@ -44,9 +44,9 @@ An example overrides.yaml file for Confluent Cloud:
 
 ```
 kafka:
-  brokers: <BROKER CONNECTION STRING>
-  password: <PASSWORD>
-  username: <USERNAME>
+  brokers: SASL_SSL://my-cluster.eu-west-1.aws.confluent.cloud:9092
+  password: XVLEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  username: KIELSXXXXXXXXXXX
   secretName: kafka-credentials
 ```
 
