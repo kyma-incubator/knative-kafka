@@ -32,6 +32,17 @@ YAML file during the helm chart installation, the initial broker secret will be 
 An example overrides.yaml file for Azure Event Hubs:
 
 ```
+global:
+  namespace:
+    runtime: my-runtime-namespace
+
+environment:
+  kafkaProvider: azure
+  defaultTenantId: my-tenant-id
+  defaultNumPartitions: 1
+  defaultReplicationFactor: 3
+  defaultKafkaConsumers: 1
+
 kafka:
   namespace: my-cluster-name-1
   brokers: my-cluster-name-1.servicebus.windows.net:9093
@@ -43,6 +54,17 @@ kafka:
 An example overrides.yaml file for Confluent Cloud:
 
 ```
+global:
+  namespace:
+    runtime: my-runtime-namespace
+
+environment:
+  kafkaProvider: confluent
+  defaultTenantId: my-tenant-id
+  defaultNumPartitions: 1
+  defaultReplicationFactor: 3
+  defaultKafkaConsumers: 1
+
 kafka:
   brokers: SASL_SSL://my-cluster.eu-west-1.aws.confluent.cloud:9092
   password: XVLEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -50,7 +72,7 @@ kafka:
   secretName: kafka-credentials
 ```
 
-If you need to specify the broker secret(s) after installation, they may also be created manually:
+Alternatively, or if you need to specify the broker secret(s) after installation, they may also be created manually:
    
 ```
 # Example A Creating A Kafka Secret
