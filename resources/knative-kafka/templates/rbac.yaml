@@ -16,29 +16,18 @@ metadata:
     helm.sh/chart: {{ .Chart.Name }}
 rules:
 - apiGroups:
-  - eventing.knative.dev
-  resources:
-  - subscriptions
-  - subscriptions/status
-  - channels
-  - channels/status
-  - clusterchannelprovisioners
-  - clusterchannelprovisioners/status
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-- apiGroups:
   - messaging.knative.dev
   resources:
   - channels
   - channels/status
   - subscriptions
+  - subscriptions/status
   verbs:
   - get
   - list
   - watch
+  - patch
+  - update
 - apiGroups:
   - knativekafka.kyma-project.io
   resources:
@@ -59,12 +48,6 @@ rules:
   - get
   - update
   - patch
-- apiGroups:
-  - eventing.knative.dev
-  resources:
-  - channels/finalizers
-  verbs:
-  - update
 - apiGroups:
   - "" # Core API Group
   resources:
@@ -105,6 +88,7 @@ rules:
   - delete
   - patch
   - update
+# TODO - REMOVE THIS ONCE UNUSED WATCHERS ARE CLEANED UP!
 - apiGroups:
   - networking.istio.io
   resources:
