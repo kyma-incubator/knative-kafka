@@ -34,6 +34,7 @@ rules:
   resources:
   - channels
   - channels/status
+  - subscriptions
   verbs:
   - get
   - list
