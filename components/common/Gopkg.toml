@@ -28,12 +28,12 @@
 # Align With Knative Eventing 0.8 (GKE Compatability)
 [[override]]
   name = "k8s.io/api"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.15.3"
 
 # Align With Knative Eventing 0.8 (GKE Compatability)
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.15.3"
 
 [[constraint]]
   name = "github.com/confluentinc/confluent-kafka-go"
