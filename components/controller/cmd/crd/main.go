@@ -8,6 +8,7 @@ import (
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
+	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/controller"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/controller/kafkachannel"
@@ -97,7 +98,7 @@ func main() {
 	}
 
 	// Get The Kafka AdminClient (Doing At This Level So That All Controllers Can Share The Reference)
-	adminClient, err := kafkaadmin.CreateAdminClient(logger, kafkaAdminClientType, environment.RuntimeNamespace)
+	adminClient, err := kafkaadmin.CreateAdminClient(logger, kafkaAdminClientType, constants.KnativeEventingNamespace)
 	if adminClient == nil || err != nil {
 		logger.Fatal("Failed To Create Kafka AdminClient", zap.Error(err))
 	}

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: knative-kafka-channel-controller
-  namespace: {{ .Values.global.namespace.install }}
+  namespace: {{ .Values.global.namespace.eventing }}
   labels:
     app: knative-kafka-channel-controller
     helm.sh/chart: {{ .Chart.Name }}
@@ -33,8 +33,6 @@ spec:
               fieldPath: metadata.namespace
         - name: METRICS_PORT
           value: {{ .Values.kafka.networking.container.metricsPort | quote }}
-        - name: RUNTIME_NAMESPACE
-          value: {{ .Values.global.namespace.runtime }}
         - name: KAFKA_PROVIDER
           value: {{ .Values.environment.kafkaProvider | quote }}
         - name: KAFKA_OFFSET_COMMIT_MESSAGE_COUNT

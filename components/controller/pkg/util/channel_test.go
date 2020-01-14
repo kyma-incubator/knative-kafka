@@ -57,19 +57,35 @@ func TestNewChannelControllerRef(t *testing.T) {
 	assert.True(t, *controllerRef.Controller)
 }
 
-// Test The Channel VirtualService Name Formatter / Generator
-func TestChannelVirtualServiceName(t *testing.T) {
+// Test The Channel Deployment Name Formatter / Generator
+func TestChannelDeploymentName(t *testing.T) {
+
+	// Test Data
 	testChannelName := "TestChannelName"
-	expectedChannelVirtualServiceName := testChannelName + "-channel"
-	actualChannelVirtualServiceName := ChannelVirtualServiceName(testChannelName)
-	assert.Equal(t, expectedChannelVirtualServiceName, actualChannelVirtualServiceName)
+	testChannelNamespace := "TestChannelNamespace"
+	channel := &kafkav1alpha1.KafkaChannel{ObjectMeta: metav1.ObjectMeta{Name: testChannelName, Namespace: testChannelNamespace}}
+
+	// Perform The Test
+	actualChannelDeploymentName := ChannelDeploymentName(channel)
+
+	// Verify The Results
+	expectedChannelDeploymentName := testChannelName + "-" + testChannelNamespace + "-channel"
+	assert.Equal(t, expectedChannelDeploymentName, actualChannelDeploymentName)
 }
 
 // Test The Channel Service Name Formatter / Generator
 func TestChannelServiceName(t *testing.T) {
+
+	// Test Data
 	testChannelName := "TestChannelName"
-	expectedChannelServiceName := testChannelName + "-channel"
-	actualChannelServiceName := ChannelServiceName(testChannelName)
+	testChannelNamespace := "TestChannelNamespace"
+	channel := &kafkav1alpha1.KafkaChannel{ObjectMeta: metav1.ObjectMeta{Name: testChannelName, Namespace: testChannelNamespace}}
+
+	// Perform The Test
+	actualChannelServiceName := ChannelServiceName(channel)
+
+	// Verify The Results
+	expectedChannelServiceName := testChannelName + "-" + testChannelNamespace + "-channel"
 	assert.Equal(t, expectedChannelServiceName, actualChannelServiceName)
 }
 

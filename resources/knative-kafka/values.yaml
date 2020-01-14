@@ -2,12 +2,11 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# Knative Requires that the Deployment be in the knative-eventing namespace (this in turn requires that the ServiceAccount must also be there)
-# The Runtime Namespace is where the Channel/Dispatcher Deployments/Services will be created (and is expected to be where the channels lives)
+# While the KafkaChannels and Knative Subscriptions can live in any user namespace, all
+# management and runtime plane components will live in the knative-eventing namespace.
 global:
   namespace:
-    install: knative-eventing
-    runtime: default
+    eventing: knative-eventing
 
 # Image Information
 image:
@@ -34,9 +33,6 @@ environment:
   # Valid values: local, confluent, azure
   kafkaProvider: local
   # Kafka Broker URL's (Comma Separated)
-  # IMPORTANT: The configured broker must be kept in sync with its expected replication factor, as set below.
-  # For example, Google compute Kafka needs replication factor 1.
-  # And Confluent Cloud Kafka needs replication factor minimum 3.
   kafkaBrokers: kafka-broker:9092
   # Konduit-Kafka Channel "Producer" Docker Image Path
   channelImage: eu.gcr.io/kyma-project/incubator/knative-kafka-channel:latest

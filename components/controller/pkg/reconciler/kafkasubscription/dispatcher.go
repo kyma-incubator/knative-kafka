@@ -91,7 +91,7 @@ func (r *Reconciler) getK8sDispatcherService(ctx context.Context, subscription *
 
 	// Create A Namespace / Name ObjectKey For The Specified Subscription
 	serviceKey := types.NamespacedName{
-		Namespace: subscription.Namespace,
+		Namespace: constants.KnativeEventingNamespace,
 		Name:      util.DispatcherServiceName(subscription),
 	}
 
@@ -110,7 +110,7 @@ func (r *Reconciler) newK8sDispatcherService(subscription *messagingv1alpha1.Sub
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.DispatcherServiceName(subscription),
-			Namespace: subscription.Namespace,
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"channel":                     channel.Name,
 				DispatcherLabel:               "true",                        // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
@@ -171,7 +171,7 @@ func (r *Reconciler) getK8sDispatcherDeployment(ctx context.Context, subscriptio
 
 	// Create A Namespace / Name ObjectKey For The Specified Channel Subscriber Deployment
 	deploymentKey := types.NamespacedName{
-		Namespace: subscription.Namespace,
+		Namespace: constants.KnativeEventingNamespace,
 		Name:      deploymentName,
 	}
 
@@ -203,7 +203,7 @@ func (r *Reconciler) newK8sDispatcherDeployment(subscription *messagingv1alpha1.
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
-			Namespace: channel.Namespace,
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"app":           deploymentName, // Matches K8S Service Selector Key/Value Below
 				DispatcherLabel: "true",         // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments

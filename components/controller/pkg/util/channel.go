@@ -36,14 +36,14 @@ func NewChannelControllerRef(channel *kafkav1alpha1.KafkaChannel) metav1.OwnerRe
 // naming convention as much as possible.
 //
 
-// Channel VirtualService Naming Utility
-func ChannelVirtualServiceName(channelName string) string {
-	return fmt.Sprintf("%s-channel", channelName)
+// Get The Channel's K8S Deployment Name
+func ChannelDeploymentName(channel *kafkav1alpha1.KafkaChannel) string {
+	return fmt.Sprintf("%s-%s-channel", channel.Name, channel.Namespace)
 }
 
 // Channel Service Naming Utility
-func ChannelServiceName(channelName string) string {
-	return fmt.Sprintf("%s-channel", channelName)
+func ChannelServiceName(channel *kafkav1alpha1.KafkaChannel) string {
+	return fmt.Sprintf("%s-%s-channel", channel.Name, channel.Namespace)
 }
 
 // Channel Host Naming Utility

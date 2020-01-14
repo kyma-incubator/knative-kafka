@@ -89,7 +89,7 @@ func (r *Reconciler) createK8sChannelService(ctx context.Context, channel *kafka
 		return nil, err
 	}
 
-	//// Update The Channel Status With Service Address
+	// Update The Channel Status With Service Address
 	channel.Status.MarkChannelServiceTrue()
 	channel.Status.SetAddress(&apis.URL{
 		Scheme: "http",
@@ -105,8 +105,8 @@ func (r *Reconciler) getK8sChannelService(ctx context.Context, channel *kafkav1a
 
 	// Create A Namespace / Name ObjectKey For The Specified Channel
 	serviceKey := types.NamespacedName{
-		Namespace: channel.Namespace,
-		Name:      util.ChannelServiceName(channel.Name),
+		Namespace: constants.KnativeEventingNamespace,
+		Name:      util.ChannelServiceName(channel),
 	}
 
 	// Get The Service By Namespace / Name
@@ -123,8 +123,8 @@ func (r *Reconciler) newK8sChannelService(channel *kafkav1alpha1.KafkaChannel) *
 	// Create & Return The K8S Service Model
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.ChannelServiceName(channel.ObjectMeta.Name),
-			Namespace: channel.Namespace,
+			Name:      util.ChannelServiceName(channel),
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"channel":                  channel.Name,
 				K8sAppChannelSelectorLabel: K8sAppChannelSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
@@ -147,7 +147,7 @@ func (r *Reconciler) newK8sChannelService(channel *kafkav1alpha1.KafkaChannel) *
 				},
 			},
 			Selector: map[string]string{
-				"app": channelDeploymentName(channel), // Matches Deployment Label Key/Value
+				"app": util.ChannelDeploymentName(channel), // Matches Deployment Label Key/Value
 			},
 		},
 	}
@@ -185,11 +185,11 @@ func (r *Reconciler) createK8sChannelDeployment(ctx context.Context, channel *ka
 func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Get The Channel Deployment Name
-	deploymentName := channelDeploymentName(channel)
+	deploymentName := util.ChannelDeploymentName(channel)
 
 	// Create A Namespace / Name ObjectKey For The Specified Channel Deployment
 	deploymentKey := types.NamespacedName{
-		Namespace: channel.Namespace,
+		Namespace: constants.KnativeEventingNamespace,
 		Name:      deploymentName,
 	}
 
@@ -205,7 +205,7 @@ func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *kafka
 func (r *Reconciler) newK8sChannelDeployment(channel *kafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Get The Channel Deployment Name
-	deploymentName := channelDeploymentName(channel)
+	deploymentName := util.ChannelDeploymentName(channel)
 
 	// Replicas Int Value For De-Referencing
 	replicas := int32(1)
@@ -221,7 +221,7 @@ func (r *Reconciler) newK8sChannelDeployment(channel *kafkav1alpha1.KafkaChannel
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
-			Namespace: channel.Namespace,
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"app": deploymentName, // Matches K8S Service Selector Key/Value Below
 			},
@@ -367,13 +367,4 @@ func (r *Reconciler) channelDeploymentEnvVars(channel *kafkav1alpha1.KafkaChanne
 
 	// Return The Channel Deployment EnvVars Array
 	return envVars, nil
-}
-
-//
-// Utilities
-//
-
-// Get The Channel's K8S Deployment Name
-func channelDeploymentName(channel *kafkav1alpha1.KafkaChannel) string {
-	return fmt.Sprintf("%s-channel", channel.Name)
 }
