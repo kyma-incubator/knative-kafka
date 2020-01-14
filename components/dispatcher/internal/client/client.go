@@ -71,7 +71,7 @@ func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event) error {
 		rctx, _, err := rcec.cloudEventClient.Send(context.Background(), event)
 		if err != nil {
 			transportContext := cloudevents.HTTPTransportContextFrom(rctx)
-			return logResponse(logger, transportContext.StatusCode)
+			return logResponse(logger, transportContext.StatusCode, err)
 		}
 		return nil
 	})
@@ -84,12 +84,14 @@ func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event) error {
 	return nil
 }
 
-func logResponse(logger *zap.Logger, statusCode int) error {
+func logResponse(logger *zap.Logger, statusCode int, err error) error {
 	if statusCode >= 500 || statusCode == 404 || statusCode == 429 {
 		logger.Warn("Failed to send message to subscriber service, retrying", zap.Int("statusCode", statusCode))
 		return errors.New("Server returned a bad response code: " + strconv.Itoa(statusCode))
 	} else if statusCode > 299 {
 		logger.Warn("Failed to send message to subscriber service, not retrying", zap.Int("statusCode", statusCode))
+	} else if statusCode == 0 {
+		return errors.Wrap(err, "Validation Error")
 	} else {
 		logger.Debug("Successfully sent message to subscriber service", zap.Int("statusCode", statusCode))
 	}

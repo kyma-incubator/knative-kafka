@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
@@ -168,6 +169,63 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 			}
 			if got := hc.calculateNumberOfRetries(); got != tt.want {
 				t.Errorf("httpClient.calculateNumberOfRetries() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_logResponse(t *testing.T) {
+	type args struct {
+		logger     *zap.Logger
+		statusCode int
+		err        error
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "200",
+			args: args{
+				logger:     log.TestLogger(),
+				statusCode: 200,
+				err:        nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "429",
+			args: args{
+				logger:     log.TestLogger(),
+				statusCode: 429,
+				err:        nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "503",
+			args: args{
+				logger:     log.TestLogger(),
+				statusCode: 503,
+				err:        nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Validation Error",
+			args: args{
+				logger:     log.TestLogger(),
+				statusCode: 0,
+				err:        errors.New("Validation Error"),
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := logResponse(tt.args.logger, tt.args.statusCode, tt.args.err); (err != nil) != tt.wantErr {
+				t.Errorf("logResponse() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

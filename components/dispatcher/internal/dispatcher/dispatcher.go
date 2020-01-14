@@ -8,6 +8,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"go.uber.org/zap"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -17,8 +18,6 @@ type DispatcherConfig struct {
 	Brokers                     string
 	Topic                       string
 	Offset                      string
-	Concurrency                 int64
-	GroupId                     string
 	PollTimeoutMillis           int
 	OffsetCommitCount           int64
 	OffsetCommitDuration        time.Duration
@@ -26,14 +25,26 @@ type DispatcherConfig struct {
 	Username                    string
 	Password                    string
 	Client                      client.RetriableClient
+	ChannelName                 string
+}
+
+type Subscription struct {
+	URI     string
+	GroupId string
+}
+
+type DispatcherClient struct {
+	Client   client.RetriableClient
+	Consumer kafkaconsumer.ConsumerInterface
 }
 
 // Define a Dispatcher Struct to hold Dispatcher Config and dispatcher implementation details
 type Dispatcher struct {
 	DispatcherConfig
-	consumers        []kafkaconsumer.ConsumerInterface
-	offsetMessages   []map[int32]kafka.Offset
-	lastOffsetCommit []time.Time
+	consumers          map[Subscription]DispatcherClient
+	offsetMessages     []map[int32]kafka.Offset
+	lastOffsetCommit   []time.Time
+	consumerUpdateLock sync.Mutex
 }
 
 // Create A New Dispatcher Of Specified Configuration
@@ -43,9 +54,9 @@ func NewDispatcher(dispatcherConfig DispatcherConfig) *Dispatcher {
 	dispatcher := &Dispatcher{
 		DispatcherConfig: dispatcherConfig,
 
-		consumers:        make([]kafkaconsumer.ConsumerInterface, 0, dispatcherConfig.Concurrency),
-		offsetMessages:   make([]map[int32]kafka.Offset, dispatcherConfig.Concurrency, dispatcherConfig.Concurrency),
-		lastOffsetCommit: make([]time.Time, dispatcherConfig.Concurrency),
+		consumers:        make(map[Subscription]DispatcherClient),
+		offsetMessages:   make([]map[int32]kafka.Offset, 0),
+		lastOffsetCommit: make([]time.Time, 0),
 	}
 
 	// Return The Dispatcher
@@ -54,25 +65,25 @@ func NewDispatcher(dispatcherConfig DispatcherConfig) *Dispatcher {
 
 // Start The Kafka Consumers
 func (d *Dispatcher) StartConsumers() {
-
-	// Create The Configured Number Of Concurrent Consumers
-	for index := int64(0); index < d.Concurrency; index++ {
-
-		// Create & Start A Single Kafka Consumer For Configured GroupID
-		consumer, err := d.initConsumer(d.GroupId, index)
-		if err != nil {
-			log.Logger().Fatal("Failed To Start Consumer", zap.Error(err), zap.Int64("Index", index))
-		}
-
-		// Track The Consumer For Clean Shutdown
-		d.consumers = append(d.consumers, consumer)
-	}
+	//
+	//// Create The Configured Number Of Concurrent Consumers
+	//for index := int64(0); index < d.Concurrency; index++ {
+	//
+	//	// Create & Start A Single Kafka Consumer For Configured GroupID
+	//	consumer, err := d.initConsumer(d.GroupId)
+	//	if err != nil {
+	//		log.Logger().Fatal("Failed To Start Consumer", zap.Error(err), zap.Int64("Index", index))
+	//	}
+	//
+	//	// Track The Consumer For Clean Shutdown
+	//	d.consumers = append(d.consumers, consumer)
+	//}
 }
 
 // Close The Running Consumers Connections
 func (d *Dispatcher) StopConsumers() {
 	for _, consumer := range d.consumers {
-		err := consumer.Close()
+		err := consumer.Consumer.Close()
 		if err != nil {
 			log.Logger().Error("Failed To Close Consumer", zap.Error(err))
 		}
@@ -80,11 +91,11 @@ func (d *Dispatcher) StopConsumers() {
 }
 
 // Create And Start A Consumer
-func (d *Dispatcher) initConsumer(groupId string, index int64) (kafkaconsumer.ConsumerInterface, error) {
+func (d *Dispatcher) initConsumer(groupId string, uri string) (*DispatcherClient, error) {
 
 	// Create Consumer
-	log.Logger().Info("Creating Consumer", zap.String("GroupID", groupId), zap.Int64("Index", index))
-	consumer, err := kafkaconsumer.CreateConsumer(d.Brokers, d.GroupId, d.Offset, d.Username, d.Password)
+	log.Logger().Info("Creating Consumer", zap.String("GroupId", groupId), zap.String("topic", d.Topic), zap.String("URI", uri))
+	consumer, err := kafkaconsumer.CreateConsumer(d.Brokers, groupId, d.Offset, d.Username, d.Password)
 	if err != nil {
 		log.Logger().Error("Failed To Create New Consumer", zap.Error(err))
 		return nil, err
@@ -98,21 +109,23 @@ func (d *Dispatcher) initConsumer(groupId string, index int64) (kafkaconsumer.Co
 	}
 
 	// Start Consuming Messages From Topic (Async)
-	go d.handleKafkaMessages(consumer, index, groupId)
+	go d.handleKafkaMessages(consumer, groupId)
+
+	dispatcherClient := DispatcherClient{Consumer: consumer, Client: client.NewRetriableCloudEventClient(uri, true, 500, 5000)}
 
 	// Return The Consumer
-	return consumer, nil
+	return &dispatcherClient, nil
 }
 
 // Consumer Message Handler - Wait For Consumer Messages, Log Them & Commit The Offset
-func (d *Dispatcher) handleKafkaMessages(consumer kafkaconsumer.ConsumerInterface, index int64, groupId string) {
+func (d *Dispatcher) handleKafkaMessages(consumer kafkaconsumer.ConsumerInterface, groupId string) {
 
 	// Configure The Logger
-	logger := log.Logger().With(zap.String("GroupID", groupId), zap.Int64("Index", index))
+	logger := log.Logger().With(zap.String("GroupID", groupId))
 
 	// Initialize The Consumer's OffsetMessages Array With A Map For Each PartitionKey
-	d.offsetMessages[index] = make(map[int32]kafka.Offset)
-	d.lastOffsetCommit[index] = time.Now()
+	//d.offsetMessages[index] = make(map[int32]kafka.Offset)
+	//d.lastOffsetCommit[index] = time.Now()
 
 	// Infinite Message Processing Loop
 	for {
@@ -121,13 +134,13 @@ func (d *Dispatcher) handleKafkaMessages(consumer kafkaconsumer.ConsumerInterfac
 		event := consumer.Poll(d.PollTimeoutMillis)
 
 		if event == nil {
-			// Commit Offsets If The Amount Of Time Since Last Commit Is "OffsetCommitDuration" Or More
-			currentTimeDuration := time.Now().Sub(d.lastOffsetCommit[index])
-
-			if currentTimeDuration > d.OffsetCommitDurationMinimum && currentTimeDuration >= d.OffsetCommitDuration {
-
-				d.commitOffsets(logger, consumer, index)
-			}
+			//// Commit Offsets If The Amount Of Time Since Last Commit Is "OffsetCommitDuration" Or More
+			//currentTimeDuration := time.Now().Sub(d.lastOffsetCommit[index])
+			//
+			//if currentTimeDuration > d.OffsetCommitDurationMinimum && currentTimeDuration >= d.OffsetCommitDuration {
+			//
+			//	d.commitOffsets(logger, consumer, index)
+			//}
 
 			// Continue Polling For Events
 			continue
@@ -147,14 +160,14 @@ func (d *Dispatcher) handleKafkaMessages(consumer kafkaconsumer.ConsumerInterfac
 			_ = d.Client.Dispatch(convertToCloudEvent(e)) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
 
 			// Update Stored Offsets Based On The Processed Message
-			d.updateOffsets(logger, consumer, e)
-			currentTimeDuration := time.Now().Sub(d.lastOffsetCommit[index])
-
-			// If "OffsetCommitCount" Number Of Messages Have Been Processed Since Last Offset Commit, Then Do One Now
-			if currentTimeDuration > d.OffsetCommitDurationMinimum &&
-				int64(e.TopicPartition.Offset-d.offsetMessages[index][e.TopicPartition.Partition]) >= d.OffsetCommitCount {
-				d.commitOffsets(logger, consumer, index)
-			}
+			//d.updateOffsets(logger, consumer, e)
+			//currentTimeDuration := time.Now().Sub(d.lastOffsetCommit[index])
+			//
+			//// If "OffsetCommitCount" Number Of Messages Have Been Processed Since Last Offset Commit, Then Do One Now
+			//if currentTimeDuration > d.OffsetCommitDurationMinimum &&
+			//	int64(e.TopicPartition.Offset-d.offsetMessages[index][e.TopicPartition.Partition]) >= d.OffsetCommitCount {
+			//	d.commitOffsets(logger, consumer, index)
+			//}
 
 		case kafka.Error:
 			logger.Warn("Received Kafka Error", zap.Error(e))
@@ -189,6 +202,51 @@ func (d *Dispatcher) commitOffsets(logger *zap.Logger, consumer kafkaconsumer.Co
 		}
 	}
 	d.lastOffsetCommit[index] = time.Now()
+}
+
+func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) {
+
+	d.consumerUpdateLock.Lock()
+	defer d.consumerUpdateLock.Unlock()
+
+	for _, subscription := range subscriptions {
+
+		// Create Consumer If Doesn't Already Exist
+		if _, ok := d.consumers[subscription]; !ok {
+			consumer, _ := d.initConsumer(subscription.GroupId, subscription.URI)
+			d.consumers[subscription] = *consumer
+		}
+	}
+
+	// Need To Handle Subscription Deletions
+
+	//keys := make([]Subscription, len(d.consumers))
+	//for key, _ := range d.consumers {
+	//	keys = append(keys, key)
+	//}
+
+	//deleted := difference(keys, subscriptions)
+	//for _, deletedSub := range deleted {
+	//	// stop consumer
+	//	d.consumers[deletedSub].Close()
+	//	delete(d.consumers, deletedSub)
+	//}
+
+}
+
+// difference returns the elements in `a` that aren't in `b`.
+func difference(a, b []Subscription) []Subscription {
+	mb := make(map[Subscription]struct{}, len(b))
+	for _, x := range b {
+		mb[x] = struct{}{}
+	}
+	var diff []Subscription
+	for _, x := range a {
+		if _, found := mb[x]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
 }
 
 // Convert Kafka Message To A Cloud Event, Eventually We Should Consider Writing A Cloud Event SDK Codec For This

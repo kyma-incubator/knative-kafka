@@ -1,16 +1,27 @@
 package main
 
 import (
+	"flag"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/util"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
+	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/controller"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
 	"go.uber.org/zap"
+	"k8s.io/client-go/rest"
+	"knative.dev/pkg/signals"
+
+	//	"knative.dev/eventing-contrib/kafka/channel/pkg/reconciler"
+
+	kncontroller "knative.dev/pkg/controller"
+
+	"k8s.io/client-go/tools/clientcmd"
+	//	"knative.dev/pkg/signals"
 
 	"os"
 	"strconv"
-	"syscall"
 	"time"
 )
 
@@ -23,8 +34,10 @@ const (
 
 // Variables
 var (
-	logger *zap.Logger
-	d      *dispatcher.Dispatcher
+	logger     *zap.Logger
+	d          *dispatcher.Dispatcher
+	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	kubeconfig = flag.String("kubeconfig", "/Users/i849245/.kube/config", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
 // The Main Function (Go Command)
@@ -43,6 +56,7 @@ func main() {
 	kafkaGroupId := os.Getenv("KAFKA_GROUP_ID")
 	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
 	kafkaTopic := os.Getenv("KAFKA_TOPIC")
+	channelName := os.Getenv("CHANNEL_NAME")
 	kafkaConsumers, _ := strconv.ParseInt(os.Getenv("KAFKA_CONSUMERS"), 10, 64)
 	kafkaUsername := os.Getenv("KAFKA_USERNAME")
 	kafkaPassword := os.Getenv("KAFKA_PASSWORD")
@@ -98,8 +112,6 @@ func main() {
 		Brokers:                     kafkaBrokers,
 		Topic:                       kafkaTopic,
 		Offset:                      DefaultKafkaConsumerOffset,
-		Concurrency:                 kafkaConsumers,
-		GroupId:                     kafkaGroupId,
 		PollTimeoutMillis:           DefaultKafkaConsumerPollTimeoutMillis,
 		OffsetCommitCount:           kafkaOffsetCommitMessageCount,
 		OffsetCommitDuration:        time.Duration(kafkaOffsetCommitDurationMillis) * time.Millisecond,
@@ -107,15 +119,50 @@ func main() {
 		Username:                    kafkaUsername,
 		Password:                    kafkaPassword,
 		Client:                      c,
+		ChannelName:                 channelName,
 	}
 	d = dispatcher.NewDispatcher(dispatcherConfig)
 
-	// Create Consumers & Connect To Kafka
-	d.StartConsumers()
+	cfg, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
+	if err != nil {
+		logger.Error("Error building kubeconfig", zap.Error(err))
+		return
+	}
 
-	// Block Waiting Termination Signal - Either SIGINT (manual ctrl-c) Or SIGTERM (sent by K8S)
-	util.WaitForSignal(logger, syscall.SIGINT, syscall.SIGTERM)
+	stopCh := signals.SetupSignalHandler()
 
+	const numControllers = 1
+	cfg.QPS = numControllers * rest.DefaultQPS
+	cfg.Burst = numControllers * rest.DefaultBurst
+
+	kafkaClientSet := versioned.NewForConfigOrDie(cfg)
+	kafkaInformerFactory := externalversions.NewSharedInformerFactory(kafkaClientSet, kncontroller.DefaultResyncPeriod)
+
+	// Messaging
+	kafkaChannelInformer := kafkaInformerFactory.Knativekafka().V1alpha1().KafkaChannels()
+
+	// Build all of our controllers, with the clients constructed above.
+	// Add new controllers to this array.
+	// You also need to modify numControllers above to match this.
+	controllers := [...]*kncontroller.Impl{
+		controller.NewController(
+			logger,
+			d,
+			kafkaChannelInformer,
+		),
+	}
+
+	// Start all of the informers and wait for them to sync.
+	logger.Info("Starting informers.")
+	if err := kncontroller.StartInformers(stopCh, kafkaChannelInformer.Informer()); err != nil {
+		logger.Error("Failed to start informers", zap.Error(err))
+		return
+	}
+
+	logger.Info("Starting controllers.")
+	kncontroller.StartAll(stopCh, controllers[:]...)
+
+	<-stopCh
 	// Close Consumer Connections
 	d.StopConsumers()
 
