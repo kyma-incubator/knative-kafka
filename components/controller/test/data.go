@@ -43,7 +43,7 @@ const (
 	DefaultTenantId          = "TestDefaultTenantId"
 	ChannelName              = "TestChannelName"
 	NamespaceName            = "TestNamespaceName"
-	ChannelDeploymentName    = ChannelName + "-channel"
+	ChannelDeploymentName    = ChannelName + "-" + NamespaceName + "-channel"
 	SubscriberName           = "test-subscriber-name"
 	DispatcherDeploymentName = SubscriberName + "-dispatcher"
 	DefaultTopicName         = DefaultTenantId + "." + NamespaceName + "." + ChannelName
@@ -218,7 +218,7 @@ func GetNewChannelWithProvisionedStatus(includeFinalizer bool, includeSpecProper
 		if ready {
 			channel.Status.SetAddress(&apis.URL{
 				Scheme: "http",
-				Host:   eventingNames.ServiceHostName(channel.Name+"-channel", channel.Namespace),
+				Host:   eventingNames.ServiceHostName(channel.Name+"-"+channel.Namespace+"-channel", constants.KnativeEventingNamespace),
 			})
 			channel.Status.MarkChannelServiceTrue()
 		} else {
@@ -237,7 +237,7 @@ func GetNewK8sChannelService() *corev1.Service {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ChannelDeploymentName,
-			Namespace: NamespaceName,
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"channel": ChannelName,
 				"k8s-app": "knative-kafka-channels",
@@ -276,7 +276,7 @@ func GetNewK8SChannelDeployment(topicName string) *appsv1.Deployment {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ChannelDeploymentName,
-			Namespace: NamespaceName,
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"app": ChannelDeploymentName,
 			},
@@ -472,7 +472,7 @@ func GetNewK8SDispatcherService() *corev1.Service {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      DispatcherDeploymentName,
-			Namespace: NamespaceName,
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"channel":    ChannelName,
 				"dispatcher": "true",
@@ -508,7 +508,7 @@ func GetNewK8SDispatcherDeployment(topicName string) *appsv1.Deployment {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      DispatcherDeploymentName,
-			Namespace: NamespaceName,
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"app":        DispatcherDeploymentName,
 				"dispatcher": "true",

@@ -152,7 +152,7 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.Kafka
 			r.logger.Error("Failed To Remove Finalizers On Channel", zap.Error(updateFinalizersErr))
 			return updateFinalizersErr
 		} else {
-			r.logger.Info("Successfully Removed Finalizer To Channel", zap.String("Channel.Namespace", channel.Namespace), zap.String("Channel.Name", channel.Name))
+			r.logger.Info("Successfully Removed Finalizer From Channel", zap.String("Channel.Namespace", channel.Namespace), zap.String("Channel.Name", channel.Name))
 			return nil
 		}
 	}

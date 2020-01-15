@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	istiov1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -58,13 +57,6 @@ func Add(mgr manager.Manager, adminClient kafkaadmin.AdminClientInterface) error
 	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{OwnerType: &kafkav1alpha1.KafkaChannel{}, IsController: true})
 	if err != nil {
 		logger.Error("Failed To Configure Controller Watch Of K8S Services Owned By Channels", zap.Error(err))
-		return err
-	}
-
-	// Configure Controller To Watch Istio VirtualServices That Are Owned By Channels
-	err = c.Watch(&source.Kind{Type: &istiov1alpha3.VirtualService{}}, &handler.EnqueueRequestForOwner{OwnerType: &kafkav1alpha1.KafkaChannel{}, IsController: true})
-	if err != nil {
-		logger.Error("Failed To Configure Controller Watch Of Istio VirtualServices Owned By Channels", zap.Error(err))
 		return err
 	}
 

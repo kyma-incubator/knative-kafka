@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: knative-kafka-channel-controller
-  namespace: {{ .Values.global.namespace.install }}
+  namespace: {{ .Values.global.namespace.eventing }}
   labels:
     helm.sh/chart: {{ .Chart.Name }}
 
@@ -15,6 +15,30 @@ metadata:
   labels:
     helm.sh/chart: {{ .Chart.Name }}
 rules:
+- apiGroups:
+  - "" # Core API Group
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+  - patch
+  - update
 - apiGroups:
   - messaging.knative.dev
   resources:
@@ -36,10 +60,8 @@ rules:
   - get
   - list
   - watch
-  - create
   - update
   - patch
-  - delete
 - apiGroups:
   - knativekafka.kyma-project.io
   resources:
@@ -48,26 +70,44 @@ rules:
   - get
   - update
   - patch
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: knative-kafka-channel-controller
+  namespace: {{ .Values.global.namespace.eventing }}
+  labels:
+    helm.sh/chart: {{ .Chart.Name }}
+subjects:
+- kind: ServiceAccount
+  name: knative-kafka-channel-controller
+  namespace: {{ .Values.global.namespace.eventing }}
+roleRef:
+  kind: ClusterRole
+  name: knative-kafka-channel-controller
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: knative-kafka-channel-controller
+  namespace: {{ .Values.global.namespace.eventing }}
+  labels:
+    helm.sh/chart: {{ .Chart.Name }}
+rules:
 - apiGroups:
   - "" # Core API Group
   resources:
   - configmaps
+  - secrets
   verbs:
   - get
   - list
   - watch
-- apiGroups:
-  - "" # Core API Group
-  resources:
-  - services
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - delete
-  - patch
-  - update
 - apiGroups:
   - "" # Core API Group.
   resources:
@@ -76,79 +116,23 @@ rules:
   - create
   - patch
   - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - delete
-  - patch
-  - update
-# TODO - REMOVE THIS ONCE UNUSED WATCHERS ARE CLEANED UP!
-- apiGroups:
-  - networking.istio.io
-  resources:
-  - virtualservices
-  verbs:
-  - get
-  - list
-  - watch
-  - create
 
 ---
 
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: knative-kafka-channel-controller
-  namespace: {{ .Values.global.namespace.install }}
-  labels:
-    helm.sh/chart: {{ .Chart.Name }}
-subjects:
-- kind: ServiceAccount
-  name: knative-kafka-channel-controller
-  namespace: {{ .Values.global.namespace.install }}
-roleRef:
-  kind: ClusterRole
-  name: knative-kafka-channel-controller
-  apiGroup: rbac.authorization.k8s.io
-
----
-
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: knative-kafka-secret-read
-  labels:
-    helm.sh/chart: {{ .Chart.Name }}
-rules:
-- apiGroups:
-  - "" # Core API Group
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: knative-kafka-channel-controller
-  namespace: {{ .Values.global.namespace.runtime }}
+  namespace: {{ .Values.global.namespace.eventing }}
+  labels:
+    helm.sh/chart: {{ .Chart.Name }}
 subjects:
 - kind: ServiceAccount
   name: knative-kafka-channel-controller
-  namespace: {{ .Values.global.namespace.install }}
+  namespace: {{ .Values.global.namespace.eventing }}
 roleRef:
-  kind: ClusterRole
-  name: knative-kafka-secret-read
+  kind: Role
+  name: knative-kafka-channel-controller
   apiGroup: rbac.authorization.k8s.io
 
 ---

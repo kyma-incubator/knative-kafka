@@ -23,7 +23,7 @@ The provider chosen effects how authentication as well as admin calls (topic cre
 
 ## Credentials
 
-### Install & Label Kafka Credentials In Runtime Namespace 
+### Install & Label Kafka Credentials In Knative-Eventing Namespace 
 Knative-Kafka depends on secrets labeled with `knativekafka.kyma-project.io/kafka-secret="true"`, multiple
 secrets are supported for the use of the `azure` integration, representing different EventHubs namespaces.  Some fields
 may not apply to your particular Kafka implementation and can be left blank.  If you specify values in your overrides
@@ -32,10 +32,6 @@ YAML file during the helm chart installation, the initial broker secret will be 
 An example overrides.yaml file for Azure Event Hubs:
 
 ```
-global:
-  namespace:
-    runtime: my-runtime-namespace
-
 environment:
   kafkaProvider: azure
   defaultTenantId: my-tenant-id
@@ -54,10 +50,6 @@ kafka:
 An example overrides.yaml file for Confluent Cloud:
 
 ```
-global:
-  namespace:
-    runtime: my-runtime-namespace
-
 environment:
   kafkaProvider: confluent
   defaultTenantId: my-tenant-id
@@ -75,11 +67,11 @@ kafka:
 Alternatively, or if you need to specify the broker secret(s) after installation, they may also be created manually:
    
 ```
-# Example A Creating A Kafka Secret
-kubectl create secret -n <RUNTIME NAMESPACE> generic kafka-credentials \
+# Example A Creating A Kafka Secret In Knative-Eventing
+kubectl create secret -n knative-eventing generic kafka-credentials \
     --from-literal=brokers=<BROKER CONNECTION STRING> \
     --from-literal=username=<USERNAME> \ 
     --from-literal=password=<PASSWORD> \
     --from-literal=namespace=<AZURE EVENTHUBS NAMESPACE> \
-kubectl label secret -n <RUNTIME NAMESPACE> kafka-credentials knativekafka.kyma-project.io/kafka-secret="true"
+kubectl label secret -n knative-eventing kafka-credentials knativekafka.kyma-project.io/kafka-secret="true"
 ```

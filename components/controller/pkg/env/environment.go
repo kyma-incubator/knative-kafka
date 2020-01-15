@@ -17,9 +17,6 @@ const (
 	ChannelImageEnvVarKey    = "CHANNEL_IMAGE"
 	DispatcherImageEnvVarKey = "DISPATCHER_IMAGE"
 
-	// The Event Runtime Namespace
-	RuntimeNamespaceEnvVarKey = "RUNTIME_NAMESPACE"
-
 	// Kafka Authorization
 	KafkaBrokerEnvVarKey   = "KAFKA_BROKERS"
 	KafkaUsernameEnvVarKey = "KAFKA_USERNAME"
@@ -88,9 +85,6 @@ type Environment struct {
 	ChannelImage    string // Required
 	DispatcherImage string // Required
 
-	// Eventing Runtime Namespace
-	RuntimeNamespace string // Required
-
 	// Kafka Configuration / Authorization
 	KafkaProvider                   string // Required
 	KafkaOffsetCommitMessageCount   int64  // Optional
@@ -150,12 +144,6 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 
 	// Get The Required DispatcherImage Config Value
 	environment.DispatcherImage, err = getRequiredConfigValue(logger, DispatcherImageEnvVarKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get The Required RuntimeNamespace Config Value
-	environment.RuntimeNamespace, err = getRequiredConfigValue(logger, RuntimeNamespaceEnvVarKey)
 	if err != nil {
 		return nil, err
 	}
