@@ -3,12 +3,20 @@ package controller
 import (
 	"context"
 	"fmt"
+	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions/knativekafka/v1alpha1"
 	listers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/logging"
 
 	"knative.dev/pkg/controller"
@@ -17,6 +25,10 @@ import (
 const (
 	// ReconcilerName is the name of the reconciler.
 	ReconcilerName = "KafkaChannels"
+
+	// corev1.Events emitted
+	channelReconciled      = "ChannelReconciled"
+	channelReconcileFailed = "ChannelReconcileFailed"
 )
 
 // Reconciler reconciles Kafka Channels.
@@ -26,13 +38,14 @@ type Reconciler struct {
 	kafkachannelInformer cache.SharedIndexInformer
 	kafkachannelLister   listers.KafkaChannelLister
 	impl                 *controller.Impl
+	Recorder             record.EventRecorder
 }
 
 var _ controller.Reconciler = Reconciler{}
 
 // NewController initializes the controller and is called by the generated code.
 // Registers event handlers to enqueue events.
-func NewController(logger *zap.Logger, dispatcher *dispatcher.Dispatcher, kafkachannelInformer v1alpha1.KafkaChannelInformer) *controller.Impl {
+func NewController(logger *zap.Logger, dispatcher *dispatcher.Dispatcher, kafkachannelInformer v1alpha1.KafkaChannelInformer, kubeClient *kubernetes.Clientset, stopChannel <-chan struct{}) *controller.Impl {
 
 	r := &Reconciler{
 		Logger:               logger,
@@ -46,6 +59,22 @@ func NewController(logger *zap.Logger, dispatcher *dispatcher.Dispatcher, kafkac
 
 	// Watch for kafka channels.
 	kafkachannelInformer.Informer().AddEventHandler(controller.HandleAll(r.impl.Enqueue))
+
+	logger.Debug("Creating event broadcaster")
+	eventBroadcaster := record.NewBroadcaster()
+	watches := []watch.Interface{
+		eventBroadcaster.StartLogging(logger.Sugar().Named("event-broadcaster").Infof),
+		eventBroadcaster.StartRecordingToSink(
+			&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")}),
+	}
+	r.Recorder = eventBroadcaster.NewRecorder(
+		scheme.Scheme, corev1.EventSource{Component: ReconcilerName})
+	go func() {
+		<-stopChannel
+		for _, w := range watches {
+			w.Stop()
+		}
+	}()
 
 	return r.impl
 }
@@ -73,20 +102,74 @@ func (r Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	// Only Reconcile KafkaChannel Associated With This Dispatcher
-	if r.dispatcher.ChannelName != name {
+	if r.dispatcher.ChannelName != key {
 		return nil
 	}
 
-	if original.Spec.Subscribable != nil {
-		subscriptions := make([]dispatcher.Subscription, 0)
-		for _, subscriber := range original.Spec.Subscribable.Subscribers {
-			groupId := fmt.Sprintf("kafka.%s", subscriber.UID)
-			subscriptions = append(subscriptions, dispatcher.Subscription{URI: subscriber.SubscriberURI, GroupId: groupId})
-			r.Logger.Info("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.String("URI", subscriber.SubscriberURI))
-		}
+	if !original.Status.IsReady() {
+		return fmt.Errorf("Channel is not ready. Cannot configure and update subscriber status")
+	}
 
-		r.dispatcher.UpdateSubscriptions(subscriptions)
+	// Don't modify the informers copy
+	channel := original.DeepCopy()
+
+	reconcileError := r.reconcile(ctx, channel)
+	if reconcileError != nil {
+		r.Logger.Error("Error Reconciling KafkaChannel", zap.Error(reconcileError))
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, channelReconcileFailed, "KafkaChannel Reconciliation Failed: %v", reconcileError)
+	} else {
+		r.Logger.Debug("KafkaChannel Reconciled Successfully")
+		r.Recorder.Event(channel, corev1.EventTypeNormal, channelReconciled, "KafkaChannel Reconciled")
 	}
 
 	return nil
+}
+
+func (r Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) error {
+	if channel.Spec.Subscribable == nil {
+		return nil
+	}
+
+	subscriptions := make([]dispatcher.Subscription, 0)
+	for _, subscriber := range channel.Spec.Subscribable.Subscribers {
+		groupId := fmt.Sprintf("kafka.%s", subscriber.UID)
+		subscriptions = append(subscriptions, dispatcher.Subscription{URI: subscriber.SubscriberURI, GroupId: groupId})
+		r.Logger.Info("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.String("URI", subscriber.SubscriberURI))
+	}
+
+	failedSubscriptions, err := r.dispatcher.UpdateSubscriptions(subscriptions)
+	if err != nil {
+		r.Logger.Error("Error updating kafka consumers in dispatcher")
+		return err
+	}
+	channel.Status.SubscribableTypeStatus.SubscribableStatus = r.createSubscribableStatus(channel.Spec.Subscribable, failedSubscriptions)
+	if len(failedSubscriptions) > 0 {
+		r.Logger.Error("Some kafka subscriptions failed to subscribe")
+		return fmt.Errorf("Some kafka subscriptions failed to subscribe")
+	}
+	return nil
+}
+
+func (r *Reconciler) createSubscribableStatus(subscribable *eventingduck.Subscribable, failedSubscriptions map[dispatcher.Subscription]error) *eventingduck.SubscribableStatus {
+	if subscribable == nil {
+		return nil
+	}
+	subscriberStatus := make([]eventingduck.SubscriberStatus, 0)
+	for _, sub := range subscribable.Subscribers {
+		status := eventingduck.SubscriberStatus{
+			UID:                sub.UID,
+			ObservedGeneration: sub.Generation,
+			Ready:              corev1.ConditionTrue,
+		}
+		groupId := fmt.Sprintf("kafka.%s", sub.UID)
+		subscription := dispatcher.Subscription{URI: sub.SubscriberURI, GroupId: groupId}
+		if err, ok := failedSubscriptions[subscription]; ok {
+			status.Ready = corev1.ConditionFalse
+			status.Message = err.Error()
+		}
+		subscriberStatus = append(subscriberStatus, status)
+	}
+	return &eventingduck.SubscribableStatus{
+		Subscribers: subscriberStatus,
+	}
 }

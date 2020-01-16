@@ -10,6 +10,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/controller"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"knative.dev/pkg/signals"
 
@@ -104,7 +105,7 @@ func main() {
 	metricsServer.Start()
 
 	// Create HTTP Client With Retry Settings
-	c := client.NewRetriableCloudEventClient(subscriberUri, exponentialBackoff, initialRetryInterval, maxRetryTime)
+	c := client.NewRetriableCloudEventClient(exponentialBackoff, initialRetryInterval, maxRetryTime)
 
 	// Create The Dispatcher With Specified Configuration
 	dispatcherConfig := dispatcher.DispatcherConfig{
@@ -134,8 +135,8 @@ func main() {
 	const numControllers = 1
 	cfg.QPS = numControllers * rest.DefaultQPS
 	cfg.Burst = numControllers * rest.DefaultBurst
-
 	kafkaClientSet := versioned.NewForConfigOrDie(cfg)
+	kubeClient := kubernetes.NewForConfigOrDie(cfg)
 	kafkaInformerFactory := externalversions.NewSharedInformerFactory(kafkaClientSet, kncontroller.DefaultResyncPeriod)
 
 	// Messaging
@@ -149,6 +150,8 @@ func main() {
 			logger,
 			d,
 			kafkaChannelInformer,
+			kubeClient,
+			stopCh,
 		),
 	}
 

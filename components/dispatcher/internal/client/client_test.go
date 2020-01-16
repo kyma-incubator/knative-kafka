@@ -104,7 +104,7 @@ func TestHttpClient_Dispatch(t *testing.T) {
 			testCloudEvent.SetDataContentType("application/json")
 			testCloudEvent.SetData(map[string]string{"test": "value"})
 
-			error := client.Dispatch(testCloudEvent)
+			error := client.Dispatch(testCloudEvent, server.URL)
 
 			if tc.expectedSuccess && error != nil {
 				t.Error("Message failed to dispatch:", error)
@@ -132,7 +132,7 @@ func setup(t *testing.T) (*retriableCloudEventClient, *httptest.Server, *http.Se
 	// test server
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
-	client := NewRetriableCloudEventClient(server.URL, true, 1000, 10000)
+	client := NewRetriableCloudEventClient(true, 1000, 10000)
 
 	return &client, server, mux
 }
@@ -162,7 +162,6 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%d max retry, initial interval %d", tt.fields.maxRetryTime, tt.fields.initialRetryInterval), func(t *testing.T) {
 			hc := retriableCloudEventClient{
-				uri:                  tt.fields.uri,
 				exponentialBackoff:   tt.fields.exponentialBackoff,
 				initialRetryInterval: tt.fields.initialRetryInterval,
 				maxRetryTime:         tt.fields.maxRetryTime,
