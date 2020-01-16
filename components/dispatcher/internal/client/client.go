@@ -60,7 +60,7 @@ func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event) error {
 	// Configure The Logger
 	var logger *zap.Logger
 	if log.Logger().Core().Enabled(zap.DebugLevel) {
-		logger = log.Logger().With(zap.Any("Event", event), zap.String("uri", rcec.uri))
+		logger = log.Logger().With(zap.String("Event", event.String()), zap.String("uri", rcec.uri))
 	} else {
 		logger = log.Logger().With(zap.String("uri", rcec.uri))
 	}

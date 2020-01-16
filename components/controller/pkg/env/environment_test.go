@@ -14,15 +14,10 @@ import (
 const (
 	metricsPort                     = "9999"
 	kafkaProvider                   = "confluent"
-	kafkaBrokers                    = "TestKafkaBrokers"
 	channelImage                    = "TestChannelImage"
 	dispatcherImage                 = "TestDispatcherImage"
-	runtimeNamespace                = "TestRuntimeNamespace"
 	kafkaOffsetCommitMessageCount   = "500"
 	kafkaOffsetCommitDurationMillis = "2000"
-	kafkaSecret                     = "TestKafkaSecret"
-	kafkaUsername                   = "TestKafkaUsername"
-	kafkaPassword                   = "TestKafkaPassword"
 
 	defaultTenantId                        = "TestDefaultTenantId"
 	defaultNumPartitions                   = "7"
@@ -51,7 +46,6 @@ type TestCase struct {
 	kafkaProvider                          string
 	channelImage                           string
 	dispatcherImage                        string
-	runtimeNamespace                       string
 	kafkaOffsetCommitMessageCount          string
 	kafkaOffsetCommitDurationMillis        string
 	defaultTenantId                        string
@@ -112,11 +106,6 @@ func TestGetEnvironment(t *testing.T) {
 	testCase = getValidTestCase("Missing Required Config - DispatcherImage")
 	testCase.dispatcherImage = ""
 	testCase.expectedError = getMissingRequiredEnvironmentVariableError(DispatcherImageEnvVarKey)
-	testCases = append(testCases, testCase)
-
-	testCase = getValidTestCase("Missing Required Config - RuntimeNamespace")
-	testCase.runtimeNamespace = ""
-	testCase.expectedError = getMissingRequiredEnvironmentVariableError(RuntimeNamespaceEnvVarKey)
 	testCases = append(testCases, testCase)
 
 	testCase = getValidTestCase("Missing Optional Config - KafkaOffsetCommitMessageCount")
@@ -208,7 +197,6 @@ func TestGetEnvironment(t *testing.T) {
 		assert.Nil(t, os.Setenv(KafkaProviderEnvVarKey, testCase.kafkaProvider))
 		assert.Nil(t, os.Setenv(ChannelImageEnvVarKey, testCase.channelImage))
 		assert.Nil(t, os.Setenv(DispatcherImageEnvVarKey, testCase.dispatcherImage))
-		assert.Nil(t, os.Setenv(RuntimeNamespaceEnvVarKey, testCase.runtimeNamespace))
 		assert.Nil(t, os.Setenv(KafkaOffsetCommitMessageCountEnvVarKey, testCase.kafkaOffsetCommitMessageCount))
 		assert.Nil(t, os.Setenv(KafkaOffsetCommitDurationMillisEnvVarKey, testCase.kafkaOffsetCommitDurationMillis))
 		assert.Nil(t, os.Setenv(DefaultTenantIdEnvVarKey, testCase.defaultTenantId))
@@ -240,7 +228,6 @@ func TestGetEnvironment(t *testing.T) {
 			assert.Equal(t, testCase.metricsPort, strconv.Itoa(environment.MetricsPort))
 			assert.Equal(t, testCase.channelImage, environment.ChannelImage)
 			assert.Equal(t, testCase.dispatcherImage, environment.DispatcherImage)
-			assert.Equal(t, testCase.runtimeNamespace, environment.RuntimeNamespace)
 
 			if len(testCase.kafkaOffsetCommitMessageCount) > 0 {
 				assert.Equal(t, testCase.kafkaOffsetCommitMessageCount, strconv.FormatInt(environment.KafkaOffsetCommitMessageCount, 10))
@@ -304,7 +291,6 @@ func getValidTestCase(name string) TestCase {
 		kafkaProvider:                          kafkaProvider,
 		channelImage:                           channelImage,
 		dispatcherImage:                        dispatcherImage,
-		runtimeNamespace:                       runtimeNamespace,
 		kafkaOffsetCommitMessageCount:          kafkaOffsetCommitMessageCount,
 		kafkaOffsetCommitDurationMillis:        kafkaOffsetCommitDurationMillis,
 		defaultTenantId:                        defaultTenantId,

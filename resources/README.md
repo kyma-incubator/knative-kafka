@@ -23,18 +23,55 @@ The provider chosen effects how authentication as well as admin calls (topic cre
 
 ## Credentials
 
-### Install & Label Kafka Credentials In Runtime Namespace 
+### Install & Label Kafka Credentials In Knative-Eventing Namespace 
 Knative-Kafka depends on secrets labeled with `knativekafka.kyma-project.io/kafka-secret="true"`, multiple
 secrets are supported for the use of the `azure` integration, representing different EventHubs namespaces.  Some fields
-may not apply to your particular Kafka implementation and can be left blank.
+may not apply to your particular Kafka implementation and can be left blank.  If you specify values in your overrides
+YAML file during the helm chart installation, the initial broker secret will be created for you.
+
+An example overrides.yaml file for Azure Event Hubs:
 
 ```
-# Example A Creating A Kafka Secret
-kubectl create secret -n <RUNTIME NAMESPACE> generic kafka-credentials \
+environment:
+  kafkaProvider: azure
+  defaultTenantId: my-tenant-id
+  defaultNumPartitions: 1
+  defaultReplicationFactor: 3
+  defaultKafkaConsumers: 1
+
+kafka:
+  namespace: my-cluster-name-1
+  brokers: my-cluster-name-1.servicebus.windows.net:9093
+  password: Endpoint=sb://my-cluster-name-1.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX=
+  username: $ConnectionString
+  secretName: my-cluster-name-1
+```
+
+An example overrides.yaml file for Confluent Cloud:
+
+```
+environment:
+  kafkaProvider: confluent
+  defaultTenantId: my-tenant-id
+  defaultNumPartitions: 1
+  defaultReplicationFactor: 3
+  defaultKafkaConsumers: 1
+
+kafka:
+  brokers: SASL_SSL://my-cluster.eu-west-1.aws.confluent.cloud:9092
+  password: XVLEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  username: KIELSXXXXXXXXXXX
+  secretName: kafka-credentials
+```
+
+Alternatively, or if you need to specify the broker secret(s) after installation, they may also be created manually:
+   
+```
+# Example A Creating A Kafka Secret In Knative-Eventing
+kubectl create secret -n knative-eventing generic kafka-credentials \
     --from-literal=brokers=<BROKER CONNECTION STRING> \
     --from-literal=username=<USERNAME> \ 
-    --from-literal=password=<PASSWORD>`
+    --from-literal=password=<PASSWORD> \
     --from-literal=namespace=<AZURE EVENTHUBS NAMESPACE> \
-kubectl label secret -n <RUNTIME NAMESPACE> kafka-credentials knativekafka.kyma-project.io/kafka-secret="true"
+kubectl label secret -n knative-eventing kafka-credentials knativekafka.kyma-project.io/kafka-secret="true"
 ```
-

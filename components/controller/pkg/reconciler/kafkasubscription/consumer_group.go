@@ -106,7 +106,7 @@ func (r *Reconciler) setConsumerGroupOffsets(ctx context.Context, subscription *
 	logger := r.logger.With(zap.String("Topic", topicName), zap.String("Group", groupId))
 
 	// Get The Kafka Secret From K8S
-	kafkaSecret, kafkaSecretErr := r.getKafkaSecret(ctx, channel.Namespace, topicName)
+	kafkaSecret, kafkaSecretErr := r.getKafkaSecret(ctx, constants.KnativeEventingNamespace, topicName)
 	if kafkaSecretErr != nil {
 		logger.Error("Failed To Get Kafka Secret", zap.Error(kafkaSecretErr))
 		r.recorder.Eventf(subscription, corev1.EventTypeWarning, event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Get Kafka Secret For Channel: %v", kafkaSecretErr)

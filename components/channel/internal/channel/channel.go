@@ -8,6 +8,7 @@ import (
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"go.uber.org/zap"
+	"strconv"
 	"time"
 )
 
@@ -75,7 +76,7 @@ func (c *Channel) SendMessage(event cloudevents.Event) error {
 		return err
 	}
 
-	log.Logger().Debug("Sending Kafka Message", zap.Any("message", producerMessage.Value))
+	log.Logger().Debug("Sending Kafka Message", zap.Any("message", producerMessage.Value), zap.Any("headers", producerMessage.Headers))
 
 	// Create a channel that corresponds to only this message being sent. The Kafka Producer will deliver the
 	// report on this channel thus informing us that the message is persisted in kafka.
@@ -178,10 +179,16 @@ func (c *Channel) createProducerHeaders(context cloudevents.EventContext) []kafk
 		headers = append(headers, kafka.Header{Key: "ce_dataschema", Value: []byte(context.GetDataSchema())})
 	}
 
-	// Only Setting String Extensions
+	// Only Supports string, int, and float64 Extensions
 	for k, v := range context.GetExtensions() {
 		if vs, ok := v.(string); ok {
 			headers = append(headers, kafka.Header{Key: "ce_" + k, Value: []byte(vs)})
+		} else if vi, ok := v.(int); ok {
+			strInt := strconv.Itoa(vi)
+			headers = append(headers, kafka.Header{Key: "ce_" + k, Value: []byte(strInt)})
+		} else if vf, ok := v.(float64); ok {
+			strFloat := strconv.FormatFloat(vf, 'f', -1, 64)
+			headers = append(headers, kafka.Header{Key: "ce_" + k, Value: []byte(strFloat)})
 		}
 	}
 

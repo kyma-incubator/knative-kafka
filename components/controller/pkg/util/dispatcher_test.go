@@ -35,10 +35,10 @@ func TestDispatcherServiceName(t *testing.T) {
 	subscription := &messagingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
 
 	// Perform The Test
-	expectedDispatcherServiceName := subscriptionName + "-dispatcher"
+	actualDispatcherServiceName := DispatcherServiceName(subscription)
 
 	// Verify The Results
-	actualDispatcherServiceName := DispatcherServiceName(subscription)
+	expectedDispatcherServiceName := subscriptionName + "-dispatcher"
 	assert.Equal(t, expectedDispatcherServiceName, actualDispatcherServiceName)
 }
 
@@ -49,10 +49,10 @@ func TestDispatcherDeploymentName(t *testing.T) {
 	subscription := &messagingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
 
 	// Perform The Test
-	expectedDispatcherDeploymentName := subscriptionName + "-dispatcher"
+	actualDispatcherDeploymentName := DispatcherDeploymentName(subscription)
 
 	// Verify The Results
-	actualDispatcherDeploymentName := DispatcherDeploymentName(subscription)
+	expectedDispatcherDeploymentName := subscriptionName + "-dispatcher"
 	assert.Equal(t, expectedDispatcherDeploymentName, actualDispatcherDeploymentName)
 }
 

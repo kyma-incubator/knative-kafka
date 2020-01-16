@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: knative-kafka-channel-controller
-  namespace: {{ .Values.global.namespace.install }}
+  namespace: {{ .Values.global.namespace.eventing }}
   labels:
     helm.sh/chart: {{ .Chart.Name }}
     k8s-app: knative-kafka-channel-controller

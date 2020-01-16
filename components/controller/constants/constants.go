@@ -1,6 +1,9 @@
 package constants
 
 const (
+	// Knative Eventing Namespace
+	KnativeEventingNamespace = "knative-eventing"
+
 	// Knative Controller Naming
 	KafkaChannelControllerAgentName      = "kafka-channel-controller"
 	KafkaSubscriptionControllerAgentName = "kafka-subscription-controller"
@@ -11,7 +14,7 @@ const (
 	KnativeSubscriptionKind = "Subscription"
 
 	// HTTP Port
-	HttpPortName = "http"
+	HttpPortName   = "http"
 	HttpPortNumber = 80
 
 	// Kafka Secret Label

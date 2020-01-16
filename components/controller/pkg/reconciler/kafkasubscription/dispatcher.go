@@ -91,7 +91,7 @@ func (r *Reconciler) getK8sDispatcherService(ctx context.Context, subscription *
 
 	// Create A Namespace / Name ObjectKey For The Specified Subscription
 	serviceKey := types.NamespacedName{
-		Namespace: subscription.Namespace,
+		Namespace: constants.KnativeEventingNamespace,
 		Name:      util.DispatcherServiceName(subscription),
 	}
 
@@ -110,7 +110,7 @@ func (r *Reconciler) newK8sDispatcherService(subscription *messagingv1alpha1.Sub
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.DispatcherServiceName(subscription),
-			Namespace: subscription.Namespace,
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"channel":                     channel.Name,
 				DispatcherLabel:               "true",                        // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
@@ -171,7 +171,7 @@ func (r *Reconciler) getK8sDispatcherDeployment(ctx context.Context, subscriptio
 
 	// Create A Namespace / Name ObjectKey For The Specified Channel Subscriber Deployment
 	deploymentKey := types.NamespacedName{
-		Namespace: subscription.Namespace,
+		Namespace: constants.KnativeEventingNamespace,
 		Name:      deploymentName,
 	}
 
@@ -203,7 +203,7 @@ func (r *Reconciler) newK8sDispatcherDeployment(subscription *messagingv1alpha1.
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
-			Namespace: channel.Namespace,
+			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"app":           deploymentName, // Matches K8S Service Selector Key/Value Below
 				DispatcherLabel: "true",         // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
@@ -284,11 +284,11 @@ func (r *Reconciler) dispatcherDeploymentEnvVars(subscription *messagingv1alpha1
 	// Get The TopicName For Specified Channel
 	topicName := util.TopicName(channel, r.environment)
 
-	// Determine The Subscription's Subscriber URI (Temporary Fallback To Deprecated DNSName Until Kyma Updates To URI)
-	subscriberURIRef := subscription.Spec.Subscriber.URI
-	if subscriberURIRef == nil || len(subscriberURIRef.String()) <= 0 {
-		r.logger.Error("Knative Subscription With Invalid Subscriber Spec - URI Not Specified!")
-		return nil, fmt.Errorf("subscription contains invalid subscriber spec -  URI not specified")
+	// Get The Subscriber's URI From The Subscription
+	subscriberUri, err := getSubscriberURIRef(subscription)
+	if err != nil {
+		r.logger.Error("Invalid Knative Subscription - PhysicalSubscription / URI Not Specified!")
+		return nil, err
 	}
 
 	// Create The Dispatcher Deployment EnvVars
@@ -319,7 +319,7 @@ func (r *Reconciler) dispatcherDeploymentEnvVars(subscription *messagingv1alpha1
 		},
 		{
 			Name:  env.SubscriberUriEnvVarKey,
-			Value: subscriberURIRef.String(),
+			Value: subscriberUri,
 		},
 		{
 			Name:  env.ExponentialBackoffEnvVarKey,
@@ -382,4 +382,18 @@ func (r *Reconciler) dispatcherDeploymentEnvVars(subscription *messagingv1alpha1
 
 	// Return The Channel Deployment EnvVars Array
 	return envVars, nil
+}
+
+// Get The Specified Subscription's URI Reference Or An Error If Not Specified Correctly
+func getSubscriberURIRef(subscription *messagingv1alpha1.Subscription) (string, error) {
+	uri := subscription.Status.PhysicalSubscription.SubscriberURI
+	if uri == nil || len(uri.String()) <= 0 {
+		uri := subscription.Spec.Subscriber.URI
+		if uri == nil || len(uri.String()) <= 0 {
+			return "", fmt.Errorf("knative Subscription with invalid Subscriber Spec (neither PhysicalSubscription not URI was specified)")
+		} else {
+			return uri.String(), nil
+		}
+	}
+	return uri.String(), nil
 }
