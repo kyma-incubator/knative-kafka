@@ -25,15 +25,15 @@
 #   unused-packages = true
 
 
-# Align With Knative Eventing 0.8 (GKE Compatability)
-[[override]]
+# Align With Knative Eventing 0.10.2 (GKE Compatability)
+[[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.15.3"
 
-# Align With Knative Eventing 0.8 (GKE Compatability)
-[[override]]
+# Align With Knative Eventing 0.10.2 (GKE Compatability)
+[[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.15.3"
 
 [[constraint]]
   name = "github.com/confluentinc/confluent-kafka-go"
