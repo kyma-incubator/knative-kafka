@@ -24,6 +24,7 @@ const (
 	MetricsPortName = "metrics"
 
 	// Controller Config Test Data
+	ServiceAccount                         = "TestServiceAccount"
 	MetricsPort                            = 9876
 	KafkaSecret                            = "TestKafkaSecret"
 	KafkaOffsetCommitMessageCount          = 99
@@ -36,16 +37,16 @@ const (
 	DefaultEventRetryInitialIntervalMillis = 88888
 	DefaultEventRetryTimeMillisMax         = 11111111
 	DefaultExponentialBackoff              = true
-	DefaultKafkaConsumers                  = 4
+	DefaultDispatcherReplicas              = 1
 
 	// Channel Test Data
 	TenantId                 = "TestTenantId"
 	DefaultTenantId          = "TestDefaultTenantId"
 	ChannelName              = "TestChannelName"
 	NamespaceName            = "TestNamespaceName"
-	ChannelDeploymentName    = ChannelName + "-" + NamespaceName + "-channel"
+	ChannelDeploymentName    = "testchannelname-testnamespacename-channel"
 	SubscriberName           = "test-subscriber-name"
-	DispatcherDeploymentName = SubscriberName + "-dispatcher"
+	DispatcherDeploymentName = "testchannelname-testnamespacename-dispatcher"
 	DefaultTopicName         = DefaultTenantId + "." + NamespaceName + "." + ChannelName
 	TopicName                = TenantId + "." + NamespaceName + "." + ChannelName
 
@@ -88,27 +89,28 @@ var (
 // Set The Required Environment Variables
 func NewEnvironment() *env.Environment {
 	return &env.Environment{
-		MetricsPort:                            MetricsPort,
-		KafkaOffsetCommitMessageCount:          KafkaOffsetCommitMessageCount,
-		KafkaOffsetCommitDurationMillis:        KafkaOffsetCommitDurationMillis,
-		ChannelImage:                           ChannelImage,
-		DispatcherImage:                        DispatcherImage,
-		DefaultTenantId:                        DefaultTenantId,
-		DefaultNumPartitions:                   DefaultNumPartitions,
-		DefaultReplicationFactor:               DefaultReplicationFactor,
-		DefaultRetentionMillis:                 DefaultRetentionMillis,
-		DefaultEventRetryInitialIntervalMillis: DefaultEventRetryInitialIntervalMillis,
-		DefaultEventRetryTimeMillisMax:         DefaultEventRetryTimeMillisMax,
-		DefaultExponentialBackoff:              DefaultExponentialBackoff,
-		DefaultKafkaConsumers:                  DefaultKafkaConsumers,
-		DispatcherCpuLimit:                     resource.MustParse(DispatcherCpuLimit),
-		DispatcherCpuRequest:                   resource.MustParse(DispatcherCpuRequest),
-		DispatcherMemoryLimit:                  resource.MustParse(DispatcherMemoryLimit),
-		DispatcherMemoryRequest:                resource.MustParse(DispatcherMemoryRequest),
-		ChannelMemoryRequest:                   resource.MustParse(ChannelMemoryRequest),
-		ChannelMemoryLimit:                     resource.MustParse(ChannelMemoryLimit),
-		ChannelCpuRequest:                      resource.MustParse(ChannelCpuRequest),
-		ChannelCpuLimit:                        resource.MustParse(ChannelCpuLimit),
+		ServiceAccount:                       ServiceAccount,
+		MetricsPort:                          MetricsPort,
+		KafkaOffsetCommitMessageCount:        KafkaOffsetCommitMessageCount,
+		KafkaOffsetCommitDurationMillis:      KafkaOffsetCommitDurationMillis,
+		ChannelImage:                         ChannelImage,
+		DispatcherImage:                      DispatcherImage,
+		DefaultTenantId:                      DefaultTenantId,
+		DefaultNumPartitions:                 DefaultNumPartitions,
+		DefaultReplicationFactor:             DefaultReplicationFactor,
+		DefaultRetentionMillis:               DefaultRetentionMillis,
+		DispatcherRetryInitialIntervalMillis: DefaultEventRetryInitialIntervalMillis,
+		DispatcherRetryTimeMillisMax:         DefaultEventRetryTimeMillisMax,
+		DispatcherRetryExponentialBackoff:    DefaultExponentialBackoff,
+		DispatcherReplicas:                   DefaultDispatcherReplicas,
+		DispatcherCpuLimit:                   resource.MustParse(DispatcherCpuLimit),
+		DispatcherCpuRequest:                 resource.MustParse(DispatcherCpuRequest),
+		DispatcherMemoryLimit:                resource.MustParse(DispatcherMemoryLimit),
+		DispatcherMemoryRequest:              resource.MustParse(DispatcherMemoryRequest),
+		ChannelMemoryRequest:                 resource.MustParse(ChannelMemoryRequest),
+		ChannelMemoryLimit:                   resource.MustParse(ChannelMemoryLimit),
+		ChannelCpuRequest:                    resource.MustParse(ChannelCpuRequest),
+		ChannelCpuLimit:                      resource.MustParse(ChannelCpuLimit),
 	}
 }
 
@@ -218,7 +220,7 @@ func GetNewChannelWithProvisionedStatus(includeFinalizer bool, includeSpecProper
 		if ready {
 			channel.Status.SetAddress(&apis.URL{
 				Scheme: "http",
-				Host:   eventingNames.ServiceHostName(channel.Name+"-"+channel.Namespace+"-channel", constants.KnativeEventingNamespace),
+				Host:   eventingNames.ServiceHostName(ChannelDeploymentName, constants.KnativeEventingNamespace),
 			})
 			channel.Status.MarkChannelServiceTrue()
 		} else {
@@ -479,7 +481,7 @@ func GetNewK8SDispatcherService() *corev1.Service {
 				"k8s-app":    "knative-kafka-dispatchers",
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				GetNewSubscriptionOwnerRef(),
+				GetNewChannelOwnerRef(),
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -499,6 +501,7 @@ func GetNewK8SDispatcherService() *corev1.Service {
 
 // Utility Function For Creating A K8S Dispatcher Deployment For The Test Channel
 func GetNewK8SDispatcherDeployment(topicName string) *appsv1.Deployment {
+
 	replicas := int32(1)
 
 	return &appsv1.Deployment{
@@ -515,10 +518,7 @@ func GetNewK8SDispatcherDeployment(topicName string) *appsv1.Deployment {
 				"channel":    ChannelName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				GetNewSubscriptionOwnerRef(),
-			},
-			Annotations: map[string]string{
-				"knativekafka.kyma-project.io/EventStartTime": EventStartTime,
+				GetNewChannelOwnerRef(),
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -535,26 +535,23 @@ func GetNewK8SDispatcherDeployment(topicName string) *appsv1.Deployment {
 					},
 				},
 				Spec: corev1.PodSpec{
+					ServiceAccountName: ServiceAccount,
 					Containers: []corev1.Container{
 						{
 							Name:  DispatcherDeploymentName,
 							Image: DispatcherImage,
 							Env: []corev1.EnvVar{
 								{
-									Name:  "METRICS_PORT",
+									Name:  env.MetricsPortEnvVarKey,
 									Value: strconv.Itoa(MetricsPort),
 								},
 								{
-									Name:  "KAFKA_GROUP_ID",
-									Value: SubscriberName,
+									Name:  env.ChannelKeyEnvVarKey,
+									Value: fmt.Sprintf("%s/%s", NamespaceName, ChannelName),
 								},
 								{
-									Name:  "KAFKA_TOPIC",
+									Name:  env.KafkaTopicEnvVarKey,
 									Value: topicName,
-								},
-								{
-									Name:  "KAFKA_CONSUMERS",
-									Value: strconv.Itoa(DefaultKafkaConsumers),
 								},
 								{
 									Name:  env.KafkaOffsetCommitMessageCountEnvVarKey,
@@ -565,19 +562,15 @@ func GetNewK8SDispatcherDeployment(topicName string) *appsv1.Deployment {
 									Value: strconv.Itoa(KafkaOffsetCommitDurationMillis),
 								},
 								{
-									Name:  "SUBSCRIBER_URI",
-									Value: SubscriberURI,
-								},
-								{
-									Name:  "EXPONENTIAL_BACKOFF",
+									Name:  env.ExponentialBackoffEnvVarKey,
 									Value: strconv.FormatBool(DefaultExponentialBackoff),
 								},
 								{
-									Name:  "INITIAL_RETRY_INTERVAL",
+									Name:  env.InitialRetryIntervalEnvVarKey,
 									Value: strconv.Itoa(DefaultEventRetryInitialIntervalMillis),
 								},
 								{
-									Name:  "MAX_RETRY_TIME",
+									Name:  env.MaxRetryTimeEnvVarKey,
 									Value: strconv.Itoa(DefaultEventRetryTimeMillisMax),
 								},
 								{
@@ -661,20 +654,6 @@ func GetNewChannelOwnerRef() metav1.OwnerReference {
 		APIVersion:         "knativekafka.kyma-project.io/v1alpha1",
 		Kind:               constants.KafkaChannelKind,
 		Name:               ChannelName,
-		UID:                "",
-		BlockOwnerDeletion: &blockOwnerDeletion,
-		Controller:         &isController,
-	}
-}
-
-// Create A New OwnerReference Model For The Test Subscription
-func GetNewSubscriptionOwnerRef() metav1.OwnerReference {
-	blockOwnerDeletion := true
-	isController := true
-	return metav1.OwnerReference{
-		APIVersion:         "messaging.knative.dev/v1alpha1",
-		Kind:               "Subscription",
-		Name:               SubscriberName,
 		UID:                "",
 		BlockOwnerDeletion: &blockOwnerDeletion,
 		Controller:         &isController,

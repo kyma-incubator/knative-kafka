@@ -12,7 +12,7 @@ func TestNewChannelLogger(t *testing.T) {
 	performEventTypeStringTest(t, ChannelServiceReconciliationFailed, "ChannelK8sServiceReconciliationFailed")
 	performEventTypeStringTest(t, ChannelDeploymentReconciliationFailed, "ChannelDeploymentReconciliationFailed")
 	performEventTypeStringTest(t, KafkaTopicReconciliationFailed, "KafkaTopicReconciliationFailed")
-	performEventTypeStringTest(t, DispatcherK8sServiceReconciliationFailed, "DispatcherK8sServiceReconciliationFailed")
+	performEventTypeStringTest(t, DispatcherServiceReconciliationFailed, "DispatcherK8sServiceReconciliationFailed")
 	performEventTypeStringTest(t, DispatcherDeploymentReconciliationFailed, "DispatcherDeploymentReconciliationFailed")
 }
 

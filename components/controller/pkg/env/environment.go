@@ -12,10 +12,12 @@ import (
 // Package Constants
 const (
 	// Knative-Kafka Configuration
-	HttpPortEnvVarKey        = "HTTP_PORT"
-	MetricsPortEnvVarKey     = "METRICS_PORT"
-	ChannelImageEnvVarKey    = "CHANNEL_IMAGE"
-	DispatcherImageEnvVarKey = "DISPATCHER_IMAGE"
+	ServiceAccountEnvVarKey     = "SERVICE_ACCOUNT"
+	HttpPortEnvVarKey           = "HTTP_PORT"
+	MetricsPortEnvVarKey        = "METRICS_PORT"
+	ChannelImageEnvVarKey       = "CHANNEL_IMAGE"
+	DispatcherReplicasEnvVarKey = "DISPATCHER_REPLICAS"
+	DispatcherImageEnvVarKey    = "DISPATCHER_IMAGE"
 
 	// Kafka Authorization
 	KafkaBrokerEnvVarKey   = "KAFKA_BROKERS"
@@ -27,11 +29,10 @@ const (
 	KafkaOffsetCommitMessageCountEnvVarKey   = "KAFKA_OFFSET_COMMIT_MESSAGE_COUNT"
 	KafkaOffsetCommitDurationMillisEnvVarKey = "KAFKA_OFFSET_COMMIT_DURATION_MILLIS"
 	KafkaTopicEnvVarKey                      = "KAFKA_TOPIC"
-	KafkaGroupIdEnvVarKey                    = "KAFKA_GROUP_ID"
-	KafkaConsumersEnvVarKey                  = "KAFKA_CONSUMERS"
 	KafkaClientIdEnvVarKey                   = "CLIENT_ID"
 
 	// Dispatcher Configuration
+	ChannelKeyEnvVarKey           = "CHANNEL_KEY"
 	SubscriberUriEnvVarKey        = "SUBSCRIBER_URI"
 	ExponentialBackoffEnvVarKey   = "EXPONENTIAL_BACKOFF"
 	InitialRetryIntervalEnvVarKey = "INITIAL_RETRY_INTERVAL"
@@ -47,18 +48,17 @@ const (
 	DefaultReplicationFactorEnvVarKey = "DEFAULT_REPLICATION_FACTOR"
 	DefaultRetentionMillisEnvVarKey   = "DEFAULT_RETENTION_MILLIS"
 
-	// Default Values To Use If Not Available In Knative Subscription Annotations
-	DefaultEventRetryInitialIntervalMillisEnvVarKey = "DEFAULT_EVENT_RETRY_INITIAL_INTERVAL_MILLIS"
-	DefaultEventRetryTimeMillisMaxEnvVarKey         = "DEFAULT_EVENT_RETRY_TIME_MILLIS"
-	DefaultExponentialBackoffEnvVarKey              = "DEFAULT_EXPONENTIAL_BACKOFF"
-	DefaultKafkaConsumersEnvVarKey                  = "DEFAULT_KAFKA_CONSUMERS"
+	// Dispatcher Event Retry Values
+	DispatcherRetryInitialIntervalMillisEnvVarKey = "DISPATCHER_RETRY_INITIAL_INTERVAL_MILLIS"
+	DispatcherRetryTimeMillisMaxEnvVarKey         = "DISPATCHER_RETRY_TIME_MILLIS"
+	DispatcherRetryExponentialBackoffEnvVarKey    = "DISPATCHER_RETRY_EXPONENTIAL_BACKOFF"
 
 	// Default Values If Optional Environment Variable Defaults Not Specified
 	DefaultTenantId                        = "default-tenant"
 	DefaultRetentionMillis                 = "604800000" // 1 Week
 	DefaultEventRetryInitialIntervalMillis = "500"       // 0.5 seconds
 	DefaultEventRetryTimeMillisMax         = "300000"    // 5 minutes
-	DefaultExponentialBackoff              = "true"
+	DefaultExponentialBackoff              = "true"      // Enabled
 
 	// Kafka Provider Types
 	KafkaProviderValueLocal     = "local"
@@ -80,7 +80,9 @@ const (
 
 // Environment Structure
 type Environment struct {
+
 	// Knative-Kafka Configuration
+	ServiceAccount  string // Required
 	MetricsPort     int    // Required
 	ChannelImage    string // Required
 	DispatcherImage string // Required
@@ -96,13 +98,13 @@ type Environment struct {
 	DefaultReplicationFactor int    // Required
 	DefaultRetentionMillis   int64  // Optional
 
-	// Default Values To Use If Not Available In Knative Subscription Annotations
-	DefaultEventRetryInitialIntervalMillis int64 // Optional
-	DefaultEventRetryTimeMillisMax         int64 // Optional
-	DefaultExponentialBackoff              bool  // Optional
-	DefaultKafkaConsumers                  int   // Required
+	// Dispatcher Retry Settings
+	DispatcherRetryInitialIntervalMillis int64 // Optional
+	DispatcherRetryTimeMillisMax         int64 // Optional
+	DispatcherRetryExponentialBackoff    bool  // Optional
 
 	// Resource configuration
+	DispatcherReplicas      int               // Required
 	DispatcherMemoryRequest resource.Quantity // Required
 	DispatcherMemoryLimit   resource.Quantity // Required
 	DispatcherCpuRequest    resource.Quantity // Required
@@ -123,6 +125,12 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 
 	// The ControllerConfig Reference
 	environment := &Environment{}
+
+	// Get The Required K8S ServiceAccount Config Value
+	environment.ServiceAccount, err = getRequiredConfigValue(logger, ServiceAccountEnvVarKey)
+	if err != nil {
+		return nil, err
+	}
 
 	// Get The Required Metrics Port Config Value & Convert To Int
 	metricsPortString, err := getRequiredConfigValue(logger, MetricsPortEnvVarKey)
@@ -217,39 +225,39 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 		return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", defaultRetentionMillisString, DefaultRetentionMillisEnvVarKey)
 	}
 
-	// Get The Optional DefaultEventRetryInitialIntervalMillis Config Value & Convert To Int
-	defaultEventRetryInitialIntervalMillisString := getOptionalConfigValue(logger, DefaultEventRetryInitialIntervalMillisEnvVarKey, DefaultEventRetryInitialIntervalMillis)
-	environment.DefaultEventRetryInitialIntervalMillis, err = strconv.ParseInt(defaultEventRetryInitialIntervalMillisString, 10, 64)
+	// Get The Optional DispatcherRetryInitialIntervalMillis Config Value & Convert To Int
+	dispatcherRetryInitialIntervalMillisString := getOptionalConfigValue(logger, DispatcherRetryInitialIntervalMillisEnvVarKey, DefaultEventRetryInitialIntervalMillis)
+	environment.DispatcherRetryInitialIntervalMillis, err = strconv.ParseInt(dispatcherRetryInitialIntervalMillisString, 10, 64)
 	if err != nil {
-		logger.Error("Invalid DefaultEventRetryInitialIntervalMillis (Non Integer)", zap.String("Value", defaultEventRetryInitialIntervalMillisString), zap.Error(err))
-		return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", defaultEventRetryInitialIntervalMillisString, DefaultEventRetryInitialIntervalMillisEnvVarKey)
+		logger.Error("Invalid DispatcherRetryInitialIntervalMillis (Non Integer)", zap.String("Value", dispatcherRetryInitialIntervalMillisString), zap.Error(err))
+		return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", dispatcherRetryInitialIntervalMillisString, DispatcherRetryInitialIntervalMillisEnvVarKey)
 	}
 
-	// Get The Optional DefaultEventRetryTimeMillisMax Config Value & Convert To Int
-	defaultEventRetryTimeMillisMaxString := getOptionalConfigValue(logger, DefaultEventRetryTimeMillisMaxEnvVarKey, DefaultEventRetryTimeMillisMax)
-	environment.DefaultEventRetryTimeMillisMax, err = strconv.ParseInt(defaultEventRetryTimeMillisMaxString, 10, 64)
+	// Get The Optional DispatcherRetryTimeMillisMax Config Value & Convert To Int
+	dispatcherRetryTimeMillisMaxString := getOptionalConfigValue(logger, DispatcherRetryTimeMillisMaxEnvVarKey, DefaultEventRetryTimeMillisMax)
+	environment.DispatcherRetryTimeMillisMax, err = strconv.ParseInt(dispatcherRetryTimeMillisMaxString, 10, 64)
 	if err != nil {
-		logger.Error("Invalid DefaultEventRetryTimeMillisMax (Non Integer)", zap.String("Value", defaultEventRetryTimeMillisMaxString), zap.Error(err))
-		return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", defaultEventRetryTimeMillisMaxString, DefaultEventRetryTimeMillisMaxEnvVarKey)
+		logger.Error("Invalid DispatcherRetryTimeMillisMax (Non Integer)", zap.String("Value", dispatcherRetryTimeMillisMaxString), zap.Error(err))
+		return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", dispatcherRetryTimeMillisMaxString, DispatcherRetryTimeMillisMaxEnvVarKey)
 	}
 
-	// Get The Optional DefaultExponentialBackoff Config Value & Convert To Bool
-	defaultExponentialBackoffString := getOptionalConfigValue(logger, DefaultExponentialBackoffEnvVarKey, DefaultExponentialBackoff)
-	environment.DefaultExponentialBackoff, err = strconv.ParseBool(defaultExponentialBackoffString)
+	// Get The Optional DispatcherRetryExponentialBackoff Config Value & Convert To Bool
+	dispatcherRetryExponentialBackoffString := getOptionalConfigValue(logger, DispatcherRetryExponentialBackoffEnvVarKey, DefaultExponentialBackoff)
+	environment.DispatcherRetryExponentialBackoff, err = strconv.ParseBool(dispatcherRetryExponentialBackoffString)
 	if err != nil {
-		logger.Error("Invalid DefaultExponentialBackoff (Non Boolean)", zap.String("Value", defaultExponentialBackoffString), zap.Error(err))
-		return nil, fmt.Errorf("invalid (non-boolean) value '%s' for environment variable '%s'", defaultExponentialBackoffString, DefaultExponentialBackoffEnvVarKey)
+		logger.Error("Invalid DispatcherRetryExponentialBackoff (Non Boolean)", zap.String("Value", dispatcherRetryExponentialBackoffString), zap.Error(err))
+		return nil, fmt.Errorf("invalid (non-boolean) value '%s' for environment variable '%s'", dispatcherRetryExponentialBackoffString, DispatcherRetryExponentialBackoffEnvVarKey)
 	}
 
-	// Get The Required DefaultKafkaConsumers Config Value & Convert To Int
-	defaultKafkaConsumersString, err := getRequiredConfigValue(logger, DefaultKafkaConsumersEnvVarKey)
+	// Get The Required DispatcherReplicas Config Value & Convert To Int
+	dispatcherReplicasString, err := getRequiredConfigValue(logger, DispatcherReplicasEnvVarKey)
 	if err != nil {
 		return nil, err
 	} else {
-		environment.DefaultKafkaConsumers, err = strconv.Atoi(defaultKafkaConsumersString)
+		environment.DispatcherReplicas, err = strconv.Atoi(dispatcherReplicasString)
 		if err != nil {
-			logger.Error("Invalid DefaultKafkaConsumers (Non Integer)", zap.String("Value", defaultKafkaConsumersString), zap.Error(err))
-			return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", defaultKafkaConsumersString, DefaultKafkaConsumersEnvVarKey)
+			logger.Error("Invalid DispatcherReplicas (Non Integer)", zap.String("Value", dispatcherReplicasString), zap.Error(err))
+			return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", dispatcherReplicasString, DispatcherReplicasEnvVarKey)
 		}
 	}
 

@@ -125,24 +125,24 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 // Perform The Actual Channel Reconciliation (In Parallel)
 func (r *Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) error {
 
-	// NOTE - The sequential order of reconciliation must be "Topic" then "Channel"
-	//        in order for the EventHub Cache to know the dynamically determined
-	//        EventHub Namespace / Kafka Secret selected for the topic.
+	// NOTE - The sequential order of reconciliation must be "Topic" then "Channel / Dispatcher" in order for the
+	//        EventHub Cache to know the dynamically determined EventHub Namespace / Kafka Secret selected for the topic.
 
-	// Reconcile The Channels Kafka Topic
+	// Reconcile The KafkaChannel's Kafka Topic
 	err := r.reconcileTopic(ctx, channel)
 	if err != nil {
 		return fmt.Errorf("reconciliation failed")
 	}
 
-	// Reconcile The Channels Channel Deployment/Service
-	err = r.reconcileChannel(ctx, channel)
-	if err != nil {
+	// Reconcile The KafkaChannel's Channel & Dispatcher Deployment/Service
+	channelError := r.reconcileChannel(ctx, channel)
+	dispatcherError := r.reconcileDispatcher(ctx, channel)
+	if channelError != nil || dispatcherError != nil {
 		return fmt.Errorf("reconciliation failed")
 	}
 
 	// If The Channel Is Being Deleted Then Remove The Finalizer So That The Channel CR Can Be Deleted
-	// (Relying On K8S Garbage Collection To Delete Channel Deployment, Service, VirtualService Deployment Based On Channel OwnerReference)
+	// (Relying On K8S Garbage Collection To Delete Channel Deployment, Service Based On Channel OwnerReference)
 	if channel.DeletionTimestamp != nil {
 		r.logger.Info("Channel Deleted - Removing Finalizer", zap.Time("DeletionTimestamp", channel.DeletionTimestamp.Time))
 		util.RemoveFinalizerFromChannel(channel, constants.KafkaChannelControllerAgentName)
