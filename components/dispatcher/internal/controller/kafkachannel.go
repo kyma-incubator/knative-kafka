@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions/knativekafka/v1alpha1"
 	listers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
@@ -17,9 +18,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	"knative.dev/pkg/logging"
-
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
+	"reflect"
 )
 
 const (
@@ -27,11 +28,12 @@ const (
 	ReconcilerName = "KafkaChannels"
 
 	// corev1.Events emitted
-	channelReconciled      = "ChannelReconciled"
-	channelReconcileFailed = "ChannelReconcileFailed"
+	channelReconciled         = "ChannelReconciled"
+	channelReconcileFailed    = "ChannelReconcileFailed"
+	channelUpdateStatusFailed = "ChannelUpdateStatusFailed"
 )
 
-// Reconciler reconciles Kafka Channels.
+// Reconciler reconciles KafkaChannels.
 type Reconciler struct {
 	dispatcher           *dispatcher.Dispatcher
 	Logger               *zap.Logger
@@ -39,19 +41,21 @@ type Reconciler struct {
 	kafkachannelLister   listers.KafkaChannelLister
 	impl                 *controller.Impl
 	Recorder             record.EventRecorder
+	KafkaClientSet       versioned.Interface
 }
 
 var _ controller.Reconciler = Reconciler{}
 
 // NewController initializes the controller and is called by the generated code.
 // Registers event handlers to enqueue events.
-func NewController(logger *zap.Logger, dispatcher *dispatcher.Dispatcher, kafkachannelInformer v1alpha1.KafkaChannelInformer, kubeClient *kubernetes.Clientset, stopChannel <-chan struct{}) *controller.Impl {
+func NewController(logger *zap.Logger, dispatcher *dispatcher.Dispatcher, kafkachannelInformer v1alpha1.KafkaChannelInformer, kubeClient kubernetes.Interface, kafkaClientSet versioned.Interface, stopChannel <-chan struct{}) *controller.Impl {
 
 	r := &Reconciler{
 		Logger:               logger,
 		dispatcher:           dispatcher,
 		kafkachannelInformer: kafkachannelInformer.Informer(),
 		kafkachannelLister:   kafkachannelInformer.Lister(),
+		KafkaClientSet:       kafkaClientSet,
 	}
 	r.impl = controller.NewImpl(r, r.Logger.Sugar(), ReconcilerName)
 
@@ -59,7 +63,6 @@ func NewController(logger *zap.Logger, dispatcher *dispatcher.Dispatcher, kafkac
 
 	// Watch for kafka channels.
 	kafkachannelInformer.Informer().AddEventHandler(controller.HandleAll(r.impl.Enqueue))
-
 	logger.Debug("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	watches := []watch.Interface{
@@ -102,7 +105,7 @@ func (r Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	// Only Reconcile KafkaChannel Associated With This Dispatcher
-	if r.dispatcher.ChannelName != key {
+	if r.dispatcher.ChannelKey != key {
 		return nil
 	}
 
@@ -120,6 +123,12 @@ func (r Reconciler) Reconcile(ctx context.Context, key string) error {
 	} else {
 		r.Logger.Debug("KafkaChannel Reconciled Successfully")
 		r.Recorder.Event(channel, corev1.EventTypeNormal, channelReconciled, "KafkaChannel Reconciled")
+	}
+
+	if _, updateStatusErr := r.updateStatus(ctx, channel); updateStatusErr != nil {
+		r.Logger.Error("Failed to update KafkaChannel status", zap.Error(updateStatusErr))
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, channelUpdateStatusFailed, "Failed to update KafkaChannel's status: %v", updateStatusErr)
+		return updateStatusErr
 	}
 
 	return nil
@@ -150,6 +159,7 @@ func (r Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaC
 	return nil
 }
 
+// Create The SubscribableStatus Block Based On The Updated Subscriptions
 func (r *Reconciler) createSubscribableStatus(subscribable *eventingduck.Subscribable, failedSubscriptions map[dispatcher.Subscription]error) *eventingduck.SubscribableStatus {
 	if subscribable == nil {
 		return nil
@@ -172,4 +182,21 @@ func (r *Reconciler) createSubscribableStatus(subscribable *eventingduck.Subscri
 	return &eventingduck.SubscribableStatus{
 		Subscribers: subscriberStatus,
 	}
+}
+
+func (r *Reconciler) updateStatus(ctx context.Context, desired *kafkav1alpha1.KafkaChannel) (*kafkav1alpha1.KafkaChannel, error) {
+	kc, err := r.kafkachannelLister.KafkaChannels(desired.Namespace).Get(desired.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	if reflect.DeepEqual(kc.Status, desired.Status) {
+		return kc, nil
+	}
+
+	// Don't modify the informers copy.
+	existing := kc.DeepCopy()
+	existing.Status = desired.Status
+	new, err := r.KafkaClientSet.KnativekafkaV1alpha1().KafkaChannels(desired.Namespace).UpdateStatus(existing)
+	return new, err
 }

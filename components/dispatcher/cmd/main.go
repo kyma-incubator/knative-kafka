@@ -38,7 +38,7 @@ var (
 	logger     *zap.Logger
 	d          *dispatcher.Dispatcher
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-	kubeconfig = flag.String("kubeconfig", "/Users/i849245/.kube/config", "Path to a kubeconfig. Only required if out-of-cluster.")
+	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
 // The Main Function (Go Command)
@@ -49,16 +49,13 @@ func main() {
 
 	// Load Environment Variables
 	metricsPort := os.Getenv("METRICS_PORT")
-	subscriberUri := os.Getenv("SUBSCRIBER_URI")
 	rawExpBackoff, expBackoffPresent := os.LookupEnv("EXPONENTIAL_BACKOFF")
 	exponentialBackoff, _ := strconv.ParseBool(rawExpBackoff)
 	maxRetryTime, _ := strconv.ParseInt(os.Getenv("MAX_RETRY_TIME"), 10, 64)
 	initialRetryInterval, _ := strconv.ParseInt(os.Getenv("INITIAL_RETRY_INTERVAL"), 10, 64)
-	kafkaGroupId := os.Getenv("KAFKA_GROUP_ID")
 	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
 	kafkaTopic := os.Getenv("KAFKA_TOPIC")
-	channelName := os.Getenv("CHANNEL_NAME")
-	kafkaConsumers, _ := strconv.ParseInt(os.Getenv("KAFKA_CONSUMERS"), 10, 64)
+	channelKey := os.Getenv("CHANNEL_KEY")
 	kafkaUsername := os.Getenv("KAFKA_USERNAME")
 	kafkaPassword := os.Getenv("KAFKA_PASSWORD")
 	kafkaPasswordLog := ""
@@ -72,29 +69,25 @@ func main() {
 	// Log Environment Variables
 	logger.Info("Environment Variables",
 		zap.String("METRICS_PORT", metricsPort),
-		zap.String("SUBSCRIBER_URI", subscriberUri),
 		zap.Bool("EXPONENTIAL_BACKOFF", exponentialBackoff),
 		zap.Int64("INITIAL_RETRY_INTERVAL", initialRetryInterval),
 		zap.Int64("MAX_RETRY_TIME", maxRetryTime),
-		zap.String("KAFKA_GROUP_ID", kafkaGroupId),
 		zap.String("KAFKA_BROKERS", kafkaBrokers),
 		zap.String("KAFKA_TOPIC", kafkaTopic),
-		zap.Int64("KAFKA_CONSUMERS", kafkaConsumers),
 		zap.Int64("KAFKA_OFFSET_COMMIT_MESSAGE_COUNT", kafkaOffsetCommitMessageCount),
 		zap.Int64("KAFKA_OFFSET_COMMIT_DURATION_MILLIS", kafkaOffsetCommitDurationMillis),
 		zap.String("KAFKA_USERNAME", kafkaUsername),
-		zap.String("KAFKA_PASSWORD", kafkaPasswordLog))
+		zap.String("KAFKA_PASSWORD", kafkaPasswordLog),
+		zap.String("CHANNEL_KEY", channelKey))
 
 	// Validate Required Environment Variables
 	if len(metricsPort) == 0 ||
-		len(subscriberUri) == 0 ||
 		maxRetryTime <= 0 ||
 		initialRetryInterval <= 0 ||
 		!expBackoffPresent ||
-		len(kafkaGroupId) == 0 ||
 		len(kafkaBrokers) == 0 ||
 		len(kafkaTopic) == 0 ||
-		kafkaConsumers <= 0 ||
+		len(channelKey) == 0 ||
 		kafkaOffsetCommitMessageCount <= 0 ||
 		kafkaOffsetCommitDurationMillis <= 0 {
 		logger.Fatal("Invalid / Missing Environment Variables - Terminating")
@@ -109,7 +102,6 @@ func main() {
 
 	// Create The Dispatcher With Specified Configuration
 	dispatcherConfig := dispatcher.DispatcherConfig{
-		SubscriberUri:               subscriberUri,
 		Brokers:                     kafkaBrokers,
 		Topic:                       kafkaTopic,
 		Offset:                      DefaultKafkaConsumerOffset,
@@ -120,7 +112,7 @@ func main() {
 		Username:                    kafkaUsername,
 		Password:                    kafkaPassword,
 		Client:                      c,
-		ChannelName:                 channelName,
+		ChannelKey:                  channelKey,
 	}
 	d = dispatcher.NewDispatcher(dispatcherConfig)
 
@@ -139,23 +131,22 @@ func main() {
 	kubeClient := kubernetes.NewForConfigOrDie(cfg)
 	kafkaInformerFactory := externalversions.NewSharedInformerFactory(kafkaClientSet, kncontroller.DefaultResyncPeriod)
 
-	// Messaging
+	// Create KafkaChannel Informer
 	kafkaChannelInformer := kafkaInformerFactory.Knativekafka().V1alpha1().KafkaChannels()
 
-	// Build all of our controllers, with the clients constructed above.
-	// Add new controllers to this array.
-	// You also need to modify numControllers above to match this.
+	// Construct Array Of Controllers, In Our Case Just the One
 	controllers := [...]*kncontroller.Impl{
 		controller.NewController(
 			logger,
 			d,
 			kafkaChannelInformer,
 			kubeClient,
+			kafkaClientSet,
 			stopCh,
 		),
 	}
 
-	// Start all of the informers and wait for them to sync.
+	// Start The Informers
 	logger.Info("Starting informers.")
 	if err := kncontroller.StartInformers(stopCh, kafkaChannelInformer.Informer()); err != nil {
 		logger.Error("Failed to start informers", zap.Error(err))

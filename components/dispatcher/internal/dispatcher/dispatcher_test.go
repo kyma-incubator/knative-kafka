@@ -34,7 +34,7 @@ const (
 	testOffsetCommitDurationMin = 50 * time.Millisecond // Small Durations For Testing!
 	testUsername                = "TestUsername"
 	testPassword                = "TestPassword"
-	testChannelName             = "TestChannel"
+	testChannelKey              = "TestChannel"
 )
 
 // Test Data (Non-Constants)
@@ -91,7 +91,7 @@ func TestDispatcher(t *testing.T) {
 		Username:                    testUsername,
 		Password:                    testPassword,
 		Client:                      cloudEventClient,
-		ChannelName:                 testChannelName,
+		ChannelKey:                  testChannelKey,
 	}
 	testDispatcher := NewDispatcher(dispatcherConfig)
 
@@ -105,7 +105,7 @@ func TestDispatcher(t *testing.T) {
 		testOffsetCommitDuration,
 		testUsername,
 		testPassword,
-		testChannelName)
+		testChannelKey)
 
 	// Start 1 Consumer
 	testDispatcher.UpdateSubscriptions([]Subscription{
@@ -243,7 +243,7 @@ func verifyDispatcher(t *testing.T,
 	assert.Equal(t, expectedOffsetCommitDuration, dispatcher.OffsetCommitDuration)
 	assert.Equal(t, expectedUsername, dispatcher.Username)
 	assert.Equal(t, expectedPassword, dispatcher.Password)
-	assert.Equal(t, expectedChannelName, dispatcher.ChannelName)
+	assert.Equal(t, expectedChannelName, dispatcher.ChannelKey)
 }
 
 // Verify The Appropriate Consumers Were Created

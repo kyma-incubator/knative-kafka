@@ -296,7 +296,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e4e83f4833dd49b5263bd4df032c9de26cda9547531380fc205d4c704a6b2df1"
+  digest = "1:7548ab573a8114d31e943656fac84f39924272306c8f6f25bef9a2ec231b4aab"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -304,11 +304,12 @@
     "components/common/pkg/kafka/util",
     "components/common/pkg/log",
     "components/common/pkg/prometheus",
-    "components/common/pkg/util",
     "components/controller/pkg/apis/knativekafka/v1alpha1",
     "components/controller/pkg/client/clientset/versioned",
+    "components/controller/pkg/client/clientset/versioned/fake",
     "components/controller/pkg/client/clientset/versioned/scheme",
     "components/controller/pkg/client/clientset/versioned/typed/knativekafka/v1alpha1",
+    "components/controller/pkg/client/clientset/versioned/typed/knativekafka/v1alpha1/fake",
     "components/controller/pkg/client/informers/externalversions",
     "components/controller/pkg/client/informers/externalversions/internalinterfaces",
     "components/controller/pkg/client/informers/externalversions/knativekafka",
@@ -419,14 +420,6 @@
   version = "v0.0.8"
 
 [[projects]]
-  digest = "1:32db15a47b5be06a5d40e863ab0ebed107741845fd2d8676121f788284d26923"
-  name = "github.com/robfig/cron"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "ccba498c397bb90a9c84945bbb0f7af2d72b6309"
-  version = "v3.0.1"
-
-[[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
   name = "github.com/rogpeppe/go-internal"
   packages = [
@@ -520,7 +513,7 @@
   revision = "2cfd321de3ee5d5f8a5fda2521d1703478334d98"
 
 [[projects]]
-  digest = "1:260048b6193e304ee294452a9e3410c474e3ce187248c7e2e4a2631207386f74"
+  digest = "1:69137ca8c666339ba6d3faf4a6f93ae7fb5f6f2c3ae003055a99154486309911"
   name = "go.uber.org/zap"
   packages = [
     ".",
@@ -528,7 +521,9 @@
     "internal/bufferpool",
     "internal/color",
     "internal/exit",
+    "internal/ztest",
     "zapcore",
+    "zaptest",
   ]
   pruneopts = "UT"
   revision = "33e58d4d0120aa28d4df84cd244838c490846c9d"
@@ -875,22 +870,6 @@
   version = "kubernetes-1.15.3"
 
 [[projects]]
-  digest = "1:f0b431fe72d7510dfe7f3f177317391621ddb500843f5661dab7520d22735a66"
-  name = "k8s.io/apiextensions-apiserver"
-  packages = [
-    "pkg/apis/apiextensions",
-    "pkg/apis/apiextensions/v1",
-    "pkg/apis/apiextensions/v1beta1",
-    "pkg/client/clientset/clientset",
-    "pkg/client/clientset/clientset/scheme",
-    "pkg/client/clientset/clientset/typed/apiextensions/v1",
-    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
-  ]
-  pruneopts = "UT"
-  revision = "ea07e0496fdfc3befebe481bd6f850febc41cdae"
-  version = "v0.17.0"
-
-[[projects]]
   digest = "1:848174da3c026f09e27bc81279df1c0660a2274098624ee70c9c2c32459fec61"
   name = "k8s.io/apimachinery"
   packages = [
@@ -945,10 +924,11 @@
   version = "kubernetes-1.15.3"
 
 [[projects]]
-  digest = "1:9114af97f0377643cd9bbe0ac73ada8a790d7ffb252b0ca3f2344d87e628e747"
+  digest = "1:dd6cb7b975984a4413e2bc3af1e9458dd75a43e5f0ce9354b1daa1fb7b83b5f2"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
+    "discovery/fake",
     "dynamic",
     "informers",
     "informers/admissionregistration",
@@ -1002,43 +982,80 @@
     "informers/storage/v1alpha1",
     "informers/storage/v1beta1",
     "kubernetes",
+    "kubernetes/fake",
     "kubernetes/scheme",
     "kubernetes/typed/admissionregistration/v1beta1",
+    "kubernetes/typed/admissionregistration/v1beta1/fake",
     "kubernetes/typed/apps/v1",
+    "kubernetes/typed/apps/v1/fake",
     "kubernetes/typed/apps/v1beta1",
+    "kubernetes/typed/apps/v1beta1/fake",
     "kubernetes/typed/apps/v1beta2",
+    "kubernetes/typed/apps/v1beta2/fake",
     "kubernetes/typed/auditregistration/v1alpha1",
+    "kubernetes/typed/auditregistration/v1alpha1/fake",
     "kubernetes/typed/authentication/v1",
+    "kubernetes/typed/authentication/v1/fake",
     "kubernetes/typed/authentication/v1beta1",
+    "kubernetes/typed/authentication/v1beta1/fake",
     "kubernetes/typed/authorization/v1",
+    "kubernetes/typed/authorization/v1/fake",
     "kubernetes/typed/authorization/v1beta1",
+    "kubernetes/typed/authorization/v1beta1/fake",
     "kubernetes/typed/autoscaling/v1",
+    "kubernetes/typed/autoscaling/v1/fake",
     "kubernetes/typed/autoscaling/v2beta1",
+    "kubernetes/typed/autoscaling/v2beta1/fake",
     "kubernetes/typed/autoscaling/v2beta2",
+    "kubernetes/typed/autoscaling/v2beta2/fake",
     "kubernetes/typed/batch/v1",
+    "kubernetes/typed/batch/v1/fake",
     "kubernetes/typed/batch/v1beta1",
+    "kubernetes/typed/batch/v1beta1/fake",
     "kubernetes/typed/batch/v2alpha1",
+    "kubernetes/typed/batch/v2alpha1/fake",
     "kubernetes/typed/certificates/v1beta1",
+    "kubernetes/typed/certificates/v1beta1/fake",
     "kubernetes/typed/coordination/v1",
+    "kubernetes/typed/coordination/v1/fake",
     "kubernetes/typed/coordination/v1beta1",
+    "kubernetes/typed/coordination/v1beta1/fake",
     "kubernetes/typed/core/v1",
+    "kubernetes/typed/core/v1/fake",
     "kubernetes/typed/events/v1beta1",
+    "kubernetes/typed/events/v1beta1/fake",
     "kubernetes/typed/extensions/v1beta1",
+    "kubernetes/typed/extensions/v1beta1/fake",
     "kubernetes/typed/networking/v1",
+    "kubernetes/typed/networking/v1/fake",
     "kubernetes/typed/networking/v1beta1",
+    "kubernetes/typed/networking/v1beta1/fake",
     "kubernetes/typed/node/v1alpha1",
+    "kubernetes/typed/node/v1alpha1/fake",
     "kubernetes/typed/node/v1beta1",
+    "kubernetes/typed/node/v1beta1/fake",
     "kubernetes/typed/policy/v1beta1",
+    "kubernetes/typed/policy/v1beta1/fake",
     "kubernetes/typed/rbac/v1",
+    "kubernetes/typed/rbac/v1/fake",
     "kubernetes/typed/rbac/v1alpha1",
+    "kubernetes/typed/rbac/v1alpha1/fake",
     "kubernetes/typed/rbac/v1beta1",
+    "kubernetes/typed/rbac/v1beta1/fake",
     "kubernetes/typed/scheduling/v1",
+    "kubernetes/typed/scheduling/v1/fake",
     "kubernetes/typed/scheduling/v1alpha1",
+    "kubernetes/typed/scheduling/v1alpha1/fake",
     "kubernetes/typed/scheduling/v1beta1",
+    "kubernetes/typed/scheduling/v1beta1/fake",
     "kubernetes/typed/settings/v1alpha1",
+    "kubernetes/typed/settings/v1alpha1/fake",
     "kubernetes/typed/storage/v1",
+    "kubernetes/typed/storage/v1/fake",
     "kubernetes/typed/storage/v1alpha1",
+    "kubernetes/typed/storage/v1alpha1/fake",
     "kubernetes/typed/storage/v1beta1",
+    "kubernetes/typed/storage/v1beta1/fake",
     "listers/admissionregistration/v1beta1",
     "listers/apps/v1",
     "listers/apps/v1beta1",
@@ -1078,6 +1095,7 @@
     "plugin/pkg/client/auth/exec",
     "rest",
     "rest/watch",
+    "testing",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -1120,12 +1138,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bb09c1841fd8100fe09b784fa13563ebffd9921d18012e72c8727ce9d4ea0144"
+  digest = "1:2d3f59daa4b479ff4e100a2e1d8fea6780040fdadc177869531fe4cc29407f55"
   name = "k8s.io/utils"
   packages = [
     "buffer",
     "integer",
-    "pointer",
     "trace",
   ]
   pruneopts = "UT"
@@ -1133,25 +1150,9 @@
 
 [[projects]]
   branch = "release-0.10"
-  digest = "1:038427600e19586cd8c26f74116274f9098da29b85687c7bd57c15a43bb608b2"
+  digest = "1:cb5d20b80476f2089b9580e299937cf0c2b8aa34b2cb48a097291debc7d2446d"
   name = "knative.dev/eventing"
-  packages = [
-    "pkg/apis/duck",
-    "pkg/apis/duck/v1alpha1",
-    "pkg/apis/eventing",
-    "pkg/apis/eventing/v1alpha1",
-    "pkg/apis/messaging",
-    "pkg/apis/messaging/v1alpha1",
-    "pkg/apis/sources",
-    "pkg/apis/sources/v1alpha1",
-    "pkg/client/clientset/versioned",
-    "pkg/client/clientset/versioned/scheme",
-    "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
-    "pkg/client/clientset/versioned/typed/messaging/v1alpha1",
-    "pkg/client/clientset/versioned/typed/sources/v1alpha1",
-    "pkg/client/injection/client",
-    "pkg/reconciler",
-  ]
+  packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "UT"
   revision = "468eab4f340deedd55bdbb2bee697cdeaa873912"
 
@@ -1173,7 +1174,7 @@
 
 [[projects]]
   branch = "release-0.10"
-  digest = "1:450834dcfff54bcd32906f5c48a8c9176c725eddf5243f0eeb98bd3242bb653d"
+  digest = "1:0ac3e1c780a99719e4541e29c11f99a16120814c69bd9f72f6a4605d6d1806fd"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1183,20 +1184,22 @@
     "apis/duck/v1beta1",
     "apis/v1alpha1",
     "changeset",
-    "client/injection/kube/client",
     "configmap",
     "controller",
     "injection",
-    "injection/clients/dynamicclient",
     "kmeta",
     "kmp",
     "logging",
     "logging/logkey",
+    "logging/testing",
     "metrics",
     "metrics/metricskey",
     "ptr",
+    "reconciler/testing",
     "signals",
     "system",
+    "system/testing",
+    "tracker",
     "webhook",
   ]
   pruneopts = "UT"
@@ -1226,23 +1229,41 @@
   analyzer-version = 1
   input-imports = [
     "github.com/cloudevents/sdk-go",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/context",
     "github.com/confluentinc/confluent-kafka-go/kafka",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",
-    "github.com/kyma-incubator/knative-kafka/components/common/pkg/util",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/fake",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions/knativekafka/v1alpha1",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1",
     "github.com/pkg/errors",
     "github.com/slok/goresilience/retry",
     "github.com/stretchr/testify/assert",
     "go.uber.org/zap",
+    "k8s.io/api/apps/v1",
+    "k8s.io/api/core/v1",
+    "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/apis/meta/v1",
+    "k8s.io/apimachinery/pkg/runtime",
+    "k8s.io/apimachinery/pkg/watch",
+    "k8s.io/client-go/kubernetes",
+    "k8s.io/client-go/kubernetes/fake",
+    "k8s.io/client-go/kubernetes/scheme",
+    "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/rest",
+    "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
+    "k8s.io/client-go/tools/record",
     "knative.dev/eventing-contrib/kafka/channel/pkg/reconciler",
-    "knative.dev/eventing/pkg/reconciler",
-    "knative.dev/pkg/configmap",
+    "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/pkg/controller",
+    "knative.dev/pkg/kmeta",
     "knative.dev/pkg/logging",
+    "knative.dev/pkg/reconciler/testing",
     "knative.dev/pkg/signals",
   ]
   solver-name = "gps-cdcl"

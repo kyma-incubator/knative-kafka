@@ -14,7 +14,6 @@ import (
 
 // Define A Dispatcher Config Struct To Hold Configuration
 type DispatcherConfig struct {
-	SubscriberUri               string
 	Brokers                     string
 	Topic                       string
 	Offset                      string
@@ -25,7 +24,7 @@ type DispatcherConfig struct {
 	Username                    string
 	Password                    string
 	Client                      client.RetriableClient
-	ChannelName                 string
+	ChannelKey                  string
 }
 
 type Subscription struct {
