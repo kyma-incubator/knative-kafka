@@ -77,7 +77,7 @@ func main() {
 	// default port being used, 8080.
 	knCloudEventClient, err := kncloudevents.NewDefaultClient()
 	if err != nil {
-		logger.Error("failed to create knative cloud event create client", zap.Error(err))
+		logger.Error("failed to create knative cloud event client", zap.Error(err))
 		return
 	}
 
