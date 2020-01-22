@@ -16,12 +16,12 @@ const (
 	// HTTP Port
 	HttpPortName = "http"
 	// IMPORTANT: HttpServicePort is the inbound port of the service resource. It must be 80 because the
-	// Channel resource's status.address.url doesn't currently have a port set. Therefore, any client
-	// using just the url will send to port 80 by default.
+	// Channel resource's url doesn't currently have a port set. Therefore, any client using just the url
+	// will send to port 80 by default.
 	HttpServicePortNumber = 80
-	// IMPORTANT: HttpPortNumber must be 8080 due to dependency issues in the channel.
-	// This variable is necessary in order to reconcile the channel resources (service,
-	// deployment, etc) correctly.
+	// IMPORTANT: HttpContainerPortNumber must be 8080 due to dependency issues in the channel. This
+	// variable is necessary in order to reconcile the channel resources (service, deployment, etc)
+	// correctly.
 	// Refer to: https://github.com/kyma-incubator/knative-kafka/blob/master/components/channel/cmd/main.go
 	HttpContainerPortNumber = 8080
 
