@@ -12,15 +12,9 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"knative.dev/pkg/signals"
-
-	//	"knative.dev/eventing-contrib/kafka/channel/pkg/reconciler"
-
-	kncontroller "knative.dev/pkg/controller"
-
 	"k8s.io/client-go/tools/clientcmd"
-	//	"knative.dev/pkg/signals"
-
+	kncontroller "knative.dev/pkg/controller"
+	"knative.dev/pkg/signals"
 	"os"
 	"strconv"
 	"time"
