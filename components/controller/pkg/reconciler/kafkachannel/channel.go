@@ -140,8 +140,8 @@ func (r *Reconciler) newK8sChannelService(channel *knativekafkav1alpha1.KafkaCha
 			Ports: []corev1.ServicePort{
 				{
 					Name:       constants.HttpPortName,
-					Port:       constants.HttpPortNumber,
-					TargetPort: intstr.FromInt(constants.HttpPortNumber),
+					Port:       constants.HttpServicePortNumber,
+					TargetPort: intstr.FromInt(constants.HttpContainerPortNumber),
 				},
 				{
 					Name:       constants.MetricsPortName,
@@ -253,7 +253,7 @@ func (r *Reconciler) newK8sChannelDeployment(channel *knativekafkav1alpha1.Kafka
 							Ports: []corev1.ContainerPort{
 								{
 									Name:          "server",
-									ContainerPort: int32(constants.HttpPortNumber),
+									ContainerPort: int32(constants.HttpContainerPortNumber),
 								},
 							},
 							Env:             channelEnvVars,
@@ -305,10 +305,6 @@ func (r *Reconciler) channelDeploymentEnvVars(channel *knativekafkav1alpha1.Kafk
 
 	// Create The Channel Deployment EnvVars
 	envVars := []corev1.EnvVar{
-		{
-			Name:  env.HttpPortEnvVarKey,
-			Value: strconv.Itoa(constants.HttpPortNumber),
-		},
 		{
 			Name:  env.MetricsPortEnvVarKey,
 			Value: strconv.Itoa(r.environment.MetricsPort),

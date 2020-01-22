@@ -317,6 +317,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
+<<<<<<< HEAD
   revision = "42d3625896c4940fcb76ad24599ee3a3fdefd67b"
 
 [[projects]]
@@ -334,6 +335,9 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "81af80346b1a01caae0cbc27fd3c1ba5b11e189f"
+=======
+  revision = "92ce5fb5109d65a05dd085b373ef110ba4322c1c"
+>>>>>>> master
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"

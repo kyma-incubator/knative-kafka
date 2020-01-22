@@ -415,7 +415,7 @@
     "components/common/pkg/prometheus",
   ]
   pruneopts = "NUT"
-  revision = "0820a3f43330446c0b1af589430b92e0a708e082"
+  revision = "92ce5fb5109d65a05dd085b373ef110ba4322c1c"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -846,7 +846,11 @@
     "protobuf/field_mask",
   ]
   pruneopts = "NUT"
+<<<<<<< HEAD
   revision = "ca5a22157cba8746e7aa978de1b1ac4085150840"
+=======
+  revision = "32f20d992d240fbca6ef7dec6c05d1f024314e02"
+>>>>>>> master
 
 [[projects]]
   digest = "1:ac05f4844011d9a131f0644945e0b165147cf216fd19bc4a0879f21753ec1391"
@@ -1353,7 +1357,11 @@
   revision = "f07c713de88362aef7545072487d6118bd4a3d4a"
 
 [[projects]]
+<<<<<<< HEAD
   digest = "1:ee427ca3b7611af9d5fc3aa2dce8e0da7963ef62ee99685b779e110d85c3fe63"
+=======
+  digest = "1:aee1d874550a515d832156baefa6a291bfa519a1974ee0bd713879487fc027d3"
+>>>>>>> master
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck/v1alpha1",

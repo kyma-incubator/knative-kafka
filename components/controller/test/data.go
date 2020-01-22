@@ -252,8 +252,8 @@ func GetNewK8sChannelService() *corev1.Service {
 			Ports: []corev1.ServicePort{
 				{
 					Name:       constants.HttpPortName,
-					Port:       constants.HttpPortNumber,
-					TargetPort: intstr.FromInt(constants.HttpPortNumber),
+					Port:       constants.HttpServicePortNumber,
+					TargetPort: intstr.FromInt(constants.HttpContainerPortNumber),
 				},
 				{
 					Name:       MetricsPortName,
@@ -307,14 +307,10 @@ func GetNewK8SChannelDeployment(topicName string) *appsv1.Deployment {
 							Ports: []corev1.ContainerPort{
 								{
 									Name:          "server",
-									ContainerPort: int32(80),
+									ContainerPort: int32(8080),
 								},
 							},
 							Env: []corev1.EnvVar{
-								{
-									Name:  "HTTP_PORT",
-									Value: strconv.Itoa(constants.HttpPortNumber),
-								},
 								{
 									Name:  "METRICS_PORT",
 									Value: strconv.Itoa(MetricsPort),
