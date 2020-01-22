@@ -15,98 +15,82 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	eventingNames "knative.dev/eventing/pkg/reconciler/names"
-	"knative.dev/pkg/apis"
 	"strconv"
 )
 
-// Reconcile The "Channel" Inbound For The Specified Channel (K8S Service, Deployment)
-func (r *Reconciler) reconcileChannel(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
+//
+// Reconcile The Dispatcher (Kafka Consumer) For The Specified KafkaChannel
+//
+func (r *Reconciler) reconcileDispatcher(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Get Channel Specific Logger
 	logger := util.ChannelLogger(r.logger, channel)
 
-	// If The Channel Is Being Deleted - Nothing To Do Since K8S Garbage Collection Will Cleanup Based On OwnerReference
+	// If The KafkaChannel Is Being Deleted - Nothing To Do Since K8S Garbage Collection Will Cleanup Based On OwnerReference
 	if channel.DeletionTimestamp != nil {
-		logger.Info("Successfully Reconciled Channel Deletion")
+		logger.Info("Successfully Reconciled Dispatcher Deletion")
 		return nil
 	}
 
-	// TODO Note, similar to the topic implementation there is not yet any intelligent handling of
-	//      changes to the Controller config or Channel arguments - need requirements for such ; )
-
-	// Reconcile The Channel's Service (K8s)
-	_, serviceErr := r.createK8sChannelService(ctx, channel)
+	// Reconcile The Dispatcher's Service (K8s)
+	_, serviceErr := r.createK8sDispatcherService(ctx, channel)
 	if serviceErr != nil {
-		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile K8S Service For Channel: %v", serviceErr)
-		logger.Error("Failed To Reconcile Channel Service", zap.Error(serviceErr))
+		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherServiceReconciliationFailed.String(), "Failed To Reconcile K8S Service For Dispatcher: %v", serviceErr)
+		logger.Error("Failed To Reconcile Dispatcher Service", zap.Error(serviceErr))
 	} else {
-		logger.Info("Successfully Reconciled Channel Service")
+		logger.Info("Successfully Reconciled Dispatcher Service")
 	}
 
-	// Reconcile The Channel's Deployment (K8s)
-	_, deploymentErr := r.createK8sChannelDeployment(ctx, channel)
+	// Reconcile The Dispatcher's Deployment (K8s)
+	_, deploymentErr := r.createK8sDispatcherDeployment(ctx, channel)
 	if deploymentErr != nil {
-		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelDeploymentReconciliationFailed.String(), "Failed To Reconcile Deployment For Channel: %v", deploymentErr)
-		logger.Error("Failed To Reconcile Channel Deployment", zap.Error(deploymentErr))
+		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Reconcile K8S Deployment For Dispatcher: %v", deploymentErr)
+		logger.Error("Failed To Reconcile Dispatcher Deployment", zap.Error(deploymentErr))
 	} else {
-		logger.Info("Successfully Reconciled Channel Deployment")
+		logger.Info("Successfully Reconciled Dispatcher Deployment")
 	}
 
 	// Return Results
 	if serviceErr != nil || deploymentErr != nil {
-		return fmt.Errorf("failed to reconcile channel components")
+		return fmt.Errorf("failed to reconcile dispatcher components")
 	} else {
 		return nil
 	}
 }
 
 //
-// K8S Channel Service
-//
-// Note - These functions were lifted from early Knative Eventing implementation which have since been moved/removed.
-//        Ideally we'd like to use that implementation directly, but it uses hardcoded config for the larger Knative Eventing
-//        ClusterBus / Single Dispatcher paradigm which doesn't work for our scalable implementation where we want a unique
-//        service/channel deployment per channel/topic.  The logic has also been modified for readability but is otherwise similar.
+// K8S Service
 //
 
-// Create The K8S Service If Not Already Existing
-func (r *Reconciler) createK8sChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+// Create The K8S Dispatcher Service If Not Already Existing
+func (r *Reconciler) createK8sDispatcherService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Attempt To Get The K8S Service Associated With The Specified Channel
-	service, err := r.getK8sChannelService(ctx, channel)
+	service, err := r.getK8sDispatcherService(ctx, channel)
 
-	// If The K8S Service Was Not Found - Then Create A New One For The Channel
+	// If The K8S Service Was Not Found - Then Create A New One For The Dispatcher
 	if errors.IsNotFound(err) {
-		r.logger.Info("Kubernetes Channel Service Not Found - Creating New One")
-		service = r.newK8sChannelService(channel)
+		r.logger.Info("Kubernetes Dispatcher Service Not Found - Creating New One")
+		service = r.newK8sDispatcherService(channel)
 		err = r.client.Create(ctx, service)
 	}
 
 	// If Any Error Occurred (Either Get Or Create) - Then Reconcile Again
 	if err != nil {
-		channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
 		return nil, err
 	}
-
-	// Update The Channel Status With Service Address
-	channel.Status.MarkChannelServiceTrue()
-	channel.Status.SetAddress(&apis.URL{
-		Scheme: "http",
-		Host:   eventingNames.ServiceHostName(service.Name, service.Namespace),
-	})
 
 	// Return The K8S Service
 	return service, nil
 }
 
-// Get The K8S Channel Service Associated With The Specified Channel
-func (r *Reconciler) getK8sChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+// Get The K8S Dispatcher Service Associated With The Specified Channel
+func (r *Reconciler) getK8sDispatcherService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Create A Namespace / Name ObjectKey For The Specified Channel
 	serviceKey := types.NamespacedName{
 		Namespace: constants.KnativeEventingNamespace,
-		Name:      util.ChannelDnsSafeName(channel),
+		Name:      util.DispatcherDnsSafeName(channel),
 	}
 
 	// Get The Service By Namespace / Name
@@ -117,11 +101,11 @@ func (r *Reconciler) getK8sChannelService(ctx context.Context, channel *knativek
 	return service, err
 }
 
-// Create K8S Channel Service Model For The Specified Channel
-func (r *Reconciler) newK8sChannelService(channel *knativekafkav1alpha1.KafkaChannel) *corev1.Service {
+// Create K8S Dispatcher Service Model For The Specified Subscription
+func (r *Reconciler) newK8sDispatcherService(channel *knativekafkav1alpha1.KafkaChannel) *corev1.Service {
 
 	// Get The Dispatcher Service Name For The Channel
-	serviceName := util.ChannelDnsSafeName(channel)
+	serviceName := util.DispatcherDnsSafeName(channel)
 
 	// Create & Return The K8S Service Model
 	return &corev1.Service{
@@ -129,8 +113,9 @@ func (r *Reconciler) newK8sChannelService(channel *knativekafkav1alpha1.KafkaCha
 			Name:      serviceName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"channel":                  channel.Name,
-				K8sAppChannelSelectorLabel: K8sAppChannelSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
+				"channel":                     channel.Name,
+				DispatcherLabel:               "true",                        // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
+				K8sAppDispatcherSelectorLabel: K8sAppDispatcherSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				util.NewChannelControllerRef(channel),
@@ -139,12 +124,7 @@ func (r *Reconciler) newK8sChannelService(channel *knativekafkav1alpha1.KafkaCha
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
-					Name:       constants.HttpPortName,
-					Port:       constants.HttpPortNumber,
-					TargetPort: intstr.FromInt(constants.HttpPortNumber),
-				},
-				{
-					Name:       constants.MetricsPortName,
+					Name:       MetricsPortName,
 					Port:       int32(r.environment.MetricsPort),
 					TargetPort: intstr.FromInt(r.environment.MetricsPort),
 				},
@@ -160,16 +140,16 @@ func (r *Reconciler) newK8sChannelService(channel *knativekafkav1alpha1.KafkaCha
 // K8S Deployment
 //
 
-// Create The K8S Channel Deployment If Not Already Existing
-func (r *Reconciler) createK8sChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+// Create The K8S Dispatcher Deployment If Not Already Existing
+func (r *Reconciler) createK8sDispatcherDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
-	// Attempt To Get The K8S Channel Deployment Associated With The Specified Channel
-	deployment, err := r.getK8sChannelDeployment(ctx, channel)
+	// Attempt To Get The K8S Dispatcher Deployment Associated With The Specified Channel
+	deployment, err := r.getK8sDispatcherDeployment(ctx, channel)
 
-	// If The K8S Channel Deployment Was Not Found - Then Create A New One For The Channel
+	// If The K8S Dispatcher Deployment Was Not Found - Then Create A New One For The Channel
 	if errors.IsNotFound(err) {
-		r.logger.Info("Kubernetes Channel Deployment Not Found - Creating New One")
-		deployment, err = r.newK8sChannelDeployment(channel)
+		r.logger.Info("Kubernetes Dispatcher Deployment Not Found - Creating New One")
+		deployment, err = r.newK8sDispatcherDeployment(channel)
 		if err == nil {
 			err = r.client.Create(ctx, deployment)
 		}
@@ -180,15 +160,15 @@ func (r *Reconciler) createK8sChannelDeployment(ctx context.Context, channel *kn
 		return nil, err
 	}
 
-	// Return The K8S Channel Deployment
+	// Return The K8S Dispatcher Deployment
 	return deployment, nil
 }
 
-// Get The K8S Channel Deployment Associated With The Specified Channel
-func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+// Get The K8S Dispatcher Deployment Associated With The Specified Channel
+func (r *Reconciler) getK8sDispatcherDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
-	// Get The Channel Deployment Name
-	deploymentName := util.ChannelDnsSafeName(channel)
+	// Get The Dispatcher Deployment Name For The Channel
+	deploymentName := util.DispatcherDnsSafeName(channel)
 
 	// Create A Namespace / Name ObjectKey For The Specified Channel Deployment
 	deploymentKey := types.NamespacedName{
@@ -196,7 +176,7 @@ func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *knati
 		Name:      deploymentName,
 	}
 
-	// Get The Channel Deployment By Namespace / Name
+	// Get The Dispatcher Deployment By Namespace / Name
 	deployment := &appsv1.Deployment{}
 	err := r.client.Get(ctx, deploymentKey, deployment)
 
@@ -204,29 +184,31 @@ func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *knati
 	return deployment, err
 }
 
-// Create K8S Channel Deployment Model For The Specified Channel
-func (r *Reconciler) newK8sChannelDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+// Create K8S Dispatcher Deployment Model For The Specified Channel
+func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
-	// Get The Channel Deployment Name
-	deploymentName := util.ChannelDnsSafeName(channel)
+	// Get The Dispatcher Deployment Name For The Channel
+	deploymentName := util.DispatcherDnsSafeName(channel)
 
 	// Replicas Int Value For De-Referencing
-	replicas := int32(1)
+	replicas := int32(r.environment.DispatcherReplicas)
 
-	// Create The Channel Container Environment Variables
-	channelEnvVars, err := r.channelDeploymentEnvVars(channel)
+	// Create The Dispatcher Container Environment Variables
+	envVars, err := r.dispatcherDeploymentEnvVars(channel)
 	if err != nil {
-		r.logger.Error("Failed To Create Channel Deployment Environment Variables", zap.Error(err))
+		r.logger.Error("Failed To Create Dispatcher Deployment Environment Variables", zap.Error(err))
 		return nil, err
 	}
 
-	// Create & Return The Channel's K8S Deployment
+	// Create The Dispatcher's K8S Deployment
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"app": deploymentName, // Matches K8S Service Selector Key/Value Below
+				"app":           deploymentName, // Matches K8S Service Selector Key/Value Below
+				DispatcherLabel: "true",         // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
+				ChannelLabel:    channel.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				util.NewChannelControllerRef(channel),
@@ -246,17 +228,12 @@ func (r *Reconciler) newK8sChannelDeployment(channel *knativekafkav1alpha1.Kafka
 					},
 				},
 				Spec: corev1.PodSpec{
+					ServiceAccountName: r.environment.ServiceAccount,
 					Containers: []corev1.Container{
 						{
-							Name:  deploymentName,
-							Image: r.environment.ChannelImage,
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "server",
-									ContainerPort: int32(constants.HttpPortNumber),
-								},
-							},
-							Env:             channelEnvVars,
+							Name:            deploymentName,
+							Image:           r.environment.DispatcherImage,
+							Env:             envVars,
 							ImagePullPolicy: corev1.PullAlways,
 							VolumeMounts: []corev1.VolumeMount{
 								{
@@ -265,13 +242,13 @@ func (r *Reconciler) newK8sChannelDeployment(channel *knativekafkav1alpha1.Kafka
 								},
 							},
 							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    r.environment.ChannelCpuRequest,
-									corev1.ResourceMemory: r.environment.ChannelMemoryRequest,
-								},
 								Limits: corev1.ResourceList{
-									corev1.ResourceCPU:    r.environment.ChannelCpuLimit,
-									corev1.ResourceMemory: r.environment.ChannelMemoryLimit,
+									corev1.ResourceMemory: r.environment.DispatcherMemoryLimit,
+									corev1.ResourceCPU:    r.environment.DispatcherCpuLimit,
+								},
+								Requests: corev1.ResourceList{
+									corev1.ResourceMemory: r.environment.DispatcherMemoryRequest,
+									corev1.ResourceCPU:    r.environment.DispatcherCpuRequest,
 								},
 							},
 						},
@@ -293,33 +270,49 @@ func (r *Reconciler) newK8sChannelDeployment(channel *knativekafkav1alpha1.Kafka
 		},
 	}
 
-	// Return Channel Deployment
+	// Return The Dispatcher's K8S Deployment
 	return deployment, nil
 }
 
-// Create The Channel Container's Env Vars
-func (r *Reconciler) channelDeploymentEnvVars(channel *knativekafkav1alpha1.KafkaChannel) ([]corev1.EnvVar, error) {
+// Create The Dispatcher Container's Env Vars
+func (r *Reconciler) dispatcherDeploymentEnvVars(channel *knativekafkav1alpha1.KafkaChannel) ([]corev1.EnvVar, error) {
 
 	// Get The TopicName For Specified Channel
 	topicName := util.TopicName(channel, r.environment)
 
-	// Create The Channel Deployment EnvVars
+	// Create The Dispatcher Deployment EnvVars
 	envVars := []corev1.EnvVar{
-		{
-			Name:  env.HttpPortEnvVarKey,
-			Value: strconv.Itoa(constants.HttpPortNumber),
-		},
 		{
 			Name:  env.MetricsPortEnvVarKey,
 			Value: strconv.Itoa(r.environment.MetricsPort),
+		},
+		{
+			Name:  env.ChannelKeyEnvVarKey,
+			Value: util.ChannelKey(channel),
 		},
 		{
 			Name:  env.KafkaTopicEnvVarKey,
 			Value: topicName,
 		},
 		{
-			Name:  env.KafkaClientIdEnvVarKey,
-			Value: topicName,
+			Name:  env.KafkaOffsetCommitMessageCountEnvVarKey,
+			Value: strconv.FormatInt(r.environment.KafkaOffsetCommitMessageCount, 10),
+		},
+		{
+			Name:  env.KafkaOffsetCommitDurationMillisEnvVarKey,
+			Value: strconv.FormatInt(r.environment.KafkaOffsetCommitDurationMillis, 10),
+		},
+		{
+			Name:  env.ExponentialBackoffEnvVarKey,
+			Value: strconv.FormatBool(r.environment.DispatcherRetryExponentialBackoff),
+		},
+		{
+			Name:  env.InitialRetryIntervalEnvVarKey,
+			Value: strconv.FormatInt(r.environment.DispatcherRetryInitialIntervalMillis, 10),
+		},
+		{
+			Name:  env.MaxRetryTimeEnvVarKey,
+			Value: strconv.FormatInt(r.environment.DispatcherRetryTimeMillisMax, 10),
 		},
 	}
 

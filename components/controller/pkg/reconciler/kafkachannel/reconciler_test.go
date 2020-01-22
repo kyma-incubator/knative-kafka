@@ -82,6 +82,8 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannel(true, true, false),
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 		},
 		{
@@ -97,6 +99,8 @@ func TestReconcile(t *testing.T) {
 			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 			ExpectedPresent: []runtime.Object{
 				test.GetNewChannel(true, true, false),
@@ -112,6 +116,8 @@ func TestReconcile(t *testing.T) {
 			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelDeleted(false, true, true),
@@ -128,6 +134,8 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannelWithProvisionedStatus(true, true, true, true, true),
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 		},
 		{
@@ -141,6 +149,8 @@ func TestReconcile(t *testing.T) {
 			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelWithProvisionedStatus(true, true, false, false, false),
@@ -156,6 +166,8 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannelWithProvisionedStatus(true, false, true, true, true),
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.DefaultTopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.DefaultTopicName),
 			},
 		},
 		{
@@ -168,6 +180,8 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannelWithProvisionedStatus(true, true, false, true, true),
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 		},
 		{
@@ -181,6 +195,8 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannelWithProvisionedStatus(true, true, true, true, true),
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 				test.GetNewChannelWithName("OtherChannel", true, true, true),
 			},
 		},
@@ -197,6 +213,8 @@ func TestReconcile(t *testing.T) {
 			ExpectedAbsent: []runtime.Object{
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 			ExpectedPresent: []runtime.Object{
 				test.GetNewChannel(false, true, true),
@@ -217,6 +235,8 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannel(true, true, true),
 				test.GetNewK8sChannelService(),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 		},
 		{
@@ -225,7 +245,7 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannel(true, true, true),
 			},
 			Mocks: test.Mocks{
-				CreateFns: []test.MockCreateFn{test.MockCreateFnDeploymentError},
+				CreateFns: []test.MockCreateFn{test.MockCreateFnChannelDeploymentError},
 			},
 			ExpectedError:  errors.New("reconciliation failed"),
 			ExpectedEvents: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelDeploymentReconciliationFailed.String()}},
@@ -235,6 +255,8 @@ func TestReconcile(t *testing.T) {
 			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelWithProvisionedStatus(true, true, true, true, true),
 				test.GetNewK8sChannelService(),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 		},
 		{
@@ -243,7 +265,7 @@ func TestReconcile(t *testing.T) {
 				test.GetNewChannel(true, true, true),
 			},
 			Mocks: test.Mocks{
-				CreateFns: []test.MockCreateFn{test.MockCreateFnServiceError},
+				CreateFns: []test.MockCreateFn{test.MockCreateFnChannelServiceError},
 			},
 			ExpectedError:  errors.New("reconciliation failed"),
 			ExpectedEvents: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.ChannelServiceReconciliationFailed.String()}},
@@ -253,6 +275,48 @@ func TestReconcile(t *testing.T) {
 			ExpectedPresent: []runtime.Object{
 				test.GetNewChannelWithProvisionedStatus(true, true, true, true, false),
 				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherService(),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
+			},
+		},
+		{
+			Name: "Create Dispatcher Deployment Error",
+			InitialState: []runtime.Object{
+				test.GetNewChannel(true, true, true),
+			},
+			Mocks: test.Mocks{
+				CreateFns: []test.MockCreateFn{test.MockCreateFnDispatcherDeploymentError},
+			},
+			ExpectedError:  errors.New("reconciliation failed"),
+			ExpectedEvents: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.DispatcherDeploymentReconciliationFailed.String()}},
+			ExpectedAbsent: []runtime.Object{
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
+			},
+			ExpectedPresent: []runtime.Object{
+				test.GetNewChannelWithProvisionedStatus(true, true, true, true, true),
+				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8sChannelService(),
+				test.GetNewK8SDispatcherService(),
+			},
+		},
+		{
+			Name: "Create Dispatcher Service Error",
+			InitialState: []runtime.Object{
+				test.GetNewChannel(true, true, true),
+			},
+			Mocks: test.Mocks{
+				CreateFns: []test.MockCreateFn{test.MockCreateFnDispatcherServiceError},
+			},
+			ExpectedError:  errors.New("reconciliation failed"),
+			ExpectedEvents: []corev1.Event{{Type: corev1.EventTypeWarning, Reason: event.DispatcherServiceReconciliationFailed.String()}},
+			ExpectedAbsent: []runtime.Object{
+				test.GetNewK8SDispatcherService(),
+			},
+			ExpectedPresent: []runtime.Object{
+				test.GetNewChannelWithProvisionedStatus(true, true, true, true, true),
+				test.GetNewK8sChannelService(),
+				test.GetNewK8SChannelDeployment(test.TopicName),
+				test.GetNewK8SDispatcherDeployment(test.TopicName),
 			},
 		},
 	}

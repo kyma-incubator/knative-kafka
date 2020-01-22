@@ -40,6 +40,14 @@ rules:
   - patch
   - update
 - apiGroups:
+  - "" # Core API Group.
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+  - update
+- apiGroups:
   - messaging.knative.dev
   resources:
   - channels
@@ -108,14 +116,6 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - "" # Core API Group.
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
-  - update
 
 ---
 

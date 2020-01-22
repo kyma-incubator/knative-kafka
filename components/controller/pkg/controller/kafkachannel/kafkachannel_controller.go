@@ -21,7 +21,7 @@ var adminClient kafkaadmin.AdminClientInterface
 
 // Creates & Initialize A KafkaChannel Controller & Add It To Specified Manager With Default RBAC
 // (Manager will set fields on the Controller and start it when the Manager is started.)
-func Add(mgr manager.Manager, adminClient kafkaadmin.AdminClientInterface) error {
+func Add(mgr manager.Manager) error {
 
 	// Create A Child Logger With The Controller Name
 	logger := log.Logger().With(zap.String("Controller", constants.KafkaChannelControllerAgentName))
@@ -35,6 +35,18 @@ func Add(mgr manager.Manager, adminClient kafkaadmin.AdminClientInterface) error
 
 	// Get A K8S Event Recorder From The Manager
 	recorder := mgr.GetEventRecorderFor(constants.KafkaChannelControllerAgentName)
+
+	// Determine The Kafka AdminClient Type (Assume Kafka Unless Azure EventHubs Are Specified)
+	kafkaAdminClientType := kafkaadmin.Kafka
+	if environment.KafkaProvider == env.KafkaProviderValueAzure {
+		kafkaAdminClientType = kafkaadmin.EventHub
+	}
+
+	// Get The Kafka AdminClient
+	adminClient, err := kafkaadmin.CreateAdminClient(logger, kafkaAdminClientType, constants.KnativeEventingNamespace)
+	if adminClient == nil || err != nil {
+		logger.Fatal("Failed To Create Kafka AdminClient", zap.Error(err))
+	}
 
 	// Create A New KafkaChannel Reconciler
 	kafkaChannelReconciler := kafkachannel.NewReconciler(recorder, logger, adminClient, environment)
