@@ -415,7 +415,7 @@
     "components/common/pkg/prometheus",
   ]
   pruneopts = "NUT"
-  revision = "0820a3f43330446c0b1af589430b92e0a708e082"
+  revision = "92ce5fb5109d65a05dd085b373ef110ba4322c1c"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -542,14 +542,6 @@
   version = "v0.0.7"
 
 [[projects]]
-  digest = "1:f1b3e1f7d4169dcd9e2003685383e99f6a4bdea14129bbcfdd80bfe455e0ad05"
-  name = "github.com/robfig/cron"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "45fbe1491cdd47d74d1bf1396286d67faee8b8b5"
-  version = "v3.0.0"
-
-[[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
   name = "github.com/rogpeppe/go-internal"
   packages = [
@@ -638,7 +630,7 @@
   revision = "2cfd321de3ee5d5f8a5fda2521d1703478334d98"
 
 [[projects]]
-  digest = "1:5ab79d2a36037de1ab2908733a2cab0c08b12f6956e3e1eab07cd1b2abf7b903"
+  digest = "1:85674ac609b704fd4e9f463553b6ffc3a3527a993ae0ba550eb56beaabdfe094"
   name = "go.uber.org/zap"
   packages = [
     ".",
@@ -646,9 +638,7 @@
     "internal/bufferpool",
     "internal/color",
     "internal/exit",
-    "internal/ztest",
     "zapcore",
-    "zaptest",
   ]
   pruneopts = "NUT"
   revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
@@ -838,7 +828,8 @@
   version = "v1.6.5"
 
 [[projects]]
-  digest = "1:3689f4cc57cc55b4631efc4b778c47d2a888a7060b4108f42cf289a2033be5ba"
+  branch = "master"
+  digest = "1:c21ea6f419a93a0d98aee5083cedbcbe1ca43aa0da73a5f3c7568c1dc926c1bf"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api",
@@ -851,10 +842,11 @@
     "googleapis/devtools/cloudtrace/v2",
     "googleapis/monitoring/v3",
     "googleapis/rpc/status",
+    "googleapis/type/calendarperiod",
     "protobuf/field_mask",
   ]
   pruneopts = "NUT"
-  revision = "357c62f0e4bbba7e6cc403ae09edcf3e2b9028fe"
+  revision = "32f20d992d240fbca6ef7dec6c05d1f024314e02"
 
 [[projects]]
   digest = "1:ac05f4844011d9a131f0644945e0b165147cf216fd19bc4a0879f21753ec1391"
@@ -1025,17 +1017,11 @@
   version = "kubernetes-1.15.3"
 
 [[projects]]
-  digest = "1:ef1ab64116addb4e8e9669c40b345996cb10272d2f18c81218b6add2af8c660e"
+  digest = "1:668bafb576081b9dd26c0cac69296549ad65e3e3af789a8ad1d9b9114b2f55c1"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
     "pkg/apis/apiextensions/v1beta1",
-    "pkg/client/clientset/clientset",
-    "pkg/client/clientset/clientset/fake",
-    "pkg/client/clientset/clientset/scheme",
-    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
-    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake",
-    "pkg/client/listers/apiextensions/v1beta1",
   ]
   pruneopts = "NUT"
   revision = "0dbe462fe92dfa8b56cc9facf0658a17d0c70fc5"
@@ -1097,13 +1083,12 @@
   version = "kubernetes-1.15.3"
 
 [[projects]]
-  digest = "1:f197972bb545738522b1331a527cca2bd6f21a645c89438207faea9ec8ef26a3"
+  digest = "1:dfd436294dfb6f1f000075fe6c277412ed5054885fcc2fbe34feaeb20e6f91d0"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
     "discovery/fake",
     "dynamic",
-    "dynamic/fake",
     "informers",
     "informers/admissionregistration",
     "informers/admissionregistration/v1beta1",
@@ -1368,7 +1353,7 @@
   revision = "f07c713de88362aef7545072487d6118bd4a3d4a"
 
 [[projects]]
-  digest = "1:1c5a70d7995656229793fc2a8df6ddb25cf2a85d8b8815c75c5c001a9d6f3f26"
+  digest = "1:aee1d874550a515d832156baefa6a291bfa519a1974ee0bd713879487fc027d3"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1377,24 +1362,7 @@
     "pkg/apis/eventing/v1alpha1",
     "pkg/apis/messaging",
     "pkg/apis/messaging/v1alpha1",
-    "pkg/apis/sources",
-    "pkg/apis/sources/v1alpha1",
-    "pkg/client/clientset/versioned",
-    "pkg/client/clientset/versioned/fake",
-    "pkg/client/clientset/versioned/scheme",
-    "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
-    "pkg/client/clientset/versioned/typed/eventing/v1alpha1/fake",
-    "pkg/client/clientset/versioned/typed/messaging/v1alpha1",
-    "pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake",
-    "pkg/client/clientset/versioned/typed/sources/v1alpha1",
-    "pkg/client/clientset/versioned/typed/sources/v1alpha1/fake",
-    "pkg/client/injection/client",
-    "pkg/client/injection/client/fake",
-    "pkg/client/listers/eventing/v1alpha1",
-    "pkg/client/listers/messaging/v1alpha1",
-    "pkg/client/listers/sources/v1alpha1",
     "pkg/reconciler/names",
-    "pkg/reconciler/testing",
     "pkg/utils",
   ]
   pruneopts = "NUT"
@@ -1412,39 +1380,19 @@
     "apis/duck/v1alpha1",
     "apis/duck/v1beta1",
     "apis/istio",
-    "apis/istio/authentication",
-    "apis/istio/authentication/v1alpha1",
     "apis/istio/common/v1alpha1",
     "apis/istio/v1alpha3",
     "apis/v1alpha1",
     "changeset",
-    "client/clientset/versioned",
-    "client/clientset/versioned/fake",
-    "client/clientset/versioned/scheme",
-    "client/clientset/versioned/typed/authentication/v1alpha1",
-    "client/clientset/versioned/typed/authentication/v1alpha1/fake",
-    "client/clientset/versioned/typed/istio/v1alpha3",
-    "client/clientset/versioned/typed/istio/v1alpha3/fake",
-    "client/injection/kube/client",
-    "client/injection/kube/client/fake",
     "configmap",
-    "controller",
-    "injection",
-    "injection/clients/dynamicclient",
-    "injection/clients/dynamicclient/fake",
     "kmeta",
     "kmp",
     "logging",
     "logging/logkey",
-    "logging/testing",
     "metrics",
     "metrics/metricskey",
     "ptr",
-    "reconciler/testing",
     "signals",
-    "system",
-    "system/testing",
-    "tracker",
     "webhook",
   ]
   pruneopts = "T"
@@ -1578,15 +1526,12 @@
     "knative.dev/eventing/pkg/apis/eventing/v1alpha1",
     "knative.dev/eventing/pkg/apis/messaging/v1alpha1",
     "knative.dev/eventing/pkg/reconciler/names",
-    "knative.dev/eventing/pkg/reconciler/testing",
     "knative.dev/eventing/pkg/utils",
     "knative.dev/pkg/apis",
+    "knative.dev/pkg/apis/duck/v1",
     "knative.dev/pkg/apis/duck/v1alpha1",
-    "knative.dev/pkg/apis/duck/v1beta1",
     "knative.dev/pkg/apis/istio/v1alpha3",
-    "knative.dev/pkg/logging",
-    "knative.dev/pkg/logging/testing",
-    "knative.dev/pkg/reconciler/testing",
+    "knative.dev/pkg/apis/v1alpha1",
     "knative.dev/pkg/signals",
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
