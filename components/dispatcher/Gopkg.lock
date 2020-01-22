@@ -99,7 +99,7 @@
     "components/common/pkg/util",
   ]
   pruneopts = "UT"
-  revision = "0820a3f43330446c0b1af589430b92e0a708e082"
+  revision = "92ce5fb5109d65a05dd085b373ef110ba4322c1c"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -350,7 +350,6 @@
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/util",
     "github.com/pkg/errors",
-    "github.com/slok/goresilience",
     "github.com/slok/goresilience/retry",
     "github.com/stretchr/testify/assert",
     "go.uber.org/zap",

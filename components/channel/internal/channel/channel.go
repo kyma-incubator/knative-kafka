@@ -181,6 +181,7 @@ func (c *Channel) createProducerHeaders(context cloudevents.EventContext) []kafk
 
 	// Only Supports string, int, and float64 Extensions
 	for k, v := range context.GetExtensions() {
+		log.Logger().Debug("Add Event Extensions", zap.Any(k, v))
 		if vs, ok := v.(string); ok {
 			headers = append(headers, kafka.Header{Key: "ce_" + k, Value: []byte(vs)})
 		} else if vi, ok := v.(int); ok {
