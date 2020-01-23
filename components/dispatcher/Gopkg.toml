@@ -36,10 +36,6 @@
    name = "github.com/kyma-incubator/knative-kafka"
    branch = "master"
 
-[[constraint]]
-   name = "knative.dev/eventing-contrib"
-   version = "v0.10.3"
-
 # Match Azure version in common component
 [[override]]
   name = "github.com/Azure/azure-event-hubs-go"

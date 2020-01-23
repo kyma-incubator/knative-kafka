@@ -158,14 +158,6 @@
   version = "v1.4.7"
 
 [[projects]]
-  digest = "1:57ae8919194013fb07b8390fb8a32e700c12fdab96e8dc4bb15d5fe45dc43245"
-  name = "github.com/gobuffalo/envy"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "dc9565002201aca1286f8d6262f5cd568226562a"
-  version = "v1.8.1"
-
-[[projects]]
   digest = "1:582e25eccee928dc12416ea4c23b6dae8f3b5687730632aa1473ebebe80a2359"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -279,14 +271,6 @@
   revision = "c2b33e84"
 
 [[projects]]
-  digest = "1:ecd9aa82687cf31d1585d4ac61d0ba180e42e8a6182b85bd785fcca8dfeefc1b"
-  name = "github.com/joho/godotenv"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "23d116af351c84513e1946b527c88823e476be13"
-  version = "v1.3.0"
-
-[[projects]]
   digest = "1:7cd2924a44ecf80a319cfa2378529fabd348d011b739fb4eccc565f65e3296c4"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -317,16 +301,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-<<<<<<< HEAD
   revision = "42d3625896c4940fcb76ad24599ee3a3fdefd67b"
-
-[[projects]]
-  digest = "1:3804a3a02964db8e6db3e5e7960ac1c1a9b12835642dd4f4ac4e56c749ec73eb"
-  name = "github.com/markbates/inflect"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "24b83195037b3bc61fcda2d28b7b0518bce293b6"
-  version = "v1.0.4"
 
 [[projects]]
   branch = "master"
@@ -335,9 +310,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "81af80346b1a01caae0cbc27fd3c1ba5b11e189f"
-=======
-  revision = "92ce5fb5109d65a05dd085b373ef110ba4322c1c"
->>>>>>> master
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -422,18 +394,6 @@
   pruneopts = "UT"
   revision = "6d489fc7f1d9cd890a250f3ea3431b1744b9623f"
   version = "v0.0.8"
-
-[[projects]]
-  digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
-  name = "github.com/rogpeppe/go-internal"
-  packages = [
-    "modfile",
-    "module",
-    "semver",
-  ]
-  pruneopts = "UT"
-  revision = "bf08ea5df4ea96c6460011b8a8ef2952494d458d"
-  version = "v1.5.1"
 
 [[projects]]
   digest = "1:7879105e731722896b497630109a23d3c312d511138de222b98c127b1fb1d389"
@@ -585,12 +545,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a2fc247e64b5dafd3251f12d396ec85f163d5bb38763c4997856addddf6e78d8"
+  digest = "1:382bb5a7fb4034db3b6a2d19e5a4a6bcf52f4750530603c01ca18a172fa3089b"
   name = "golang.org/x/sync"
-  packages = [
-    "errgroup",
-    "semaphore",
-  ]
+  packages = ["semaphore"]
   pruneopts = "UT"
   revision = "cd5d95a43a6e21273425c7ae415d3df9ea832eeb"
 
@@ -828,10 +785,9 @@
   version = "2019.2.3"
 
 [[projects]]
-  digest = "1:975093e79aee83503409c504150df7f727c34395553b49f2a4787a58a95097d2"
+  digest = "1:d89afbf3588e87d2c9e6efdd5528d249b32d23a12fbd7ec324f3cb373c6fb76c"
   name = "k8s.io/api"
   packages = [
-    "admission/v1beta1",
     "admissionregistration/v1beta1",
     "apps/v1",
     "apps/v1beta1",
@@ -1161,24 +1117,8 @@
   revision = "468eab4f340deedd55bdbb2bee697cdeaa873912"
 
 [[projects]]
-  digest = "1:528b9ea74d1436021f08f8a534a11af2d8ca8a62c515c2d1b70b7c7c8ff1cf7f"
-  name = "knative.dev/eventing-contrib"
-  packages = [
-    "kafka/channel/pkg/apis/messaging",
-    "kafka/channel/pkg/apis/messaging/v1alpha1",
-    "kafka/channel/pkg/client/clientset/versioned",
-    "kafka/channel/pkg/client/clientset/versioned/scheme",
-    "kafka/channel/pkg/client/clientset/versioned/typed/messaging/v1alpha1",
-    "kafka/channel/pkg/reconciler",
-    "kafka/channel/pkg/utils",
-  ]
-  pruneopts = "UT"
-  revision = "690293c82da40152fbb0224ff45d33be67a8af9a"
-  version = "v0.10.3"
-
-[[projects]]
   branch = "release-0.10"
-  digest = "1:0ac3e1c780a99719e4541e29c11f99a16120814c69bd9f72f6a4605d6d1806fd"
+  digest = "1:c827535326b2234899da300fa11fe5000d101a39dcc70efd74c07d13c7e0dadf"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1198,13 +1138,11 @@
     "logging/testing",
     "metrics",
     "metrics/metricskey",
-    "ptr",
     "reconciler/testing",
     "signals",
     "system",
     "system/testing",
     "tracker",
-    "webhook",
   ]
   pruneopts = "UT"
   revision = "884d50f09454909de6f343c165fdba5f59c5c19a"
@@ -1241,6 +1179,7 @@
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/fake",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/scheme",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions/knativekafka/v1alpha1",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1",
@@ -1253,19 +1192,22 @@
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/runtime",
+    "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/kubernetes/typed/core/v1",
+    "k8s.io/client-go/listers/apps/v1",
+    "k8s.io/client-go/listers/core/v1",
     "k8s.io/client-go/rest",
+    "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
-    "knative.dev/eventing-contrib/kafka/channel/pkg/reconciler",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
+    "knative.dev/pkg/apis",
     "knative.dev/pkg/controller",
-    "knative.dev/pkg/kmeta",
     "knative.dev/pkg/logging",
     "knative.dev/pkg/reconciler/testing",
     "knative.dev/pkg/signals",
