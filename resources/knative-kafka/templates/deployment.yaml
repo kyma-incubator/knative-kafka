@@ -60,7 +60,7 @@ spec:
         - name: DEFAULT_KAFKA_CONSUMERS
           value: {{ .Values.environment.defaultKafkaConsumers | quote }}
         - name: "DISPATCHER_REPLICAS"
-          value: 1
+          value: "1"
         - name: DISPATCHER_RETRY_INITIAL_INTERVAL_MILLIS
           value: "500"
         - name: DISPATCHER_RETRY_TIME_MILLIS
