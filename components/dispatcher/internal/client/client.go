@@ -41,18 +41,23 @@ func NewRetriableCloudEventClient(exponentialBackoff bool, initialRetryInterval 
 	transport, err := cloudevents.NewHTTPTransport(
 		cloudevents.WithBinaryEncoding(),
 	)
-	transport.Client = httpClient
 
 	if err != nil {
-		panic("failed to create transport, " + err.Error())
+		panic("Failed To Create Transport, " + err.Error())
 	}
+	transport.Client = httpClient
 
 	ceClient, err := cloudevents.NewClient(transport)
 	if err != nil {
-		panic("unable to create cloudevent client: " + err.Error())
+		panic("Unable To Create CloudEvent Client: " + err.Error())
 	}
 
-	return retriableCloudEventClient{exponentialBackoff: exponentialBackoff, initialRetryInterval: initialRetryInterval, maxRetryTime: maxRetryTime, cloudEventClient: ceClient}
+	return retriableCloudEventClient{
+		exponentialBackoff:   exponentialBackoff,
+		initialRetryInterval: initialRetryInterval,
+		maxRetryTime:         maxRetryTime,
+		cloudEventClient:     ceClient,
+	}
 }
 
 func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event, uri string) error {

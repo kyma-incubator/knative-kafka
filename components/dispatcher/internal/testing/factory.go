@@ -38,10 +38,6 @@ func MakeFactory(ctor Ctor) Factory {
 		statsReporter := &FakeStatsReporter{}
 
 		// Set up our Controller from the fakes.
-		// Eventing
-		//	ncInformer := messagingInformerFactory.Knativekafka().V1alpha1().KafkaChannels()
-
-		// Set up our Controller from the fakes.
 		c := ctor(&ls, client, eventRecorder)
 
 		actionRecorderList := ActionRecorderList{client}

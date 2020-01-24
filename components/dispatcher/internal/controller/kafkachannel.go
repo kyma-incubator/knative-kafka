@@ -146,11 +146,8 @@ func (r Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaC
 		r.Logger.Info("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.String("URI", subscriber.SubscriberURI))
 	}
 
-	failedSubscriptions, err := r.dispatcher.UpdateSubscriptions(subscriptions)
-	if err != nil {
-		r.Logger.Error("Error updating kafka consumers in dispatcher")
-		return err
-	}
+	failedSubscriptions := r.dispatcher.UpdateSubscriptions(subscriptions)
+
 	channel.Status.SubscribableTypeStatus.SubscribableStatus = r.createSubscribableStatus(channel.Spec.Subscribable, failedSubscriptions)
 	if len(failedSubscriptions) > 0 {
 		r.Logger.Error("Some kafka subscriptions failed to subscribe")

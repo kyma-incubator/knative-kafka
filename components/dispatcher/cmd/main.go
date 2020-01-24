@@ -8,7 +8,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/controller"
-	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
+	dispatch "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -30,7 +30,7 @@ const (
 // Variables
 var (
 	logger     *zap.Logger
-	d          *dispatcher.Dispatcher
+	dispatcher *dispatch.Dispatcher
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
@@ -92,10 +92,10 @@ func main() {
 	metricsServer.Start()
 
 	// Create HTTP Client With Retry Settings
-	c := client.NewRetriableCloudEventClient(exponentialBackoff, initialRetryInterval, maxRetryTime)
+	ceClient := client.NewRetriableCloudEventClient(exponentialBackoff, initialRetryInterval, maxRetryTime)
 
 	// Create The Dispatcher With Specified Configuration
-	dispatcherConfig := dispatcher.DispatcherConfig{
+	dispatcherConfig := dispatch.DispatcherConfig{
 		Brokers:                     kafkaBrokers,
 		Topic:                       kafkaTopic,
 		Offset:                      DefaultKafkaConsumerOffset,
@@ -105,12 +105,12 @@ func main() {
 		OffsetCommitDurationMinimum: MinimumKafkaConsumerOffsetCommitDurationMillis * time.Millisecond,
 		Username:                    kafkaUsername,
 		Password:                    kafkaPassword,
-		Client:                      c,
+		Client:                      ceClient,
 		ChannelKey:                  channelKey,
 	}
-	d = dispatcher.NewDispatcher(dispatcherConfig)
+	dispatcher = dispatch.NewDispatcher(dispatcherConfig)
 
-	cfg, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
+	config, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
 	if err != nil {
 		logger.Error("Error building kubeconfig", zap.Error(err))
 		return
@@ -119,10 +119,10 @@ func main() {
 	stopCh := signals.SetupSignalHandler()
 
 	const numControllers = 1
-	cfg.QPS = numControllers * rest.DefaultQPS
-	cfg.Burst = numControllers * rest.DefaultBurst
-	kafkaClientSet := versioned.NewForConfigOrDie(cfg)
-	kubeClient := kubernetes.NewForConfigOrDie(cfg)
+	config.QPS = numControllers * rest.DefaultQPS
+	config.Burst = numControllers * rest.DefaultBurst
+	kafkaClientSet := versioned.NewForConfigOrDie(config)
+	kubeClient := kubernetes.NewForConfigOrDie(config)
 	kafkaInformerFactory := externalversions.NewSharedInformerFactory(kafkaClientSet, kncontroller.DefaultResyncPeriod)
 
 	// Create KafkaChannel Informer
@@ -132,7 +132,7 @@ func main() {
 	controllers := [...]*kncontroller.Impl{
 		controller.NewController(
 			logger,
-			d,
+			dispatcher,
 			kafkaChannelInformer,
 			kubeClient,
 			kafkaClientSet,
@@ -152,7 +152,7 @@ func main() {
 
 	<-stopCh
 	// Close Consumer Connections
-	d.StopConsumers()
+	dispatcher.StopConsumers()
 
 	// Shutdown The Prometheus Metrics Server
 	metricsServer.Stop()

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/google/go-cmp/cmp"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -30,8 +30,8 @@ const (
 	testMessagesToSend          = 3
 	testPollTimeoutMillis       = 500 // Not Used By Mock Consumer ; )
 	testOffsetCommitCount       = 2
-	testOffsetCommitDuration    = 50 * time.Millisecond // Small Durations For Testing!
-	testOffsetCommitDurationMin = 50 * time.Millisecond // Small Durations For Testing!
+	testOffsetCommitDuration    = 500 * time.Millisecond // Small Durations For Testing!
+	testOffsetCommitDurationMin = 500 * time.Millisecond // Small Durations For Testing!
 	testUsername                = "TestUsername"
 	testPassword                = "TestPassword"
 	testChannelKey              = "TestChannel"
@@ -44,9 +44,6 @@ var (
 	testNotification = kafka.RevokedPartitions{}
 	testValue        = map[string]string{"test": "value"}
 )
-
-// Setup A Test Logger (Ignore Unused Warning - This Updates The log.Logger Reference!)
-var logger = log.TestLogger()
 
 // Test All The Dispatcher Functionality
 func TestDispatcher(t *testing.T) {
@@ -108,7 +105,7 @@ func TestDispatcher(t *testing.T) {
 		testChannelKey)
 
 	// Start 1 Consumer
-	testDispatcher.UpdateSubscriptions([]Subscription{
+	subscriptionResults := testDispatcher.UpdateSubscriptions([]Subscription{
 		{
 			URI:     testSubscriberUri1,
 			GroupId: testGroupId,
@@ -116,15 +113,17 @@ func TestDispatcher(t *testing.T) {
 	})
 
 	// Verify Consumers Started
+	assert.Len(t, subscriptionResults, 0)
 	verifyConsumersCount(t, testDispatcher.consumers, 1)
 
 	// Remove All Consumers
-	testDispatcher.UpdateSubscriptions(make([]Subscription, 0))
+	subscriptionResults = testDispatcher.UpdateSubscriptions(make([]Subscription, 0))
 
+	assert.Len(t, subscriptionResults, 0)
 	verifyConsumersCount(t, testDispatcher.consumers, 0)
 
 	// Start 3 Consumers
-	testDispatcher.UpdateSubscriptions([]Subscription{
+	subscriptionResults = testDispatcher.UpdateSubscriptions([]Subscription{
 		{
 			URI:     testSubscriberUri1,
 			GroupId: testGroupId,
@@ -140,6 +139,7 @@ func TestDispatcher(t *testing.T) {
 	})
 
 	// Verify 3 Consumers Active
+	assert.Len(t, subscriptionResults, 0)
 	verifyConsumersCount(t, testDispatcher.consumers, 3)
 
 	// Send Errors, Notifications, Messages To Each Consumer
@@ -274,7 +274,6 @@ func verifyConsumerCommits(t *testing.T, consumers map[Subscription]*ConsumerOff
 	assert.Len(t, consumers, expectedCount)
 	for _, consumer := range consumers {
 		mockConsumer, ok := consumer.consumer.(*MockConsumer)
-		//assert.True(t, mockConsumer.closed)
 		assert.True(t, ok)
 		for _, offset := range mockConsumer.commits {
 			assert.NotNil(t, offset)
@@ -304,10 +303,7 @@ func sendNotificationToConsumers(t *testing.T, consumers map[Subscription]*Consu
 // Send Some Messages To The Specified Consumers
 func sendMessagesToConsumers(t *testing.T, consumers map[Subscription]*ConsumerOffset, count int) {
 	for i := 0; i < count; i++ {
-		message, err := createKafkaMessage(kafka.Offset(i + 1))
-		if err != nil {
-			t.Errorf("Unable to create message, %+v", err)
-		}
+		message := createKafkaMessage(kafka.Offset(i+1), cloudevents.VersionV1)
 
 		for _, consumer := range consumers {
 			mockConsumer, ok := consumer.consumer.(*MockConsumer)
@@ -318,18 +314,10 @@ func sendMessagesToConsumers(t *testing.T, consumers map[Subscription]*ConsumerO
 }
 
 // Create A New Kafka Message With Specified Offset
-func createKafkaMessage(offset kafka.Offset) (*kafka.Message, error) {
-	testCloudEvent := cloudevents.NewEvent(cloudevents.VersionV03)
-	testCloudEvent.SetID("ABC-123")
-	testCloudEvent.SetType("com.cloudevents.readme.sent")
-	testCloudEvent.SetSource("http://localhost:8080/")
-	testCloudEvent.SetDataContentType("application/json")
-	testCloudEvent.SetData(testValue)
+func createKafkaMessage(offset kafka.Offset, cloudEventVersion string) *kafka.Message {
 
-	eventBytes, err := testCloudEvent.DataBytes()
-	if err != nil {
-		return nil, err
-	}
+	testCloudEvent := createCloudEvent(cloudEventVersion)
+	eventBytes, _ := testCloudEvent.DataBytes()
 
 	return &kafka.Message{
 		Key:       []byte(testKey),
@@ -341,7 +329,20 @@ func createKafkaMessage(offset kafka.Offset) (*kafka.Message, error) {
 			Partition: testPartition,
 			Offset:    offset,
 		},
-	}, nil
+	}
+}
+
+func createCloudEvent(cloudEventVersion string) cloudevents.Event {
+	testCloudEvent := cloudevents.NewEvent(cloudEventVersion)
+	testCloudEvent.SetID("ABC-123")
+	testCloudEvent.SetType("com.cloudevents.readme.sent")
+	testCloudEvent.SetSource("http://localhost:8080/")
+	testCloudEvent.SetDataContentType("application/json")
+
+	data, _ := json.Marshal(testValue)
+	testCloudEvent.SetData(data)
+
+	return testCloudEvent
 }
 
 // Map CloudEvent Context Headers To Kafka Message Headers
@@ -493,4 +494,76 @@ func (mc *MockConsumer) StoreOffsets(offsets []kafka.TopicPartition) (storedOffs
 	}
 	mc.offsetsMutex.Unlock()
 	return nil, nil
+}
+
+func Test_convertToCloudEvent(t *testing.T) {
+
+	// Valid v0.3 Message
+	validMessageV03 := createKafkaMessage(1, cloudevents.VersionV03)
+	expectedCloudEventV03 := createCloudEvent(cloudevents.VersionV03)
+
+	// Valid v1 Message
+	validMessageV1 := createKafkaMessage(2, cloudevents.VersionV1)
+	expectedCloudEventV1 := createCloudEvent(cloudevents.VersionV1)
+
+	// Invalid Since Has No Spec Version
+	invalidMessage := kafka.Message{
+		TopicPartition: kafka.TopicPartition{
+			Topic:     &topic,
+			Partition: 0,
+			Offset:    1,
+		},
+		Value: []byte("foobar"),
+		Key:   []byte("foobar"),
+		Headers: []kafka.Header{
+			{Key: "ce_datacontenttype", Value: []byte("application/json")},
+		},
+	}
+
+	type args struct {
+		message *kafka.Message
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    *cloudevents.Event
+		wantErr bool
+	}{
+		{
+			name: "valid 0.3 cloudevent",
+			args: args{
+				message: validMessageV03,
+			},
+			want:    &expectedCloudEventV03,
+			wantErr: false,
+		},
+		{
+			name: "valid 1.0 cloudevent",
+			args: args{
+				message: validMessageV1,
+			},
+			want:    &expectedCloudEventV1,
+			wantErr: false,
+		},
+		{
+			name: "invalid cloudevent",
+			args: args{
+				message: &invalidMessage,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := convertToCloudEvent(tt.args.message)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("convertToCloudEvent() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !cmp.Equal(got, tt.want) {
+				t.Errorf("Did not receive correct results:\n %s", cmp.Diff(got, tt.want))
+			}
+		})
+	}
 }

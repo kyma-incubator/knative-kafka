@@ -1,6 +1,7 @@
 package dispatcher
 
 import (
+	"errors"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
@@ -118,7 +119,7 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 			currentTimeDuration := time.Now().Sub(consumerOffset.lastOffsetCommit)
 
 			if currentTimeDuration > d.OffsetCommitDurationMinimum && currentTimeDuration >= d.OffsetCommitDuration {
-				d.commitOffsets(logger, consumerOffset)
+				d.commitOffsets(logger, &consumerOffset)
 			}
 
 			// Continue Polling For Events
@@ -136,7 +137,13 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 				zap.Int32("Partition", e.TopicPartition.Partition),
 				zap.Any("Offset", e.TopicPartition.Offset))
 
-			_ = d.Client.Dispatch(convertToCloudEvent(e), subscription.URI) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
+			cloudEvent, err := convertToCloudEvent(e)
+			if err != nil {
+				logger.Error("Unable To Convert Kafka Message To CloudEvent, Skipping", zap.Any("message", e))
+				continue
+			}
+
+			_ = d.Client.Dispatch(*cloudEvent, subscription.URI) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
 
 			// Update Stored Offsets Based On The Processed Message
 			d.updateOffsets(consumerOffset.consumer, e)
@@ -145,7 +152,7 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 			// If "OffsetCommitCount" Number Of Messages Have Been Processed Since Last Offset Commit, Then Do One Now
 			if currentTimeDuration > d.OffsetCommitDurationMinimum &&
 				int64(e.TopicPartition.Offset-consumerOffset.offsets[e.TopicPartition.Partition]) >= d.OffsetCommitCount {
-				d.commitOffsets(logger, consumerOffset)
+				d.commitOffsets(logger, &consumerOffset)
 			}
 
 		case kafka.Error:
@@ -166,7 +173,7 @@ func (d *Dispatcher) updateOffsets(consumer kafkaconsumer.ConsumerInterface, mes
 }
 
 // Commit The Stored Offsets For Partitions Still Assigned To This Consumer
-func (d *Dispatcher) commitOffsets(logger *zap.Logger, consumerOffset ConsumerOffset) {
+func (d *Dispatcher) commitOffsets(logger *zap.Logger, consumerOffset *ConsumerOffset) {
 	partitions, err := consumerOffset.consumer.Commit()
 	if err != nil {
 		// Don't Log Error If There Weren't Any Offsets To Commit
@@ -174,7 +181,7 @@ func (d *Dispatcher) commitOffsets(logger *zap.Logger, consumerOffset ConsumerOf
 			logger.Error("Error Committing Offsets", zap.Error(err))
 		}
 	} else {
-		//logger.Debug("Committed Partitions", zap.Any("partitions", partitions))
+		logger.Debug("Committed Partitions", zap.Any("partitions", partitions))
 		consumerOffset.offsets = make(map[int32]kafka.Offset)
 		for _, partition := range partitions {
 			consumerOffset.offsets[partition.Partition] = partition.Offset
@@ -183,7 +190,7 @@ func (d *Dispatcher) commitOffsets(logger *zap.Logger, consumerOffset ConsumerOf
 	consumerOffset.lastOffsetCommit = time.Now()
 }
 
-func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) (map[Subscription]error, error) {
+func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) map[Subscription]error {
 
 	failedSubscriptions := make(map[Subscription]error)
 	activeSubscriptions := make(map[Subscription]bool)
@@ -212,12 +219,27 @@ func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) (map[Subs
 		}
 	}
 
-	return failedSubscriptions, nil
+	return failedSubscriptions
 }
 
 // Convert Kafka Message To A Cloud Event, Eventually We Should Consider Writing A Cloud Event SDK Codec For This
-func convertToCloudEvent(message *kafka.Message) cloudevents.Event {
-	event := cloudevents.NewEvent(cloudevents.VersionV03)
+func convertToCloudEvent(message *kafka.Message) (*cloudevents.Event, error) {
+	var specVersion string
+
+	// Determine CloudEvent Version
+	for _, header := range message.Headers {
+		if header.Key == "ce_specversion" {
+			specVersion = string(header.Value)
+			break
+		}
+	}
+
+	if len(specVersion) == 0 {
+		return nil, errors.New("could not determine CloudEvent version from Kafka message")
+	}
+
+	// Generate CloudEvent
+	event := cloudevents.NewEvent(specVersion)
 	event.SetData(message.Value)
 	for _, header := range message.Headers {
 		h := header.Key
@@ -225,8 +247,6 @@ func convertToCloudEvent(message *kafka.Message) cloudevents.Event {
 		switch h {
 		case "ce_datacontenttype":
 			event.SetDataContentType(v)
-		case "ce_specversion":
-			event.SetSpecVersion(v)
 		case "ce_type":
 			event.SetType(v)
 		case "ce_source":
@@ -240,11 +260,13 @@ func convertToCloudEvent(message *kafka.Message) cloudevents.Event {
 			event.SetSubject(v)
 		case "ce_dataschema":
 			event.SetDataSchema(v)
+		case "ce_specversion":
+			// Already Handled So Don't Do Anything
 		default:
 			// Must Be An Extension, Remove The "ce_" Prefix
 			event.SetExtension(strings.TrimPrefix(h, "ce_"), v)
 		}
 	}
 
-	return event
+	return &event, nil
 }
