@@ -6,6 +6,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/go-cmp/cmp"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -44,6 +45,9 @@ var (
 	testNotification = kafka.RevokedPartitions{}
 	testValue        = map[string]string{"test": "value"}
 )
+
+// Need To Load TestLogger To Make It Default Logger
+var logger = log.TestLogger()
 
 // Test All The Dispatcher Functionality
 func TestDispatcher(t *testing.T) {
