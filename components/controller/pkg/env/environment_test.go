@@ -12,6 +12,7 @@ import (
 
 // Test Constants
 const (
+	serviceAccount                  = "TestServiceAccount"
 	metricsPort                     = "9999"
 	kafkaProvider                   = "confluent"
 	channelImage                    = "TestChannelImage"
@@ -28,6 +29,7 @@ const (
 	defaultExponentialBackoff              = "true"
 	defaultKafkaConsumers                  = "5"
 
+	dispatcherReplicas      = "1"
 	dispatcherMemoryRequest = "20Mi"
 	dispatcherCpuRequest    = "100m"
 	dispatcherMemoryLimit   = "50Mi"
@@ -41,30 +43,32 @@ const (
 
 // Define The TestCase Struct
 type TestCase struct {
-	name                                   string
-	metricsPort                            string
-	kafkaProvider                          string
-	channelImage                           string
-	dispatcherImage                        string
-	kafkaOffsetCommitMessageCount          string
-	kafkaOffsetCommitDurationMillis        string
-	defaultTenantId                        string
-	defaultNumPartitions                   string
-	defaultReplicationFactor               string
-	defaultRetentionMillis                 string
-	defaultEventRetryInitialIntervalMillis string
-	defaultEventRetryTimeMillisMax         string
-	defaultExponentialBackoff              string
-	defaultKafkaConsumers                  string
-	dispatcherMemoryRequest                string
-	dispatcherMemoryLimit                  string
-	dispatcherCpuRequest                   string
-	dispatcherCpuLimit                     string
-	channelMemoryRequest                   string
-	channelMemoryLimit                     string
-	channelCpuRequest                      string
-	channelCpuLimit                        string
-	expectedError                          error
+	name                                 string
+	serviceAccount                       string
+	metricsPort                          string
+	kafkaProvider                        string
+	channelImage                         string
+	dispatcherImage                      string
+	kafkaOffsetCommitMessageCount        string
+	kafkaOffsetCommitDurationMillis      string
+	defaultTenantId                      string
+	defaultNumPartitions                 string
+	defaultReplicationFactor             string
+	defaultRetentionMillis               string
+	dispatcherRetryInitialIntervalMillis string
+	dispatcherRetryTimeMillisMax         string
+	dispatcherRetryExponentialBackoff    string
+	defaultKafkaConsumers                string
+	dispatcherReplicas                   string
+	dispatcherMemoryRequest              string
+	dispatcherMemoryLimit                string
+	dispatcherCpuRequest                 string
+	dispatcherCpuLimit                   string
+	channelMemoryRequest                 string
+	channelMemoryLimit                   string
+	channelCpuRequest                    string
+	channelCpuLimit                      string
+	expectedError                        error
 }
 
 // Test All Permutations Of The GetEnvironment() Functionality
@@ -76,6 +80,11 @@ func TestGetEnvironment(t *testing.T) {
 	// Define The TestCases
 	testCases := make([]TestCase, 0, 30)
 	testCase := getValidTestCase("Valid Complete Config")
+	testCases = append(testCases, testCase)
+
+	testCase = getValidTestCase("Missing Required Config - ServiceAccount")
+	testCase.serviceAccount = ""
+	testCase.expectedError = getMissingRequiredEnvironmentVariableError(ServiceAccountEnvVarKey)
 	testCases = append(testCases, testCase)
 
 	testCase = getValidTestCase("Missing Required Config - MetricsPort")
@@ -149,41 +158,41 @@ func TestGetEnvironment(t *testing.T) {
 	testCase.expectedError = getInvalidIntegerEnvironmentVariableError(testCase.defaultRetentionMillis, DefaultRetentionMillisEnvVarKey)
 	testCases = append(testCases, testCase)
 
-	testCase = getValidTestCase("Missing Optional Config - DefaultEventRetryInitialIntervalMillis")
-	testCase.defaultEventRetryInitialIntervalMillis = ""
+	testCase = getValidTestCase("Missing Optional Config - DispatcherRetryInitialIntervalMillis")
+	testCase.dispatcherRetryInitialIntervalMillis = ""
 	testCases = append(testCases, testCase)
 
-	testCase = getValidTestCase("Invalid Config - DefaultEventRetryInitialIntervalMillis")
-	testCase.defaultEventRetryInitialIntervalMillis = "NAN"
-	testCase.expectedError = getInvalidIntegerEnvironmentVariableError(testCase.defaultEventRetryInitialIntervalMillis, DefaultEventRetryInitialIntervalMillisEnvVarKey)
+	testCase = getValidTestCase("Invalid Config - DispatcherRetryInitialIntervalMillis")
+	testCase.dispatcherRetryInitialIntervalMillis = "NAN"
+	testCase.expectedError = getInvalidIntegerEnvironmentVariableError(testCase.dispatcherRetryInitialIntervalMillis, DispatcherRetryInitialIntervalMillisEnvVarKey)
 	testCases = append(testCases, testCase)
 
-	testCase = getValidTestCase("Missing Optional Config - DefaultEventRetryTimeMillisMax")
-	testCase.defaultEventRetryTimeMillisMax = ""
+	testCase = getValidTestCase("Missing Optional Config - DispatcherRetryTimeMillisMax")
+	testCase.dispatcherRetryTimeMillisMax = ""
 	testCases = append(testCases, testCase)
 
-	testCase = getValidTestCase("Invalid Config - DefaultEventRetryTimeMillisMax")
-	testCase.defaultEventRetryTimeMillisMax = "NAN"
-	testCase.expectedError = getInvalidIntegerEnvironmentVariableError(testCase.defaultEventRetryTimeMillisMax, DefaultEventRetryTimeMillisMaxEnvVarKey)
+	testCase = getValidTestCase("Invalid Config - DispatcherRetryTimeMillisMax")
+	testCase.dispatcherRetryTimeMillisMax = "NAN"
+	testCase.expectedError = getInvalidIntegerEnvironmentVariableError(testCase.dispatcherRetryTimeMillisMax, DispatcherRetryTimeMillisMaxEnvVarKey)
 	testCases = append(testCases, testCase)
 
-	testCase = getValidTestCase("Missing Optional Config - DefaultExponentialBackoff")
-	testCase.defaultExponentialBackoff = ""
+	testCase = getValidTestCase("Missing Optional Config - DispatcherRetryExponentialBackoff")
+	testCase.dispatcherRetryExponentialBackoff = ""
 	testCases = append(testCases, testCase)
 
-	testCase = getValidTestCase("Invalid Config - DefaultExponentialBackoff")
-	testCase.defaultExponentialBackoff = "NAB"
-	testCase.expectedError = getInvalidBooleanEnvironmentVariableError(testCase.defaultExponentialBackoff, DefaultExponentialBackoffEnvVarKey)
+	testCase = getValidTestCase("Invalid Config - DispatcherRetryExponentialBackoff")
+	testCase.dispatcherRetryExponentialBackoff = "NAB"
+	testCase.expectedError = getInvalidBooleanEnvironmentVariableError(testCase.dispatcherRetryExponentialBackoff, DispatcherRetryExponentialBackoffEnvVarKey)
 	testCases = append(testCases, testCase)
 
-	testCase = getValidTestCase("Missing Required Config - DefaultKafkaConsumers")
-	testCase.defaultKafkaConsumers = ""
-	testCase.expectedError = getMissingRequiredEnvironmentVariableError(DefaultKafkaConsumersEnvVarKey)
+	testCase = getValidTestCase("Missing Required Config - DispatcherReplicas")
+	testCase.dispatcherReplicas = ""
+	testCase.expectedError = getMissingRequiredEnvironmentVariableError(DispatcherReplicasEnvVarKey)
 	testCases = append(testCases, testCase)
 
-	testCase = getValidTestCase("Invalid Config - DefaultKafkaConsumers")
-	testCase.defaultKafkaConsumers = "NAN"
-	testCase.expectedError = getInvalidIntegerEnvironmentVariableError(testCase.defaultKafkaConsumers, DefaultKafkaConsumersEnvVarKey)
+	testCase = getValidTestCase("Invalid Config - DispatcherReplicas")
+	testCase.dispatcherReplicas = "NAN"
+	testCase.expectedError = getInvalidIntegerEnvironmentVariableError(testCase.dispatcherReplicas, DispatcherReplicasEnvVarKey)
 	testCases = append(testCases, testCase)
 
 	// Loop Over All The TestCases
@@ -191,6 +200,7 @@ func TestGetEnvironment(t *testing.T) {
 
 		// (Re)Setup The Environment Variables From TestCase
 		os.Clearenv()
+		assert.Nil(t, os.Setenv(ServiceAccountEnvVarKey, testCase.serviceAccount))
 		if len(testCase.metricsPort) > 0 {
 			assert.Nil(t, os.Setenv(MetricsPortEnvVarKey, testCase.metricsPort))
 		}
@@ -205,10 +215,12 @@ func TestGetEnvironment(t *testing.T) {
 		}
 		assert.Nil(t, os.Setenv(DefaultReplicationFactorEnvVarKey, testCase.defaultReplicationFactor))
 		assert.Nil(t, os.Setenv(DefaultRetentionMillisEnvVarKey, testCase.defaultRetentionMillis))
-		assert.Nil(t, os.Setenv(DefaultEventRetryInitialIntervalMillisEnvVarKey, testCase.defaultEventRetryInitialIntervalMillis))
-		assert.Nil(t, os.Setenv(DefaultEventRetryTimeMillisMaxEnvVarKey, testCase.defaultEventRetryTimeMillisMax))
-		assert.Nil(t, os.Setenv(DefaultExponentialBackoffEnvVarKey, testCase.defaultExponentialBackoff))
-		assert.Nil(t, os.Setenv(DefaultKafkaConsumersEnvVarKey, testCase.defaultKafkaConsumers))
+		assert.Nil(t, os.Setenv(DispatcherRetryInitialIntervalMillisEnvVarKey, testCase.dispatcherRetryInitialIntervalMillis))
+		assert.Nil(t, os.Setenv(DispatcherRetryTimeMillisMaxEnvVarKey, testCase.dispatcherRetryTimeMillisMax))
+		assert.Nil(t, os.Setenv(DispatcherRetryExponentialBackoffEnvVarKey, testCase.dispatcherRetryExponentialBackoff))
+		if len(testCase.dispatcherReplicas) > 0 {
+			assert.Nil(t, os.Setenv(DispatcherReplicasEnvVarKey, testCase.dispatcherReplicas))
+		}
 		assert.Nil(t, os.Setenv(DispatcherCpuLimitEnvVarKey, testCase.dispatcherCpuLimit))
 		assert.Nil(t, os.Setenv(DispatcherCpuRequestEnvVarKey, testCase.dispatcherCpuRequest))
 		assert.Nil(t, os.Setenv(DispatcherMemoryLimitEnvVarKey, testCase.dispatcherMemoryLimit))
@@ -223,8 +235,10 @@ func TestGetEnvironment(t *testing.T) {
 
 		// Verify The Results
 		if testCase.expectedError == nil {
+
 			assert.Nil(t, err)
 			assert.NotNil(t, environment)
+			assert.Equal(t, testCase.serviceAccount, environment.ServiceAccount)
 			assert.Equal(t, testCase.metricsPort, strconv.Itoa(environment.MetricsPort))
 			assert.Equal(t, testCase.channelImage, environment.ChannelImage)
 			assert.Equal(t, testCase.dispatcherImage, environment.DispatcherImage)
@@ -256,25 +270,26 @@ func TestGetEnvironment(t *testing.T) {
 				assert.Equal(t, DefaultRetentionMillis, strconv.FormatInt(environment.DefaultRetentionMillis, 10))
 			}
 
-			if len(testCase.defaultEventRetryInitialIntervalMillis) > 0 {
-				assert.Equal(t, testCase.defaultEventRetryInitialIntervalMillis, strconv.FormatInt(environment.DefaultEventRetryInitialIntervalMillis, 10))
+			if len(testCase.dispatcherRetryInitialIntervalMillis) > 0 {
+				assert.Equal(t, testCase.dispatcherRetryInitialIntervalMillis, strconv.FormatInt(environment.DispatcherRetryInitialIntervalMillis, 10))
 			} else {
-				assert.Equal(t, DefaultEventRetryInitialIntervalMillis, strconv.FormatInt(environment.DefaultEventRetryInitialIntervalMillis, 10))
+				assert.Equal(t, DefaultEventRetryInitialIntervalMillis, strconv.FormatInt(environment.DispatcherRetryInitialIntervalMillis, 10))
 			}
 
-			if len(testCase.defaultEventRetryTimeMillisMax) > 0 {
-				assert.Equal(t, testCase.defaultEventRetryTimeMillisMax, strconv.FormatInt(environment.DefaultEventRetryTimeMillisMax, 10))
+			if len(testCase.dispatcherRetryTimeMillisMax) > 0 {
+				assert.Equal(t, testCase.dispatcherRetryTimeMillisMax, strconv.FormatInt(environment.DispatcherRetryTimeMillisMax, 10))
 			} else {
-				assert.Equal(t, DefaultEventRetryTimeMillisMax, strconv.FormatInt(environment.DefaultEventRetryTimeMillisMax, 10))
+				assert.Equal(t, DefaultEventRetryTimeMillisMax, strconv.FormatInt(environment.DispatcherRetryTimeMillisMax, 10))
 			}
 
-			if len(testCase.defaultExponentialBackoff) > 0 {
-				assert.Equal(t, testCase.defaultExponentialBackoff, strconv.FormatBool(environment.DefaultExponentialBackoff))
+			if len(testCase.dispatcherRetryExponentialBackoff) > 0 {
+				assert.Equal(t, testCase.dispatcherRetryExponentialBackoff, strconv.FormatBool(environment.DispatcherRetryExponentialBackoff))
 			} else {
-				assert.Equal(t, DefaultExponentialBackoff, strconv.FormatBool(environment.DefaultExponentialBackoff))
+				assert.Equal(t, DefaultExponentialBackoff, strconv.FormatBool(environment.DispatcherRetryExponentialBackoff))
 			}
 
-			assert.Equal(t, testCase.defaultKafkaConsumers, strconv.Itoa(environment.DefaultKafkaConsumers))
+			assert.Equal(t, testCase.dispatcherReplicas, strconv.Itoa(environment.DispatcherReplicas))
+
 		} else {
 			assert.Equal(t, testCase.expectedError, err)
 			assert.Nil(t, environment)
@@ -286,30 +301,32 @@ func TestGetEnvironment(t *testing.T) {
 // Get The Base / Valid Test Case - All Config Specified / No Errors
 func getValidTestCase(name string) TestCase {
 	return TestCase{
-		name:                                   name,
-		metricsPort:                            metricsPort,
-		kafkaProvider:                          kafkaProvider,
-		channelImage:                           channelImage,
-		dispatcherImage:                        dispatcherImage,
-		kafkaOffsetCommitMessageCount:          kafkaOffsetCommitMessageCount,
-		kafkaOffsetCommitDurationMillis:        kafkaOffsetCommitDurationMillis,
-		defaultTenantId:                        defaultTenantId,
-		defaultNumPartitions:                   defaultNumPartitions,
-		defaultReplicationFactor:               defaultReplicationFactor,
-		defaultRetentionMillis:                 defaultRetentionMillis,
-		defaultEventRetryInitialIntervalMillis: defaultEventRetryInitialIntervalMillis,
-		defaultEventRetryTimeMillisMax:         defaultEventRetryTimeMillisMax,
-		defaultExponentialBackoff:              defaultExponentialBackoff,
-		defaultKafkaConsumers:                  defaultKafkaConsumers,
-		dispatcherCpuRequest:                   dispatcherCpuRequest,
-		dispatcherCpuLimit:                     dispatcherCpuLimit,
-		dispatcherMemoryLimit:                  dispatcherMemoryLimit,
-		dispatcherMemoryRequest:                dispatcherMemoryRequest,
-		channelMemoryRequest:                   channelMemoryRequest,
-		channelCpuRequest:                      channelCpuRquest,
-		channelMemoryLimit:                     channelMemoryLimit,
-		channelCpuLimit:                        channelCpuLimit,
-		expectedError:                          nil,
+		name:                                 name,
+		serviceAccount:                       serviceAccount,
+		metricsPort:                          metricsPort,
+		kafkaProvider:                        kafkaProvider,
+		channelImage:                         channelImage,
+		dispatcherImage:                      dispatcherImage,
+		kafkaOffsetCommitMessageCount:        kafkaOffsetCommitMessageCount,
+		kafkaOffsetCommitDurationMillis:      kafkaOffsetCommitDurationMillis,
+		defaultTenantId:                      defaultTenantId,
+		defaultNumPartitions:                 defaultNumPartitions,
+		defaultReplicationFactor:             defaultReplicationFactor,
+		defaultRetentionMillis:               defaultRetentionMillis,
+		dispatcherRetryInitialIntervalMillis: defaultEventRetryInitialIntervalMillis,
+		dispatcherRetryTimeMillisMax:         defaultEventRetryTimeMillisMax,
+		dispatcherRetryExponentialBackoff:    defaultExponentialBackoff,
+		defaultKafkaConsumers:                defaultKafkaConsumers,
+		dispatcherReplicas:                   dispatcherReplicas,
+		dispatcherCpuRequest:                 dispatcherCpuRequest,
+		dispatcherCpuLimit:                   dispatcherCpuLimit,
+		dispatcherMemoryLimit:                dispatcherMemoryLimit,
+		dispatcherMemoryRequest:              dispatcherMemoryRequest,
+		channelMemoryRequest:                 channelMemoryRequest,
+		channelCpuRequest:                    channelCpuRquest,
+		channelMemoryLimit:                   channelMemoryLimit,
+		channelCpuLimit:                      channelCpuLimit,
+		expectedError:                        nil,
 	}
 }
 

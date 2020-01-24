@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
+	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
@@ -20,8 +20,8 @@ import (
 	"strconv"
 )
 
-// Reconcile The "Channel" Inbound For The Specified Channel (K8S Service, Istio VirtualService, Deployment)
-func (r *Reconciler) reconcileChannel(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) error {
+// Reconcile The "Channel" Inbound For The Specified Channel (K8S Service, Deployment)
+func (r *Reconciler) reconcileChannel(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Get Channel Specific Logger
 	logger := util.ChannelLogger(r.logger, channel)
@@ -71,7 +71,7 @@ func (r *Reconciler) reconcileChannel(ctx context.Context, channel *kafkav1alpha
 //
 
 // Create The K8S Service If Not Already Existing
-func (r *Reconciler) createK8sChannelService(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+func (r *Reconciler) createK8sChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Attempt To Get The K8S Service Associated With The Specified Channel
 	service, err := r.getK8sChannelService(ctx, channel)
@@ -101,12 +101,12 @@ func (r *Reconciler) createK8sChannelService(ctx context.Context, channel *kafka
 }
 
 // Get The K8S Channel Service Associated With The Specified Channel
-func (r *Reconciler) getK8sChannelService(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+func (r *Reconciler) getK8sChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Create A Namespace / Name ObjectKey For The Specified Channel
 	serviceKey := types.NamespacedName{
 		Namespace: constants.KnativeEventingNamespace,
-		Name:      util.ChannelServiceName(channel),
+		Name:      util.ChannelDnsSafeName(channel),
 	}
 
 	// Get The Service By Namespace / Name
@@ -118,12 +118,15 @@ func (r *Reconciler) getK8sChannelService(ctx context.Context, channel *kafkav1a
 }
 
 // Create K8S Channel Service Model For The Specified Channel
-func (r *Reconciler) newK8sChannelService(channel *kafkav1alpha1.KafkaChannel) *corev1.Service {
+func (r *Reconciler) newK8sChannelService(channel *knativekafkav1alpha1.KafkaChannel) *corev1.Service {
+
+	// Get The Dispatcher Service Name For The Channel
+	serviceName := util.ChannelDnsSafeName(channel)
 
 	// Create & Return The K8S Service Model
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.ChannelServiceName(channel),
+			Name:      serviceName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"channel":                  channel.Name,
@@ -147,7 +150,7 @@ func (r *Reconciler) newK8sChannelService(channel *kafkav1alpha1.KafkaChannel) *
 				},
 			},
 			Selector: map[string]string{
-				"app": util.ChannelDeploymentName(channel), // Matches Deployment Label Key/Value
+				"app": serviceName, // Matches Deployment Label Key/Value
 			},
 		},
 	}
@@ -158,7 +161,7 @@ func (r *Reconciler) newK8sChannelService(channel *kafkav1alpha1.KafkaChannel) *
 //
 
 // Create The K8S Channel Deployment If Not Already Existing
-func (r *Reconciler) createK8sChannelDeployment(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+func (r *Reconciler) createK8sChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Attempt To Get The K8S Channel Deployment Associated With The Specified Channel
 	deployment, err := r.getK8sChannelDeployment(ctx, channel)
@@ -182,10 +185,10 @@ func (r *Reconciler) createK8sChannelDeployment(ctx context.Context, channel *ka
 }
 
 // Get The K8S Channel Deployment Associated With The Specified Channel
-func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Get The Channel Deployment Name
-	deploymentName := util.ChannelDeploymentName(channel)
+	deploymentName := util.ChannelDnsSafeName(channel)
 
 	// Create A Namespace / Name ObjectKey For The Specified Channel Deployment
 	deploymentKey := types.NamespacedName{
@@ -202,10 +205,10 @@ func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *kafka
 }
 
 // Create K8S Channel Deployment Model For The Specified Channel
-func (r *Reconciler) newK8sChannelDeployment(channel *kafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+func (r *Reconciler) newK8sChannelDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Get The Channel Deployment Name
-	deploymentName := util.ChannelDeploymentName(channel)
+	deploymentName := util.ChannelDnsSafeName(channel)
 
 	// Replicas Int Value For De-Referencing
 	replicas := int32(1)
@@ -295,7 +298,7 @@ func (r *Reconciler) newK8sChannelDeployment(channel *kafkav1alpha1.KafkaChannel
 }
 
 // Create The Channel Container's Env Vars
-func (r *Reconciler) channelDeploymentEnvVars(channel *kafkav1alpha1.KafkaChannel) ([]corev1.EnvVar, error) {
+func (r *Reconciler) channelDeploymentEnvVars(channel *knativekafkav1alpha1.KafkaChannel) ([]corev1.EnvVar, error) {
 
 	// Get The TopicName For Specified Channel
 	topicName := util.TopicName(channel, r.environment)

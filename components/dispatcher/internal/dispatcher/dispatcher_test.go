@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/google/go-cmp/cmp"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
@@ -23,60 +24,67 @@ const (
 	testTopic                   = "TestTopic"
 	testPartition               = 33
 	testOffset                  = "latest"
-	testConcurrency             = 4
 	testGroupId                 = "TestGroupId"
+	testGroupId2                = "TestGroupId2"
+	testGroupId3                = "TestGroupId3"
 	testKey                     = "TestKey"
 	testMessagesToSend          = 3
 	testPollTimeoutMillis       = 500 // Not Used By Mock Consumer ; )
 	testOffsetCommitCount       = 2
-	testOffsetCommitDuration    = 50 * time.Millisecond // Small Durations For Testing!
-	testOffsetCommitDurationMin = 50 * time.Millisecond // Small Durations For Testing!
+	testOffsetCommitDuration    = 500 * time.Millisecond // Small Durations For Testing!
+	testOffsetCommitDurationMin = 500 * time.Millisecond // Small Durations For Testing!
 	testUsername                = "TestUsername"
 	testPassword                = "TestPassword"
+	testChannelKey              = "TestChannel"
 )
 
 // Test Data (Non-Constants)
 var (
-	topic              = testTopic
-	testError          = kafka.NewError(1, "sample error", false)
-	testNotification   = kafka.RevokedPartitions{}
-	numberOfCalls      = 0
-	numberOfCallsMutex = &sync.Mutex{}
-	testValue          = map[string]string{"test": "value"}
+	topic            = testTopic
+	testError        = kafka.NewError(1, "sample error", false)
+	testNotification = kafka.RevokedPartitions{}
+	testValue        = map[string]string{"test": "value"}
 )
 
-// Setup A Test Logger (Ignore Unused Warning - This Updates The log.Logger Reference!)
+// Need To Load TestLogger To Make It Default Logger
 var logger = log.TestLogger()
 
 // Test All The Dispatcher Functionality
 func TestDispatcher(t *testing.T) {
 
 	// Initialize The Test HTTP Server Instance & URL
-	var httpServer = getHttpServer(t)
-	testSubscriberUri := httpServer.URL
+	callCount1 := 0
+	var httpServer = getHttpServer(t, &callCount1)
+	testSubscriberUri1 := httpServer.URL
 	defer httpServer.Close()
+
+	callCount2 := 0
+	var httpServer2 = getHttpServer(t, &callCount2)
+	testSubscriberUri2 := httpServer2.URL
+	defer httpServer2.Close()
+
+	callCount3 := 0
+	var httpServer3 = getHttpServer(t, &callCount3)
+	testSubscriberUri3 := httpServer3.URL
+	defer httpServer3.Close()
 
 	// Replace The NewClient Wrapper To Provide Mock Consumer & Defer Reset
 	newConsumerWrapperPlaceholder := kafkaconsumer.NewConsumerWrapper
 	kafkaconsumer.NewConsumerWrapper = func(configMap *kafka.ConfigMap) (kafkaconsumer.ConsumerInterface, error) {
 		verifyConfigMapValue(t, configMap, "bootstrap.servers", testBrokers)
-		verifyConfigMapValue(t, configMap, "group.id", testGroupId)
 		verifyConfigMapValue(t, configMap, "sasl.username", testUsername)
 		verifyConfigMapValue(t, configMap, "sasl.password", testPassword)
 		return NewMockConsumer(), nil
 	}
 	defer func() { kafkaconsumer.NewConsumerWrapper = newConsumerWrapperPlaceholder }()
 
-	cloudEventClient := client.NewRetriableCloudEventClient(testSubscriberUri, false, 500, 5000)
+	cloudEventClient := client.NewRetriableCloudEventClient(false, 500, 5000)
 
 	// Create A New Dispatcher
 	dispatcherConfig := DispatcherConfig{
 		Brokers:                     testBrokers,
 		Topic:                       testTopic,
 		Offset:                      testOffset,
-		Concurrency:                 testConcurrency,
-		GroupId:                     testGroupId,
-		SubscriberUri:               testSubscriberUri,
 		PollTimeoutMillis:           testPollTimeoutMillis,
 		OffsetCommitCount:           testOffsetCommitCount,
 		OffsetCommitDuration:        testOffsetCommitDuration,
@@ -84,6 +92,7 @@ func TestDispatcher(t *testing.T) {
 		Username:                    testUsername,
 		Password:                    testPassword,
 		Client:                      cloudEventClient,
+		ChannelKey:                  testChannelKey,
 	}
 	testDispatcher := NewDispatcher(dispatcherConfig)
 
@@ -93,18 +102,49 @@ func TestDispatcher(t *testing.T) {
 		testBrokers,
 		testTopic,
 		testOffset,
-		testConcurrency,
-		testGroupId,
 		testOffsetCommitCount,
 		testOffsetCommitDuration,
 		testUsername,
-		testPassword)
+		testPassword,
+		testChannelKey)
 
-	// Start Consumers
-	testDispatcher.StartConsumers()
+	// Start 1 Consumer
+	subscriptionResults := testDispatcher.UpdateSubscriptions([]Subscription{
+		{
+			URI:     testSubscriberUri1,
+			GroupId: testGroupId,
+		},
+	})
 
 	// Verify Consumers Started
-	verifyConsumersCount(t, testDispatcher.consumers)
+	assert.Len(t, subscriptionResults, 0)
+	verifyConsumersCount(t, testDispatcher.consumers, 1)
+
+	// Remove All Consumers
+	subscriptionResults = testDispatcher.UpdateSubscriptions(make([]Subscription, 0))
+
+	assert.Len(t, subscriptionResults, 0)
+	verifyConsumersCount(t, testDispatcher.consumers, 0)
+
+	// Start 3 Consumers
+	subscriptionResults = testDispatcher.UpdateSubscriptions([]Subscription{
+		{
+			URI:     testSubscriberUri1,
+			GroupId: testGroupId,
+		},
+		{
+			URI:     testSubscriberUri2,
+			GroupId: testGroupId2,
+		},
+		{
+			URI:     testSubscriberUri3,
+			GroupId: testGroupId3,
+		},
+	})
+
+	// Verify 3 Consumers Active
+	assert.Len(t, subscriptionResults, 0)
+	verifyConsumersCount(t, testDispatcher.consumers, 3)
 
 	// Send Errors, Notifications, Messages To Each Consumer
 	sendErrorToConsumers(t, testDispatcher.consumers, testError)
@@ -114,24 +154,30 @@ func TestDispatcher(t *testing.T) {
 	// Wait For Consumers To Process Messages
 	waitForConsumersToProcessEvents(t, testDispatcher.consumers)
 
+	// Verify The Consumer Offset Commit Messages
+	verifyConsumerCommits(t, testDispatcher.consumers, 3)
+
 	// Stop Consumers
 	testDispatcher.StopConsumers()
-
-	// Verify The Consumer Offset Commit Messages
-	verifyConsumerCommits(t, testDispatcher.consumers)
 
 	// Verify Consumers Stopped
 	verifyConsumersClosed(t, testDispatcher.consumers)
 
-	// Wait A Bit To See The Channel Closing Logs (lame but only for visual verification of non-blocking channel shutdown)
+	// Wait A Bit To fSee The Channel Closing Logs (lame but only for visual verification of non-blocking channel shutdown)
 	time.Sleep(2 * time.Second)
 
 	// Verify Mock HTTP Server Is Called The Correct Number Of Times
-	numberOfCallsMutex.Lock()
-	if numberOfCalls != (testConcurrency * (testMessagesToSend)) {
-		t.Errorf("expected %+v HTTP calls but got: %+v", testConcurrency, numberOfCalls)
+	if callCount1 != testMessagesToSend {
+		t.Errorf("expected %+v HTTP calls but got: %+v", testMessagesToSend, callCount1)
 	}
-	numberOfCallsMutex.Unlock()
+
+	if callCount2 != testMessagesToSend {
+		t.Errorf("expected %+v HTTP calls but got: %+v", testMessagesToSend, callCount2)
+	}
+
+	if callCount3 != testMessagesToSend {
+		t.Errorf("expected %+v HTTP calls but got: %+v", testMessagesToSend, callCount3)
+	}
 }
 
 // Verify A Specific ConfigMap Value
@@ -142,15 +188,13 @@ func verifyConfigMapValue(t *testing.T, configMap *kafka.ConfigMap, key string, 
 }
 
 // Return Test HTTP Server - Always Responds With Success
-func getHttpServer(t *testing.T) *httptest.Server {
+func getHttpServer(t *testing.T, callCount *int) *httptest.Server {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		switch request.Method {
 		case "POST":
 
 			// Update The Number Of Calls (Async Safe)
-			numberOfCallsMutex.Lock()
-			numberOfCalls++
-			numberOfCallsMutex.Unlock()
+			*callCount++
 
 			// Verify Request Content-Type Header
 			requestContentTypeHeader := request.Header.Get("Content-Type")
@@ -187,56 +231,53 @@ func verifyDispatcher(t *testing.T,
 	expectedBrokers string,
 	expectedTopic string,
 	expectedOffset string,
-	expectedConcurrency int64,
-	expectedGroupId string,
 	expectedOffsetCommitCount int64,
 	expectedOffsetCommitDuration time.Duration,
 	expectedUsername string,
-	expectedPassword string) {
+	expectedPassword string,
+	expectedChannelName string) {
 
 	assert.NotNil(t, dispatcher)
 	assert.Equal(t, expectedBrokers, dispatcher.Brokers)
 	assert.Equal(t, expectedTopic, dispatcher.Topic)
 	assert.Equal(t, expectedOffset, dispatcher.Offset)
-	assert.Equal(t, expectedConcurrency, dispatcher.Concurrency)
-	assert.Equal(t, expectedGroupId, dispatcher.GroupId)
 	assert.NotNil(t, dispatcher.consumers)
 	assert.Len(t, dispatcher.consumers, 0)
 	assert.Equal(t, expectedOffsetCommitCount, dispatcher.OffsetCommitCount)
 	assert.Equal(t, expectedOffsetCommitDuration, dispatcher.OffsetCommitDuration)
 	assert.Equal(t, expectedUsername, dispatcher.Username)
 	assert.Equal(t, expectedPassword, dispatcher.Password)
+	assert.Equal(t, expectedChannelName, dispatcher.ChannelKey)
 }
 
 // Verify The Appropriate Consumers Were Created
-func verifyConsumersCount(t *testing.T, consumers []kafkaconsumer.ConsumerInterface) {
+func verifyConsumersCount(t *testing.T, consumers map[Subscription]*ConsumerOffset, expectedCount int) {
 	assert.NotNil(t, consumers)
-	assert.Len(t, consumers, testConcurrency)
+	assert.Len(t, consumers, expectedCount)
 	for _, consumer := range consumers {
-		mockConsumer, ok := consumer.(*MockConsumer)
+		mockConsumer, ok := consumer.consumer.(*MockConsumer)
 		assert.False(t, mockConsumer.closed)
 		assert.True(t, ok)
 	}
 }
 
 // Verify The Consumers Have All Been Closed
-func verifyConsumersClosed(t *testing.T, consumers []kafkaconsumer.ConsumerInterface) {
+func verifyConsumersClosed(t *testing.T, consumers map[Subscription]*ConsumerOffset) {
 	assert.NotNil(t, consumers)
-	assert.Len(t, consumers, testConcurrency)
+	assert.Len(t, consumers, 0)
 	for _, consumer := range consumers {
-		mockConsumer, ok := consumer.(*MockConsumer)
+		mockConsumer, ok := consumer.consumer.(*MockConsumer)
 		assert.True(t, mockConsumer.closed)
 		assert.True(t, ok)
 	}
 }
 
 // Verify The Consumers Have The Correct Commit Messages / Offsets
-func verifyConsumerCommits(t *testing.T, consumers []kafkaconsumer.ConsumerInterface) {
+func verifyConsumerCommits(t *testing.T, consumers map[Subscription]*ConsumerOffset, expectedCount int) {
 	assert.NotNil(t, consumers)
-	assert.Len(t, consumers, testConcurrency)
+	assert.Len(t, consumers, expectedCount)
 	for _, consumer := range consumers {
-		mockConsumer, ok := consumer.(*MockConsumer)
-		assert.True(t, mockConsumer.closed)
+		mockConsumer, ok := consumer.consumer.(*MockConsumer)
 		assert.True(t, ok)
 		for _, offset := range mockConsumer.commits {
 			assert.NotNil(t, offset)
@@ -246,33 +287,30 @@ func verifyConsumerCommits(t *testing.T, consumers []kafkaconsumer.ConsumerInter
 }
 
 // Send An Error To The Specified Consumers
-func sendErrorToConsumers(t *testing.T, consumers []kafkaconsumer.ConsumerInterface, err kafka.Error) {
+func sendErrorToConsumers(t *testing.T, consumers map[Subscription]*ConsumerOffset, err kafka.Error) {
 	for _, consumer := range consumers {
-		mockConsumer, ok := consumer.(*MockConsumer)
+		mockConsumer, ok := consumer.consumer.(*MockConsumer)
 		assert.True(t, ok)
 		mockConsumer.sendMessage(err)
 	}
 }
 
 // Send A Notification To The Specified Consumers
-func sendNotificationToConsumers(t *testing.T, consumers []kafkaconsumer.ConsumerInterface, notification kafka.Event) {
+func sendNotificationToConsumers(t *testing.T, consumers map[Subscription]*ConsumerOffset, notification kafka.Event) {
 	for _, consumer := range consumers {
-		mockConsumer, ok := consumer.(*MockConsumer)
+		mockConsumer, ok := consumer.consumer.(*MockConsumer)
 		assert.True(t, ok)
 		mockConsumer.sendMessage(notification)
 	}
 }
 
 // Send Some Messages To The Specified Consumers
-func sendMessagesToConsumers(t *testing.T, consumers []kafkaconsumer.ConsumerInterface, count int) {
+func sendMessagesToConsumers(t *testing.T, consumers map[Subscription]*ConsumerOffset, count int) {
 	for i := 0; i < count; i++ {
-		message, err := createKafkaMessage(kafka.Offset(i + 1))
-		if err != nil {
-			t.Errorf("Unable to create message, %+v", err)
-		}
+		message := createKafkaMessage(kafka.Offset(i+1), cloudevents.VersionV1)
 
 		for _, consumer := range consumers {
-			mockConsumer, ok := consumer.(*MockConsumer)
+			mockConsumer, ok := consumer.consumer.(*MockConsumer)
 			assert.True(t, ok)
 			mockConsumer.sendMessage(message)
 		}
@@ -280,18 +318,10 @@ func sendMessagesToConsumers(t *testing.T, consumers []kafkaconsumer.ConsumerInt
 }
 
 // Create A New Kafka Message With Specified Offset
-func createKafkaMessage(offset kafka.Offset) (*kafka.Message, error) {
-	testCloudEvent := cloudevents.NewEvent(cloudevents.VersionV03)
-	testCloudEvent.SetID("ABC-123")
-	testCloudEvent.SetType("com.cloudevents.readme.sent")
-	testCloudEvent.SetSource("http://localhost:8080/")
-	testCloudEvent.SetDataContentType("application/json")
-	testCloudEvent.SetData(testValue)
+func createKafkaMessage(offset kafka.Offset, cloudEventVersion string) *kafka.Message {
 
-	eventBytes, err := testCloudEvent.DataBytes()
-	if err != nil {
-		return nil, err
-	}
+	testCloudEvent := createCloudEvent(cloudEventVersion)
+	eventBytes, _ := testCloudEvent.DataBytes()
 
 	return &kafka.Message{
 		Key:       []byte(testKey),
@@ -303,7 +333,20 @@ func createKafkaMessage(offset kafka.Offset) (*kafka.Message, error) {
 			Partition: testPartition,
 			Offset:    offset,
 		},
-	}, nil
+	}
+}
+
+func createCloudEvent(cloudEventVersion string) cloudevents.Event {
+	testCloudEvent := cloudevents.NewEvent(cloudEventVersion)
+	testCloudEvent.SetID("ABC-123")
+	testCloudEvent.SetType("com.cloudevents.readme.sent")
+	testCloudEvent.SetSource("http://localhost:8080/")
+	testCloudEvent.SetDataContentType("application/json")
+
+	data, _ := json.Marshal(testValue)
+	testCloudEvent.SetData(data)
+
+	return testCloudEvent
 }
 
 // Map CloudEvent Context Headers To Kafka Message Headers
@@ -339,10 +382,10 @@ func createMessageHeaders(context cloudevents.EventContext) []kafka.Header {
 }
 
 // Wait For The Consumers To Process All The Events
-func waitForConsumersToProcessEvents(t *testing.T, consumers []kafkaconsumer.ConsumerInterface) {
+func waitForConsumersToProcessEvents(t *testing.T, consumers map[Subscription]*ConsumerOffset) {
 	startTime := time.Now()
 	for _, consumer := range consumers {
-		mockConsumer, ok := consumer.(*MockConsumer)
+		mockConsumer, ok := consumer.consumer.(*MockConsumer)
 		assert.True(t, ok)
 		for {
 			mockConsumer.offsetsMutex.Lock()
@@ -455,4 +498,76 @@ func (mc *MockConsumer) StoreOffsets(offsets []kafka.TopicPartition) (storedOffs
 	}
 	mc.offsetsMutex.Unlock()
 	return nil, nil
+}
+
+func Test_convertToCloudEvent(t *testing.T) {
+
+	// Valid v0.3 Message
+	validMessageV03 := createKafkaMessage(1, cloudevents.VersionV03)
+	expectedCloudEventV03 := createCloudEvent(cloudevents.VersionV03)
+
+	// Valid v1 Message
+	validMessageV1 := createKafkaMessage(2, cloudevents.VersionV1)
+	expectedCloudEventV1 := createCloudEvent(cloudevents.VersionV1)
+
+	// Invalid Since Has No Spec Version
+	invalidMessage := kafka.Message{
+		TopicPartition: kafka.TopicPartition{
+			Topic:     &topic,
+			Partition: 0,
+			Offset:    1,
+		},
+		Value: []byte("foobar"),
+		Key:   []byte("foobar"),
+		Headers: []kafka.Header{
+			{Key: "ce_datacontenttype", Value: []byte("application/json")},
+		},
+	}
+
+	type args struct {
+		message *kafka.Message
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    *cloudevents.Event
+		wantErr bool
+	}{
+		{
+			name: "valid 0.3 cloudevent",
+			args: args{
+				message: validMessageV03,
+			},
+			want:    &expectedCloudEventV03,
+			wantErr: false,
+		},
+		{
+			name: "valid 1.0 cloudevent",
+			args: args{
+				message: validMessageV1,
+			},
+			want:    &expectedCloudEventV1,
+			wantErr: false,
+		},
+		{
+			name: "invalid cloudevent",
+			args: args{
+				message: &invalidMessage,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := convertToCloudEvent(tt.args.message)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("convertToCloudEvent() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !cmp.Equal(got, tt.want) {
+				t.Errorf("Did not receive correct results:\n %s", cmp.Diff(got, tt.want))
+			}
+		})
+	}
 }

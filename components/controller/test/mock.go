@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 // Mock Constants
@@ -205,6 +206,28 @@ var MockCreateFnServiceError MockCreateFn = func(innerClient client.Client, ctx 
 	return Unhandled, nil
 }
 
+// Handle Any Channel Services By Returning An Error
+var MockCreateFnChannelServiceError MockCreateFn = func(innerClient client.Client, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) (MockHandled, error) {
+	if _, ok := obj.(*corev1.Service); ok {
+		if strings.HasSuffix(obj.(*corev1.Service).Name, "-channel") {
+			err := errors.New(MockCreateFnServiceErrorMessage)
+			return Handled, err
+		}
+	}
+	return Unhandled, nil
+}
+
+// Handle Any Dispatcher Services By Returning An Error
+var MockCreateFnDispatcherServiceError MockCreateFn = func(innerClient client.Client, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) (MockHandled, error) {
+	if _, ok := obj.(*corev1.Service); ok {
+		if strings.HasSuffix(obj.(*corev1.Service).Name, "-dispatcher") {
+			err := errors.New(MockCreateFnServiceErrorMessage)
+			return Handled, err
+		}
+	}
+	return Unhandled, nil
+}
+
 //
 // K8S Deployment Mock Functions
 //
@@ -223,6 +246,28 @@ var MockCreateFnDeploymentError MockCreateFn = func(innerClient client.Client, c
 	if _, ok := obj.(*appsv1.Deployment); ok {
 		err := errors.New(MockCreateFnDeploymentErrorMessage)
 		return Handled, err
+	}
+	return Unhandled, nil
+}
+
+// Handle Any Channel Deployment By Returning An Error
+var MockCreateFnChannelDeploymentError MockCreateFn = func(innerClient client.Client, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) (MockHandled, error) {
+	if _, ok := obj.(*appsv1.Deployment); ok {
+		if strings.HasSuffix(obj.(*appsv1.Deployment).Name, "-channel") {
+			err := errors.New(MockCreateFnDeploymentErrorMessage)
+			return Handled, err
+		}
+	}
+	return Unhandled, nil
+}
+
+// Handle Any Dispatcher Deployment By Returning An Error
+var MockCreateFnDispatcherDeploymentError MockCreateFn = func(innerClient client.Client, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) (MockHandled, error) {
+	if _, ok := obj.(*appsv1.Deployment); ok {
+		if strings.HasSuffix(obj.(*appsv1.Deployment).Name, "-dispatcher") {
+			err := errors.New(MockCreateFnDeploymentErrorMessage)
+			return Handled, err
+		}
 	}
 	return Unhandled, nil
 }

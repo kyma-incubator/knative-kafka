@@ -1,53 +1,17 @@
 package util
 
 import (
-	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
-	"regexp"
-	"strings"
+	"fmt"
+	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 )
 
-// Compile RegExps
-var startsWithLowercaseAlphaCharRegExp = regexp.MustCompile("^[a-z].*$")
-var endsWithLowercaseAlphaCharRegExp = regexp.MustCompile("^.*[a-z]$")
-var invalidK8sServiceCharactersRegExp = regexp.MustCompile("[^a-z0-9\\-]+")
+// Create A DNS Safe Name For The Specified KafkaChannel Suitable For Use With K8S Services
+func DispatcherDnsSafeName(channel *knativekafkav1alpha1.KafkaChannel) string {
 
-// Dispatcher K8S Service Naming Utility
-func DispatcherServiceName(subscription *messagingv1alpha1.Subscription) string {
-	return generateValidDispatcherDnsName(subscription.Name)
-}
-
-// Dispatcher Deployment Naming Utility
-func DispatcherDeploymentName(subscription *messagingv1alpha1.Subscription) string {
-	return generateValidDispatcherDnsName(subscription.Name)
-}
-
-// Return A Valid Dispatcher DNS Name Which Is As Close To The Specified Name As Possible
-func generateValidDispatcherDnsName(name string) string {
-
-	// Convert To LowerCase
-	validDnsName := strings.ToLower(name)
-
-	// Strip Any Invalid DNS Characters
-	validDnsName = invalidK8sServiceCharactersRegExp.ReplaceAllString(validDnsName, "")
-
-	// Prepend Alpha Prefix If Needed
-	if !startsWithLowercaseAlphaCharRegExp.MatchString(validDnsName) {
-		validDnsName = "kk-" + validDnsName // Should never happen but just in case ; )
-	}
-
-	// Append The Dispatcher Suffix
-	validDnsName = validDnsName + "-dispatcher"
-
-	// Truncate If Too Long
-	if len(validDnsName) > 55 {
-		validDnsName = validDnsName[:55]
-	}
-
-	// Remove Any Trailing Non Alpha
-	for !endsWithLowercaseAlphaCharRegExp.MatchString(validDnsName) {
-		validDnsName = validDnsName[:(len(validDnsName) - 1)]
-	}
-
-	// Return The Valid DNS Name
-	return validDnsName
+	// In order for the resulting name to be a valid DNS component is 63 characters.  We are appending 12 characters to separate
+	// the components and to indicate this is a Dispatcher which further reduces the available length to 51.  We will allocate 30
+	// characters to the channel and 20 to the namespace, leaving some extra buffer.
+	safeChannelName := GenerateValidDnsName(channel.Name, 30)
+	safeChannelNamespace := GenerateValidDnsName(channel.Namespace, 20)
+	return fmt.Sprintf("%s-%s-dispatcher", safeChannelName, safeChannelNamespace)
 }

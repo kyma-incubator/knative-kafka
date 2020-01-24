@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	cloudevents "github.com/cloudevents/sdk-go"
+	cloudeventcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/context"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/slok/goresilience/retry"
@@ -21,14 +22,13 @@ var httpClient = &http.Client{
 // Client represents anything that can dispatch an event
 // to a downstream service
 type RetriableClient interface {
-	Dispatch(message cloudevents.Event) error
+	Dispatch(message cloudevents.Event, uri string) error
 }
 
 // retriableCloudEventClient is a client implementation that interprets
 // kafka messages as cloud events and utilizes the cloud event library
 // and supports retries with exponential backoff
 type retriableCloudEventClient struct {
-	uri                  string
 	exponentialBackoff   bool
 	initialRetryInterval int64
 	maxRetryTime         int64
@@ -37,43 +37,46 @@ type retriableCloudEventClient struct {
 
 var _ RetriableClient = &retriableCloudEventClient{}
 
-func NewRetriableCloudEventClient(uri string, exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
+func NewRetriableCloudEventClient(exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
 	transport, err := cloudevents.NewHTTPTransport(
-		cloudevents.WithTarget(uri),
-		cloudevents.WithEncoding(cloudevents.HTTPBinaryV03),
+		cloudevents.WithBinaryEncoding(),
 	)
-	transport.Client = httpClient
 
 	if err != nil {
-		panic("failed to create transport, " + err.Error())
+		panic("Failed To Create Transport, " + err.Error())
 	}
+	transport.Client = httpClient
 
 	ceClient, err := cloudevents.NewClient(transport)
 	if err != nil {
-		panic("unable to create cloudevent client: " + err.Error())
+		panic("Unable To Create CloudEvent Client: " + err.Error())
 	}
 
-	return retriableCloudEventClient{uri: uri, exponentialBackoff: exponentialBackoff, initialRetryInterval: initialRetryInterval, maxRetryTime: maxRetryTime, cloudEventClient: ceClient}
+	return retriableCloudEventClient{
+		exponentialBackoff:   exponentialBackoff,
+		initialRetryInterval: initialRetryInterval,
+		maxRetryTime:         maxRetryTime,
+		cloudEventClient:     ceClient,
+	}
 }
 
-func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event) error {
+func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event, uri string) error {
 	// Configure The Logger
 	var logger *zap.Logger
 	if log.Logger().Core().Enabled(zap.DebugLevel) {
-		logger = log.Logger().With(zap.String("Event", event.String()), zap.String("uri", rcec.uri))
+		logger = log.Logger().With(zap.String("Event", event.String()), zap.String("uri", uri))
 	} else {
-		logger = log.Logger().With(zap.String("uri", rcec.uri))
+		logger = log.Logger().With(zap.String("uri", uri))
 	}
 
+	ctx := context.Background()
 	runner := retry.New(retry.Config{DisableBackoff: rcec.exponentialBackoff, Times: rcec.calculateNumberOfRetries(), WaitBase: time.Millisecond * time.Duration(rcec.initialRetryInterval)})
+	ctx = cloudeventcontext.WithTarget(ctx, uri)
 
-	err := runner.Run(context.TODO(), func(_ context.Context) error {
-		rctx, _, err := rcec.cloudEventClient.Send(context.Background(), event)
-		if err != nil {
-			transportContext := cloudevents.HTTPTransportContextFrom(rctx)
-			return logResponse(logger, transportContext.StatusCode)
-		}
-		return nil
+	err := runner.Run(ctx, func(ctx context.Context) error {
+		responseContext, _, err := rcec.cloudEventClient.Send(ctx, event)
+		transportContext := cloudevents.HTTPTransportContextFrom(responseContext)
+		return logResponse(logger, transportContext.StatusCode, err)
 	})
 
 	// Retries failed
@@ -84,12 +87,14 @@ func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event) error {
 	return nil
 }
 
-func logResponse(logger *zap.Logger, statusCode int) error {
+func logResponse(logger *zap.Logger, statusCode int, err error) error {
 	if statusCode >= 500 || statusCode == 404 || statusCode == 429 {
 		logger.Warn("Failed to send message to subscriber service, retrying", zap.Int("statusCode", statusCode))
 		return errors.New("Server returned a bad response code: " + strconv.Itoa(statusCode))
 	} else if statusCode > 299 {
 		logger.Warn("Failed to send message to subscriber service, not retrying", zap.Int("statusCode", statusCode))
+	} else if statusCode == 0 {
+		return errors.Wrap(err, "Validation Error")
 	} else {
 		logger.Debug("Successfully sent message to subscriber service", zap.Int("statusCode", statusCode))
 	}

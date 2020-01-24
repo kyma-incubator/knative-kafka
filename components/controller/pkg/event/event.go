@@ -20,7 +20,7 @@ const (
 	KafkaTopicReconciliationFailed
 
 	// Dispatcher (Kafka Consumer) Reconciliation
-	DispatcherK8sServiceReconciliationFailed
+	DispatcherServiceReconciliationFailed
 	DispatcherDeploymentReconciliationFailed
 )
 
@@ -44,7 +44,7 @@ func (et CoreV1EventType) String() string {
 		eventTypeString = "ChannelDeploymentReconciliationFailed"
 	case KafkaTopicReconciliationFailed:
 		eventTypeString = "KafkaTopicReconciliationFailed"
-	case DispatcherK8sServiceReconciliationFailed:
+	case DispatcherServiceReconciliationFailed:
 		eventTypeString = "DispatcherK8sServiceReconciliationFailed"
 	case DispatcherDeploymentReconciliationFailed:
 		eventTypeString = "DispatcherDeploymentReconciliationFailed"

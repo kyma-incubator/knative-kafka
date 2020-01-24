@@ -1,6 +1,8 @@
 package util
 
 import (
+	"fmt"
+	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
@@ -9,14 +11,15 @@ import (
 
 // Test Constants
 const (
-	subscriptionName = "test-subscription-name"
+	channelName      = "testname"
+	channelNamespace = "testnamespace"
 )
 
 // Test The newControllerRef() Functionality
 func TestNewControllerRef(t *testing.T) {
 
 	// Test Data
-	subscription := &messagingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
+	subscription := &messagingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: channelName}}
 
 	// Perform The Test
 	actualControllerRef := NewSubscriptionControllerRef(subscription)
@@ -25,58 +28,19 @@ func TestNewControllerRef(t *testing.T) {
 	assert.NotNil(t, actualControllerRef)
 	assert.Equal(t, messagingv1alpha1.SchemeGroupVersion.Group+"/"+messagingv1alpha1.SchemeGroupVersion.Version, actualControllerRef.APIVersion)
 	assert.Equal(t, "Subscription", actualControllerRef.Kind)
-	assert.Equal(t, subscriptionName, actualControllerRef.Name)
+	assert.Equal(t, channelName, actualControllerRef.Name)
 }
 
-// Test The dispatcherServiceName() Functionality
-func TestDispatcherServiceName(t *testing.T) {
+// Test The DispatcherDnsSafeName() Functionality
+func TestDispatcherDnsSafeName(t *testing.T) {
 
 	// Test Data
-	subscription := &messagingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
+	channel := &knativekafkav1alpha1.KafkaChannel{ObjectMeta: metav1.ObjectMeta{Name: channelName, Namespace: channelNamespace}}
 
 	// Perform The Test
-	actualDispatcherServiceName := DispatcherServiceName(subscription)
+	actualResult := DispatcherDnsSafeName(channel)
 
 	// Verify The Results
-	expectedDispatcherServiceName := subscriptionName + "-dispatcher"
-	assert.Equal(t, expectedDispatcherServiceName, actualDispatcherServiceName)
-}
-
-// Test The dispatcherDeploymentName() Functionality
-func TestDispatcherDeploymentName(t *testing.T) {
-
-	// Test Data
-	subscription := &messagingv1alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{Name: subscriptionName}}
-
-	// Perform The Test
-	actualDispatcherDeploymentName := DispatcherDeploymentName(subscription)
-
-	// Verify The Results
-	expectedDispatcherDeploymentName := subscriptionName + "-dispatcher"
-	assert.Equal(t, expectedDispatcherDeploymentName, actualDispatcherDeploymentName)
-}
-
-// Test The generateValidDispatcherDnsName() Functionality
-func TestGenerateValidDispatcherDnsName(t *testing.T) {
-
-	// Define The TestCase Struct
-	type TestCase struct {
-		testValue      string
-		expectedResult string
-	}
-
-	// Define The Test Cases
-	testCases := []TestCase{
-		{"", "kk--dispatcher"},
-		{"1234567890", "kk-1234567890-dispatcher"},
-		{"lambda-foo-product.created-v1--stage", "lambda-foo-productcreated-v1--stage-dispatcher"},
-		{"LAMBDA-FOO-PRODUCT.CREATED-V1--STAGE", "lambda-foo-productcreated-v1--stage-dispatcher"},
-		{"somelongstringwith54charactershmmmmmmmmmmmmmmmmmmmmmm7", "somelongstringwith54charactershmmmmmmmmmmmmmmmmmmmmmm"},
-	}
-
-	// Test All The TestCases
-	for _, testCase := range testCases {
-		actualResult := generateValidDispatcherDnsName(testCase.testValue)
-		assert.Equal(t, testCase.expectedResult, actualResult)
-	}
+	expectedResult := fmt.Sprintf("%s-%s-dispatcher", channelName, channelNamespace)
+	assert.Equal(t, expectedResult, actualResult)
 }

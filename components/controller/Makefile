@@ -83,11 +83,11 @@ clients:
 
 build-native: clean
 	@echo 'Building $(APP_NAME) (Native)'
-	mkdir -p $(BUILD_DIR); cd $(BUILD_ROOT)/cmd/crd; go build -o $(BUILD_DIR)/$(APP_NAME)
+	mkdir -p $(BUILD_DIR); cd $(BUILD_ROOT)/cmd; go build -o $(BUILD_DIR)/$(APP_NAME)
 
 build-linux: clean
 	@echo 'Building $(APP_NAME) (Linux)'
-	mkdir -p $(BUILD_DIR); cd $(BUILD_ROOT)/cmd/crd; CGO_ENABLED=0 GOOS=linux go build -o $(BUILD_DIR)/$(APP_NAME)
+	mkdir -p $(BUILD_DIR); cd $(BUILD_ROOT)/cmd; CGO_ENABLED=0 GOOS=linux go build -o $(BUILD_DIR)/$(APP_NAME)
 
 .PHONY: build-native build-linux
 

@@ -1353,13 +1353,10 @@
   revision = "f07c713de88362aef7545072487d6118bd4a3d4a"
 
 [[projects]]
-  digest = "1:aee1d874550a515d832156baefa6a291bfa519a1974ee0bd713879487fc027d3"
+  digest = "1:ee427ca3b7611af9d5fc3aa2dce8e0da7963ef62ee99685b779e110d85c3fe63"
   name = "knative.dev/eventing"
   packages = [
-    "pkg/apis/duck",
     "pkg/apis/duck/v1alpha1",
-    "pkg/apis/eventing",
-    "pkg/apis/eventing/v1alpha1",
     "pkg/apis/messaging",
     "pkg/apis/messaging/v1alpha1",
     "pkg/reconciler/names",
@@ -1523,7 +1520,6 @@
     "k8s.io/gengo/args",
     "k8s.io/gengo/examples/defaulter-gen/generators",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
-    "knative.dev/eventing/pkg/apis/eventing/v1alpha1",
     "knative.dev/eventing/pkg/apis/messaging/v1alpha1",
     "knative.dev/eventing/pkg/reconciler/names",
     "knative.dev/eventing/pkg/utils",
