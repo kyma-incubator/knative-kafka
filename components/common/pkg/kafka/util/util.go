@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 )
@@ -30,4 +31,9 @@ func AddDebugFlags(configMap *kafka.ConfigMap, flags string) {
 	// Update The Kafka ConfigMap With The Specified Debug Flags (Ignoring Impossible Errors)
 	_ = configMap.SetKey(constants.ConfigPropertyDebug, flags)
 
+}
+
+// Get The Formatted Kafka Topic Name From The Specified Components
+func TopicName(namespace string, name string) string {
+	return fmt.Sprintf("%s.%s", namespace, name)
 }

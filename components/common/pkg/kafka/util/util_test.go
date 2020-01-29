@@ -2,8 +2,8 @@ package util
 
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/stretchr/testify/assert"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -48,4 +48,19 @@ func verifyConfigMapValue(t *testing.T, configMap *kafka.ConfigMap, key string, 
 	property, err := configMap.Get(key, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, expected, property)
+}
+
+// Test The TopicName() Functionality
+func TestTopicName(t *testing.T) {
+
+	// Test Data
+	name := "TestName"
+	namespace := "TestNamespace"
+
+	// Perform The Test
+	actualTopicName := TopicName(namespace, name)
+
+	// Verify The Results
+	expectedTopicName := namespace + "." + name
+	assert.Equal(t, expectedTopicName, actualTopicName)
 }
