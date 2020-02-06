@@ -5,6 +5,7 @@ import (
 	"fmt"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/scheme"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions/knativekafka/v1alpha1"
 	listers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
@@ -13,7 +14,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -143,7 +143,7 @@ func (r Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaC
 	for _, subscriber := range channel.Spec.Subscribable.Subscribers {
 		groupId := fmt.Sprintf("kafka.%s", subscriber.UID)
 		subscriptions = append(subscriptions, dispatcher.Subscription{URI: subscriber.SubscriberURI, GroupId: groupId})
-		r.Logger.Info("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.String("URI", subscriber.SubscriberURI))
+		r.Logger.Debug("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.String("URI", subscriber.SubscriberURI))
 	}
 
 	failedSubscriptions := r.dispatcher.UpdateSubscriptions(subscriptions)
