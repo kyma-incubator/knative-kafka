@@ -6,13 +6,18 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
+	"github.com/kyma-incubator/knative-kafka/components/controller/test"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"testing"
 )
 
 // Test Data
 const (
+	channelName              = "testname"
+	channelNamespace         = "testnamespace"
+	channelUID               = "testuid"
 	numPartitions            = 123
 	defaultNumPartitions     = 987
 	replicationFactor        = 22
@@ -21,7 +26,7 @@ const (
 	defaultRetentionMillis   = int64(55555)
 )
 
-// Test The ChannelLogger Functionality
+// Test The ChannelLogger() Functionality
 func TestChannelLogger(t *testing.T) {
 
 	// Test Logger
@@ -39,25 +44,6 @@ func TestChannelLogger(t *testing.T) {
 	channelLogger.Info("Testing Channel Logger")
 }
 
-// Test The NewChannelControllerRef Functionality
-func TestNewChannelControllerRef(t *testing.T) {
-
-	// Test Data
-	subscription := &knativekafkav1alpha1.KafkaChannel{
-		ObjectMeta: metav1.ObjectMeta{Name: "TestName"},
-	}
-
-	// Perform The Test
-	controllerRef := NewChannelControllerRef(subscription)
-
-	// Validate Results
-	assert.NotNil(t, controllerRef)
-	assert.Equal(t, knativekafkav1alpha1.SchemeGroupVersion.String(), controllerRef.APIVersion)
-	assert.Equal(t, constants.KafkaChannelKind, controllerRef.Kind)
-	assert.Equal(t, subscription.ObjectMeta.Name, controllerRef.Name)
-	assert.True(t, *controllerRef.Controller)
-}
-
 // Test The ChannelKey() Functionality
 func TestChannelKey(t *testing.T) {
 
@@ -72,17 +58,33 @@ func TestChannelKey(t *testing.T) {
 	assert.Equal(t, expectedResult, actualResult)
 }
 
-// Test The ChannelDnsSafeName() Functionality
-func TestChannelDnsSafeName(t *testing.T) {
+// Test The NewChannelOwnerReference() Functionality
+func TestNewChannelOwnerReference(t *testing.T) {
 
 	// Test Data
-	channel := &knativekafkav1alpha1.KafkaChannel{ObjectMeta: metav1.ObjectMeta{Name: channelName, Namespace: channelNamespace}}
+	channel := &knativekafkav1alpha1.KafkaChannel{
+		ObjectMeta: metav1.ObjectMeta{Name: channelName},
+	}
 
 	// Perform The Test
-	actualResult := ChannelDnsSafeName(channel)
+	controllerRef := NewChannelOwnerReference(channel)
+
+	// Validate Results
+	assert.NotNil(t, controllerRef)
+	assert.Equal(t, knativekafkav1alpha1.SchemeGroupVersion.String(), controllerRef.APIVersion)
+	assert.Equal(t, constants.KafkaChannelKind, controllerRef.Kind)
+	assert.Equal(t, channel.ObjectMeta.Name, controllerRef.Name)
+	assert.True(t, *controllerRef.Controller)
+}
+
+// Test The ChannelDeploymentDnsSafeName() Functionality
+func TestChannelDeploymentDnsSafeName(t *testing.T) {
+
+	// Perform The Test
+	actualResult := ChannelDeploymentDnsSafeName(test.KafkaSecret)
 
 	// Verify The Results
-	expectedResult := fmt.Sprintf("%s-%s-channel", channelName, channelNamespace)
+	expectedResult := fmt.Sprintf("%s-channel", strings.ToLower(test.KafkaSecret))
 	assert.Equal(t, expectedResult, actualResult)
 }
 

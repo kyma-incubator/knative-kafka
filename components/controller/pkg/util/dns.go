@@ -11,7 +11,7 @@ var endsWithLowercaseAlphaCharRegExp = regexp.MustCompile("^.*[a-z]$")
 var invalidK8sServiceCharactersRegExp = regexp.MustCompile("[^a-z0-9\\-]+")
 
 // Return A Valid DNS Name Which Is As Close To The Specified Name As Possible & Truncated To The Smaller Of Specified Length / 63
-func GenerateValidDnsName(name string, length int) string {
+func GenerateValidDnsName(name string, length int, prefix bool, suffix bool) string {
 
 	// Max Truncation Length Is 63
 	if length <= 0 || length > 63 {
@@ -25,7 +25,7 @@ func GenerateValidDnsName(name string, length int) string {
 	validDnsName = invalidK8sServiceCharactersRegExp.ReplaceAllString(validDnsName, "")
 
 	// Prepend Alpha Prefix If Needed
-	if !startsWithLowercaseAlphaCharRegExp.MatchString(validDnsName) {
+	if prefix && !startsWithLowercaseAlphaCharRegExp.MatchString(validDnsName) {
 		validDnsName = "kk-" + validDnsName
 	}
 
@@ -35,7 +35,7 @@ func GenerateValidDnsName(name string, length int) string {
 	}
 
 	// Remove Any Trailing Non Alpha
-	for !endsWithLowercaseAlphaCharRegExp.MatchString(validDnsName) {
+	for suffix && !endsWithLowercaseAlphaCharRegExp.MatchString(validDnsName) {
 		validDnsName = validDnsName[:(len(validDnsName) - 1)]
 	}
 

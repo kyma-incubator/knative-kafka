@@ -95,7 +95,7 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 		}
 	}
 
-	// Reset The Channel's Status Conditions (Addressable, Ready)
+	// Reset The Channel's Status Conditions To Unknown (Addressable, Topic, Service, Deployment, etc...)
 	channel.Status.InitializeConditions()
 
 	// Perform The Channel Reconciliation

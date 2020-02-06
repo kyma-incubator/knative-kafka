@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	eventingNames "knative.dev/eventing/pkg/reconciler/names"
@@ -26,11 +25,13 @@ const (
 	// Controller Config Test Data
 	ServiceAccount                         = "TestServiceAccount"
 	MetricsPort                            = 9876
-	KafkaSecret                            = "TestKafkaSecret"
+	KafkaSecret                            = "testkafkasecret"
 	KafkaOffsetCommitMessageCount          = 99
 	KafkaOffsetCommitDurationMillis        = 9999
 	ChannelImage                           = "TestChannelImage"
+	ChannelReplicas                        = 1
 	DispatcherImage                        = "TestDispatcherImage"
+	DispatcherReplicas                     = 1
 	DefaultNumPartitions                   = 4
 	DefaultReplicationFactor               = 1
 	DefaultRetentionMillis                 = 99999
@@ -41,14 +42,14 @@ const (
 
 	// Channel Test Data
 	TenantId                 = "TestTenantId"
-	DefaultTenantId          = "TestDefaultTenantId"
 	ChannelName              = "TestChannelName"
 	NamespaceName            = "TestNamespaceName"
-	ChannelDeploymentName    = "testchannelname-testnamespacename-channel"
+	ChannelServiceName       = "testchannelname-testnamespacename-channel"
+	ChannelDeploymentName    = KafkaSecret + "-channel"
 	SubscriberName           = "test-subscriber-name"
 	DispatcherDeploymentName = "testchannelname-testnamespacename-dispatcher"
-	DefaultTopicName         = DefaultTenantId + "." + NamespaceName + "." + ChannelName
-	TopicName                = TenantId + "." + NamespaceName + "." + ChannelName
+	DefaultTopicName         = NamespaceName + "." + ChannelName
+	TopicName                = NamespaceName + "." + ChannelName
 
 	// Subscription Test Data
 	EventStartTime = "2019-01-01T00:00:00Z"
@@ -93,20 +94,20 @@ func NewEnvironment() *env.Environment {
 		MetricsPort:                          MetricsPort,
 		KafkaOffsetCommitMessageCount:        KafkaOffsetCommitMessageCount,
 		KafkaOffsetCommitDurationMillis:      KafkaOffsetCommitDurationMillis,
-		ChannelImage:                         ChannelImage,
-		DispatcherImage:                      DispatcherImage,
-		DefaultTenantId:                      DefaultTenantId,
 		DefaultNumPartitions:                 DefaultNumPartitions,
 		DefaultReplicationFactor:             DefaultReplicationFactor,
 		DefaultRetentionMillis:               DefaultRetentionMillis,
+		DispatcherImage:                      DispatcherImage,
+		DispatcherReplicas:                   DispatcherReplicas,
 		DispatcherRetryInitialIntervalMillis: DefaultEventRetryInitialIntervalMillis,
 		DispatcherRetryTimeMillisMax:         DefaultEventRetryTimeMillisMax,
 		DispatcherRetryExponentialBackoff:    DefaultExponentialBackoff,
-		DispatcherReplicas:                   DefaultDispatcherReplicas,
 		DispatcherCpuLimit:                   resource.MustParse(DispatcherCpuLimit),
 		DispatcherCpuRequest:                 resource.MustParse(DispatcherCpuRequest),
 		DispatcherMemoryLimit:                resource.MustParse(DispatcherMemoryLimit),
 		DispatcherMemoryRequest:              resource.MustParse(DispatcherMemoryRequest),
+		ChannelImage:                         ChannelImage,
+		ChannelReplicas:                      ChannelReplicas,
 		ChannelMemoryRequest:                 resource.MustParse(ChannelMemoryRequest),
 		ChannelMemoryLimit:                   resource.MustParse(ChannelMemoryLimit),
 		ChannelCpuRequest:                    resource.MustParse(ChannelCpuRequest),
@@ -177,7 +178,7 @@ func GetNewChannelWithName(name string, includeFinalizer bool, includeSpecProper
 
 // Utility Function For Creating A Test Channel (Provisioned) With Deletion Timestamp
 func GetNewChannelDeleted(includeFinalizer bool, includeSpecProperties bool, includeSubscribers bool) *kafkav1alpha1.KafkaChannel {
-	channel := GetNewChannelWithProvisionedStatus(includeFinalizer, includeSpecProperties, includeSubscribers, true, true)
+	channel := GetNewChannelWithProvisionedStatus(includeFinalizer, includeSpecProperties, includeSubscribers, true, GetChannelStatusReady())
 	channel.DeletionTimestamp = &DeletedTimestamp
 	if !includeFinalizer {
 		channel.ObjectMeta.Finalizers = nil
@@ -185,53 +186,108 @@ func GetNewChannelDeleted(includeFinalizer bool, includeSpecProperties bool, inc
 	return channel
 }
 
-// Utility Function For Creating A Test Knative Messaging Channel
-func GetNewKnativeMessagingChannel(channelApiVersion string, channelKind string) *messagingv1alpha1.Channel {
-
-	// Create The Specified Knative Messaging Channel
-	messagingChannel := &messagingv1alpha1.Channel{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
-			Kind:       constants.KnativeChannelKind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: NamespaceName,
-			Name:      ChannelName,
-		},
-		Spec: messagingv1alpha1.ChannelSpec{
-			ChannelTemplate: &eventingduck.ChannelTemplateSpec{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: channelApiVersion,
-					Kind:       channelKind,
-				},
-			},
-		},
-	}
-
-	// Return The Knative Messaging Channel
-	return messagingChannel
-}
-
 // Utility Function For Creating A Test Channel With Provisioned / NotProvisioned Status
-func GetNewChannelWithProvisionedStatus(includeFinalizer bool, includeSpecProperties bool, includeSubscribers bool, provisioned bool, ready bool) *kafkav1alpha1.KafkaChannel {
+func GetNewChannelWithProvisionedStatus(includeFinalizer bool, includeSpecProperties bool, includeSubscribers bool, provisioned bool, status *kafkav1alpha1.KafkaChannelStatus) *kafkav1alpha1.KafkaChannel {
 	channel := GetNewChannel(includeFinalizer, includeSpecProperties, includeSubscribers)
 	if provisioned {
-		channel.Status.InitializeConditions()
-		if ready {
-			channel.Status.SetAddress(&apis.URL{
-				Scheme: "http",
-				Host:   eventingNames.ServiceHostName(ChannelDeploymentName, constants.KnativeEventingNamespace),
-			})
-			channel.Status.MarkChannelServiceTrue()
-		} else {
-			channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", MockCreateFnServiceErrorMessage))
-		}
+		channel.Status = *status
 	}
 	return channel
 }
 
+// Get READY Success Status
+func GetChannelStatusReady() *kafkav1alpha1.KafkaChannelStatus {
+	return GetChannelStatus(true, true, true, true, true)
+}
+
+func GetChannelStatusTopicFailed() *kafkav1alpha1.KafkaChannelStatus {
+	return GetChannelStatus(false, true, true, true, true)
+}
+
+func GetChannelStatusChannelServiceFailed() *kafkav1alpha1.KafkaChannelStatus {
+	return GetChannelStatus(true, false, true, true, true)
+}
+
+func GetChannelStatusChannelDeploymentServiceFailed() *kafkav1alpha1.KafkaChannelStatus {
+	return GetChannelStatus(true, true, false, true, true)
+}
+
+func GetChannelStatusChannelDeploymentFailed() *kafkav1alpha1.KafkaChannelStatus {
+	return GetChannelStatus(true, true, true, false, true)
+}
+
+func GetChannelStatusDispatcherDeploymentFailed() *kafkav1alpha1.KafkaChannelStatus {
+	return GetChannelStatus(true, true, true, true, false)
+}
+
+// Utility Function For Creating A KafkaChannel Status
+func GetChannelStatus(topic, channelService, channelDeploymentService, channelDeployment, dispatcherDeployment bool) *kafkav1alpha1.KafkaChannelStatus {
+	kafkaChannelStatus := &kafkav1alpha1.KafkaChannelStatus{}
+	kafkaChannelStatus.InitializeConditions()
+
+	if topic {
+		kafkaChannelStatus.MarkTopicTrue()
+	} else {
+		kafkaChannelStatus.MarkTopicFailed("TopicFailed", "Channel Kafka Topic Failed: Test Error")
+	}
+
+	if channelService {
+		kafkaChannelStatus.MarkChannelServiceTrue()
+		kafkaChannelStatus.SetAddress(&apis.URL{
+			Scheme: "http",
+			Host:   eventingNames.ServiceHostName(ChannelName, NamespaceName),
+		})
+	} else {
+		kafkaChannelStatus.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", MockCreateFnServiceErrorMessage))
+	}
+
+	if channelDeploymentService {
+		kafkaChannelStatus.MarkChannelDeploymentServiceTrue()
+	} else {
+		kafkaChannelStatus.MarkChannelDeploymentServiceFailed("ChannelDeploymentServiceFailed", fmt.Sprintf("Channel Deployment Service Failed: %s", MockCreateFnServiceErrorMessage))
+	}
+
+	if channelDeployment {
+		kafkaChannelStatus.MarkChannelDeploymentTrue()
+	} else {
+		kafkaChannelStatus.MarkChannelDeploymentFailed("ChannelDeploymentFailed", fmt.Sprintf("Channel Deployment Failed: %s", MockCreateFnDeploymentErrorMessage))
+	}
+
+	if dispatcherDeployment {
+		kafkaChannelStatus.MarkDispatcherDeploymentTrue()
+	} else {
+		kafkaChannelStatus.MarkDispatcherDeploymentFailed("DispatcherDeploymentFailed", fmt.Sprintf("Dispatcher Deployment Failed: %s", MockCreateFnDeploymentErrorMessage))
+	}
+
+	return kafkaChannelStatus
+}
+
 // Utility Function For Creating A K8S Channel Service For The Test Channel
-func GetNewK8sChannelService() *corev1.Service {
+func GetNewKafkaChannelService() *corev1.Service {
+	return &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: corev1.SchemeGroupVersion.String(),
+			Kind:       "Service",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ChannelName,
+			Namespace: NamespaceName,
+			Labels: map[string]string{
+				"k8s-app": "knative-kafka-channels",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				GetNewChannelOwnerRef(true),
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Type:         corev1.ServiceTypeExternalName,
+			ExternalName: ChannelDeploymentName + "." + constants.KnativeEventingNamespace + ".svc.cluster.local",
+		},
+	}
+}
+
+// Utility Function For Creating A K8S Channel Service For The Test Channel
+func GetNewChannelDeploymentService() *corev1.Service {
 	return &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.String(),
@@ -241,11 +297,7 @@ func GetNewK8sChannelService() *corev1.Service {
 			Name:      ChannelDeploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"channel": ChannelName,
 				"k8s-app": "knative-kafka-channels",
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				GetNewChannelOwnerRef(),
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -270,7 +322,7 @@ func GetNewK8sChannelService() *corev1.Service {
 
 // Utility Function For Creating A K8S Channel Deployment For The Test Channel
 func GetNewK8SChannelDeployment(topicName string) *appsv1.Deployment {
-	replicas := int32(1)
+	replicas := int32(ChannelReplicas)
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: appsv1.SchemeGroupVersion.String(),
@@ -281,9 +333,6 @@ func GetNewK8SChannelDeployment(topicName string) *appsv1.Deployment {
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
 				"app": ChannelDeploymentName,
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				GetNewChannelOwnerRef(),
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -314,14 +363,6 @@ func GetNewK8SChannelDeployment(topicName string) *appsv1.Deployment {
 								{
 									Name:  "METRICS_PORT",
 									Value: strconv.Itoa(MetricsPort),
-								},
-								{
-									Name:  "KAFKA_TOPIC",
-									Value: topicName,
-								},
-								{
-									Name:  "CLIENT_ID",
-									Value: topicName,
 								},
 								{
 									Name: env.KafkaBrokerEnvVarKey,
@@ -442,25 +483,6 @@ func GetNewSubscriptionDeleted(namespaceName string, subscriberName string, incl
 	return subscription
 }
 
-// Utility Function For Creating A Test Subscription With Indirect Knative Messaging Channel
-func GetNewSubscriptionIndirectChannel(namespaceName string, subscriberName string, includeAnnotations bool, includeFinalizer bool, eventStartTime string, deleted bool) *messagingv1alpha1.Subscription {
-
-	// Get The Default / Base Subscription
-	var subscription *messagingv1alpha1.Subscription
-	if deleted == true {
-		subscription = GetNewSubscriptionDeleted(namespaceName, subscriberName, includeAnnotations, includeFinalizer)
-	} else {
-		subscription = GetNewSubscription(namespaceName, subscriberName, includeAnnotations, includeFinalizer, eventStartTime)
-	}
-
-	// Modify The Subscription To Use Indirect Knative Messaging Channel
-	subscription.Spec.Channel.APIVersion = messagingv1alpha1.SchemeGroupVersion.String()
-	subscription.Spec.Channel.Kind = constants.KnativeChannelKind
-
-	// Return The Subscription
-	return subscription
-}
-
 // Utility Function For Creating A K8S Dispatcher Service For The Test Channel
 func GetNewK8SDispatcherService() *corev1.Service {
 	return &corev1.Service{
@@ -477,7 +499,7 @@ func GetNewK8SDispatcherService() *corev1.Service {
 				"k8s-app":    "knative-kafka-dispatchers",
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				GetNewChannelOwnerRef(),
+				GetNewChannelOwnerRef(true),
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -497,9 +519,7 @@ func GetNewK8SDispatcherService() *corev1.Service {
 
 // Utility Function For Creating A K8S Dispatcher Deployment For The Test Channel
 func GetNewK8SDispatcherDeployment(topicName string) *appsv1.Deployment {
-
-	replicas := int32(1)
-
+	replicas := int32(DispatcherReplicas)
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: appsv1.SchemeGroupVersion.String(),
@@ -514,7 +534,7 @@ func GetNewK8SDispatcherDeployment(topicName string) *appsv1.Deployment {
 				"channel":    ChannelName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				GetNewChannelOwnerRef(),
+				GetNewChannelOwnerRef(true),
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -643,9 +663,8 @@ func GetNewK8SDispatcherDeploymentWithoutAnnotations(topicName string) *appsv1.D
 }
 
 // Create A New OwnerReference Model For The Test Channel
-func GetNewChannelOwnerRef() metav1.OwnerReference {
+func GetNewChannelOwnerRef(isController bool) metav1.OwnerReference {
 	blockOwnerDeletion := true
-	isController := true
 	return metav1.OwnerReference{
 		APIVersion:         "knativekafka.kyma-project.io/v1alpha1",
 		Kind:               constants.KafkaChannelKind,

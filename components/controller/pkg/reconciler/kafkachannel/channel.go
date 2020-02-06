@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	eventingNames "knative.dev/eventing/pkg/reconciler/names"
+	eventingUtils "knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/apis"
 	"strconv"
 )
@@ -32,81 +33,93 @@ func (r *Reconciler) reconcileChannel(ctx context.Context, channel *knativekafka
 		return nil
 	}
 
-	// TODO Note, similar to the topic implementation there is not yet any intelligent handling of
-	//      changes to the Controller config or Channel arguments - need requirements for such ; )
-
-	// Reconcile The Channel's Service (K8s)
-	_, serviceErr := r.createK8sChannelService(ctx, channel)
-	if serviceErr != nil {
-		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile K8S Service For Channel: %v", serviceErr)
-		logger.Error("Failed To Reconcile Channel Service", zap.Error(serviceErr))
+	// Reconcile The KafkaChannel's Service
+	channelServiceErr := r.reconcileKafkaChannelService(ctx, channel)
+	if channelServiceErr != nil {
+		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service For Channel: %v", channelServiceErr)
+		logger.Error("Failed To Reconcile KafkaChannel Service", zap.Error(channelServiceErr))
 	} else {
-		logger.Info("Successfully Reconciled Channel Service")
+		logger.Info("Successfully Reconciled KafkaChannel Service")
 	}
 
-	// Reconcile The Channel's Deployment (K8s)
-	_, deploymentErr := r.createK8sChannelDeployment(ctx, channel)
+	// Reconcile The Channel Deployment's Service
+	deploymentServiceErr := r.reconcileChannelDeploymentService(ctx, channel)
+	if deploymentServiceErr != nil {
+		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile Channel Deployment Service For Channel: %v", deploymentServiceErr)
+		logger.Error("Failed To Reconcile Channel Deployment Service", zap.Error(deploymentServiceErr))
+	} else {
+		logger.Info("Successfully Reconciled Channel Deployment Service")
+	}
+
+	// Reconcile The Channel's Deployment
+	deploymentErr := r.reconcileChannelDeployment(ctx, channel)
 	if deploymentErr != nil {
-		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelDeploymentReconciliationFailed.String(), "Failed To Reconcile Deployment For Channel: %v", deploymentErr)
+		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelDeploymentReconciliationFailed.String(), "Failed To Reconcile Channel Deployment For Channel: %v", deploymentErr)
 		logger.Error("Failed To Reconcile Channel Deployment", zap.Error(deploymentErr))
 	} else {
 		logger.Info("Successfully Reconciled Channel Deployment")
 	}
 
 	// Return Results
-	if serviceErr != nil || deploymentErr != nil {
+	if channelServiceErr != nil || deploymentServiceErr != nil || deploymentErr != nil {
 		return fmt.Errorf("failed to reconcile channel components")
 	} else {
-		return nil
+		return nil // Success
 	}
 }
 
 //
-// K8S Channel Service
+// KafkaChannel Kafka Channel Service
 //
-// Note - These functions were lifted from early Knative Eventing implementation which have since been moved/removed.
-//        Ideally we'd like to use that implementation directly, but it uses hardcoded config for the larger Knative Eventing
-//        ClusterBus / Single Dispatcher paradigm which doesn't work for our scalable implementation where we want a unique
-//        service/channel deployment per channel/topic.  The logic has also been modified for readability but is otherwise similar.
+// One K8S Service per KafkaChannel, in the same namespace as the KafkaChannel, with an
+// ExternalName reference to the single K8S Service in the knative-eventing namespace
+// for the Channel Deployment/Pods (as reconciled below).
 //
 
-// Create The K8S Service If Not Already Existing
-func (r *Reconciler) createK8sChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+// Reconcile The KafkaChannel Service
+func (r *Reconciler) reconcileKafkaChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
 
-	// Attempt To Get The K8S Service Associated With The Specified Channel
-	service, err := r.getK8sChannelService(ctx, channel)
-
-	// If The K8S Service Was Not Found - Then Create A New One For The Channel
-	if errors.IsNotFound(err) {
-		r.logger.Info("Kubernetes Channel Service Not Found - Creating New One")
-		service = r.newK8sChannelService(channel)
-		err = r.client.Create(ctx, service)
-	}
-
-	// If Any Error Occurred (Either Get Or Create) - Then Reconcile Again
+	// Attempt To Get The Service Associated With The Specified Channel
+	service, err := r.getKafkaChannelService(ctx, channel)
 	if err != nil {
-		channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
-		return nil, err
+
+		// If The Service Was Not Found - Then Create A New One For The Channel
+		if errors.IsNotFound(err) {
+			r.logger.Info("KafkaChannel Service Not Found - Creating New One")
+			service = r.newKafkaChannelService(channel)
+			err = r.client.Create(ctx, service)
+			if err != nil {
+				r.logger.Error("Failed To Create KafkaChannel Service", zap.Error(err))
+				channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
+				return err
+			} else {
+				r.logger.Info("Successfully Created KafkaChannel Service")
+				channel.Status.MarkChannelServiceTrue()
+				channel.Status.SetAddress(&apis.URL{
+					Scheme: "http",
+					Host:   eventingNames.ServiceHostName(service.Name, service.Namespace),
+				})
+				return nil
+			}
+		} else {
+			r.logger.Error("Failed To Get KafkaChannel Service", zap.Error(err))
+			channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
+			return err
+		}
 	}
 
-	// Update The Channel Status With Service Address
-	channel.Status.MarkChannelServiceTrue()
-	channel.Status.SetAddress(&apis.URL{
-		Scheme: "http",
-		Host:   eventingNames.ServiceHostName(service.Name, service.Namespace),
-	})
-
-	// Return The K8S Service
-	return service, nil
+	// Return Success
+	r.logger.Info("Successfully Verified KafkaChannel Service")
+	return nil
 }
 
-// Get The K8S Channel Service Associated With The Specified Channel
-func (r *Reconciler) getK8sChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+// Get The KafkaChannel Service Associated With The Specified Channel
+func (r *Reconciler) getKafkaChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
-	// Create A Namespace / Name ObjectKey For The Specified Channel
+	// Create A Namespace / Name ObjectKey For The Specified KafkaChannel
 	serviceKey := types.NamespacedName{
-		Namespace: constants.KnativeEventingNamespace,
-		Name:      util.ChannelDnsSafeName(channel),
+		Name:      channel.Name,      // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
+		Namespace: channel.Namespace, // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 	}
 
 	// Get The Service By Namespace / Name
@@ -117,23 +130,110 @@ func (r *Reconciler) getK8sChannelService(ctx context.Context, channel *knativek
 	return service, err
 }
 
-// Create K8S Channel Service Model For The Specified Channel
-func (r *Reconciler) newK8sChannelService(channel *knativekafkav1alpha1.KafkaChannel) *corev1.Service {
+// Create KafkaChannel Service Model For The Specified Channel
+func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaChannel) *corev1.Service {
 
-	// Get The Dispatcher Service Name For The Channel
-	serviceName := util.ChannelDnsSafeName(channel)
+	// Get The Dispatcher Service Name For The Channel (One Channel Service Per KafkaChannel Instance)
+	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))
+	deploymentServiceAddress := fmt.Sprintf("%s.%s.svc.%s", deploymentName, constants.KnativeEventingNamespace, eventingUtils.GetClusterDomainName())
 
-	// Create & Return The K8S Service Model
+	// Create & Return The Service Model
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceName,
-			Namespace: constants.KnativeEventingNamespace,
+			Name:      channel.Name,      // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
+			Namespace: channel.Namespace, // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 			Labels: map[string]string{
-				"channel":                  channel.Name,
 				K8sAppChannelSelectorLabel: K8sAppChannelSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				util.NewChannelControllerRef(channel),
+				util.NewChannelOwnerReference(channel),
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Type:         corev1.ServiceTypeExternalName,
+			ExternalName: deploymentServiceAddress,
+		},
+	}
+}
+
+//
+// KafkaChannel Kafka Deployment Service
+//
+// One K8S Service per Kafka Authorization, in the same knative-eventing namespace,
+// referring to the single matching Channel Deployment/Pods (as reconciled below).
+//
+
+// Reconcile The Kafka Deployment Service
+func (r *Reconciler) reconcileChannelDeploymentService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
+
+	// Attempt To Get The Deployment Service Associated With The Specified Channel
+	service, err := r.getChannelDeploymentService(ctx, channel)
+	if err != nil {
+
+		// If The Service Was Not Found - Then Create A New One For The Channel
+		if errors.IsNotFound(err) {
+
+			// Then Create The New Deployment Service
+			r.logger.Info("Channel Deployment Service Not Found - Creating New One")
+			service = r.newChannelDeploymentService(channel)
+			err = r.client.Create(ctx, service)
+			if err != nil {
+				r.logger.Error("Failed To Create Channel Deployment Service", zap.Error(err))
+				channel.Status.MarkChannelDeploymentServiceFailed("ChannelDeploymentServiceFailed", fmt.Sprintf("Channel Deployment Service Failed: %s", err))
+				return err
+			} else {
+				r.logger.Info("Successfully Created Channel Deployment Service")
+				channel.Status.MarkChannelDeploymentServiceTrue()
+				return nil
+			}
+
+		} else {
+
+			// Failed In Attempt To Get Deployment Service From K8S
+			r.logger.Error("Failed To Get Channel Deployment Service", zap.Error(err))
+			channel.Status.MarkChannelDeploymentServiceFailed("ChannelDeploymentServiceFailed", fmt.Sprintf("Channel Deployment Service Failed: %s", err))
+			return err
+		}
+	}
+
+	// Service Already Exists - Mark Status & Return Success
+	channel.Status.MarkChannelDeploymentServiceTrue()
+	return nil
+}
+
+// Get The Kafka Deployment Service Associated With The Specified Channel
+func (r *Reconciler) getChannelDeploymentService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+
+	// Get The Dispatcher Deployment Name For The Channel - Use Same For Service
+	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))
+
+	// Create A Namespace / Name ObjectKey For The Specified Channel
+	serviceKey := types.NamespacedName{
+		Name:      deploymentName,
+		Namespace: constants.KnativeEventingNamespace,
+	}
+
+	// Get The Service By Namespace / Name
+	service := &corev1.Service{}
+	err := r.client.Get(ctx, serviceKey, service)
+
+	// Return The Results
+	return service, err
+}
+
+// Create Kafka Deployment Service Model For The Specified Channel
+func (r *Reconciler) newChannelDeploymentService(channel *knativekafkav1alpha1.KafkaChannel) *corev1.Service {
+
+	// Get The Dispatcher Deployment Name For The Channel - Use Same For Service
+	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))
+
+	// Create & Return The Service Model
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploymentName,
+			Namespace: constants.KnativeEventingNamespace,
+			Labels: map[string]string{
+				K8sAppChannelSelectorLabel: K8sAppChannelSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -150,45 +250,67 @@ func (r *Reconciler) newK8sChannelService(channel *knativekafkav1alpha1.KafkaCha
 				},
 			},
 			Selector: map[string]string{
-				"app": serviceName, // Matches Deployment Label Key/Value
+				"app": deploymentName, // Matches Deployment Label Key/Value
 			},
 		},
 	}
 }
 
 //
-// K8S Deployment
+// KafkaChannel Deployment - The Kafka Producer Implementation
+//
+// One K8S Deployment per Kafka Authorization, in the knative-eventing namespace.
 //
 
-// Create The K8S Channel Deployment If Not Already Existing
-func (r *Reconciler) createK8sChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+// Reconcile The KafkaChannel Deployment
+func (r *Reconciler) reconcileChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
 
-	// Attempt To Get The K8S Channel Deployment Associated With The Specified Channel
-	deployment, err := r.getK8sChannelDeployment(ctx, channel)
+	// Attempt To Get The KafkaChannel Deployment Associated With The Specified Channel
+	deployment, err := r.getChannelDeployment(ctx, channel)
+	if err != nil {
 
-	// If The K8S Channel Deployment Was Not Found - Then Create A New One For The Channel
-	if errors.IsNotFound(err) {
-		r.logger.Info("Kubernetes Channel Deployment Not Found - Creating New One")
-		deployment, err = r.newK8sChannelDeployment(channel)
-		if err == nil {
-			err = r.client.Create(ctx, deployment)
+		// If The KafkaChannel Deployment Was Not Found - Then Create A New Deployment For The Channel
+		if errors.IsNotFound(err) {
+
+			// Then Create The New Deployment
+			r.logger.Info("KafkaChannel Deployment Not Found - Creating New One")
+			deployment, err = r.newChannelDeployment(channel)
+			if err != nil {
+				r.logger.Error("Failed To Create KafkaChannel Deployment YAML", zap.Error(err))
+				channel.Status.MarkChannelDeploymentFailed("ChannelDeploymentFailed", fmt.Sprintf("Channel Deployment Failed: %s", err))
+				return err
+			} else {
+				err = r.client.Create(ctx, deployment)
+				if err != nil {
+					r.logger.Error("Failed To Create KafkaChannel Deployment", zap.Error(err))
+					channel.Status.MarkChannelDeploymentFailed("ChannelDeploymentFailed", fmt.Sprintf("Channel Deployment Failed: %s", err))
+					return err
+				} else {
+					r.logger.Info("Successfully Created KafkaChannel Deployment")
+					channel.Status.MarkChannelDeploymentTrue()
+					return nil
+				}
+			}
+
+		} else {
+
+			// Failed In Attempt To Get Deployment From K8S
+			r.logger.Error("Failed To Get KafkaChannel Deployment", zap.Error(err))
+			channel.Status.MarkChannelDeploymentFailed("ChannelDeploymentFailed", fmt.Sprintf("Channel Deployment Failed: %s", err))
+			return err
 		}
 	}
 
-	// If Any Error Occurred (Either Get Or Create) - Then Reconcile Again
-	if err != nil {
-		return nil, err
-	}
-
-	// Return The K8S Channel Deployment
-	return deployment, nil
+	// Deployment Already Exists - Mark Status & Return Success
+	channel.Status.MarkChannelDeploymentTrue()
+	return nil
 }
 
-// Get The K8S Channel Deployment Associated With The Specified Channel
-func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+// Get The KafkaChannel Deployment Associated With The Specified Channel
+func (r *Reconciler) getChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
-	// Get The Channel Deployment Name
-	deploymentName := util.ChannelDnsSafeName(channel)
+	// Get The Channel Deployment Name (One Channel Deployment Per Kafka Auth Secret)
+	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))
 
 	// Create A Namespace / Name ObjectKey For The Specified Channel Deployment
 	deploymentKey := types.NamespacedName{
@@ -204,14 +326,14 @@ func (r *Reconciler) getK8sChannelDeployment(ctx context.Context, channel *knati
 	return deployment, err
 }
 
-// Create K8S Channel Deployment Model For The Specified Channel
-func (r *Reconciler) newK8sChannelDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+// Create KafkaChannel Deployment Model For The Specified Channel
+func (r *Reconciler) newChannelDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
-	// Get The Channel Deployment Name
-	deploymentName := util.ChannelDnsSafeName(channel)
+	// Get The Channel Deployment Name (One Channel Deployment Per Kafka Auth Secret)
+	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))
 
 	// Replicas Int Value For De-Referencing
-	replicas := int32(1)
+	replicas := int32(r.environment.ChannelReplicas)
 
 	// Create The Channel Container Environment Variables
 	channelEnvVars, err := r.channelDeploymentEnvVars(channel)
@@ -220,16 +342,13 @@ func (r *Reconciler) newK8sChannelDeployment(channel *knativekafkav1alpha1.Kafka
 		return nil, err
 	}
 
-	// Create & Return The Channel's K8S Deployment
+	// Create & Return The Channel's Deployment
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"app": deploymentName, // Matches K8S Service Selector Key/Value Below
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				util.NewChannelControllerRef(channel),
+				"app": deploymentName, // Matches Service Selector Key/Value Below
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -301,21 +420,13 @@ func (r *Reconciler) newK8sChannelDeployment(channel *knativekafkav1alpha1.Kafka
 func (r *Reconciler) channelDeploymentEnvVars(channel *knativekafkav1alpha1.KafkaChannel) ([]corev1.EnvVar, error) {
 
 	// Get The TopicName For Specified Channel
-	topicName := util.TopicName(channel, r.environment)
+	topicName := util.TopicName(channel)
 
 	// Create The Channel Deployment EnvVars
 	envVars := []corev1.EnvVar{
 		{
 			Name:  env.MetricsPortEnvVarKey,
 			Value: strconv.Itoa(r.environment.MetricsPort),
-		},
-		{
-			Name:  env.KafkaTopicEnvVarKey,
-			Value: topicName,
-		},
-		{
-			Name:  env.KafkaClientIdEnvVarKey,
-			Value: topicName,
 		},
 	}
 
@@ -366,4 +477,9 @@ func (r *Reconciler) channelDeploymentEnvVars(channel *knativekafkav1alpha1.Kafk
 
 	// Return The Channel Deployment EnvVars Array
 	return envVars, nil
+}
+
+// Get The Kafka Auth Secret Corresponding To The Specified KafkaChannel
+func (r *Reconciler) kafkaSecretName(channel *knativekafkav1alpha1.KafkaChannel) string {
+	return r.adminClient.GetKafkaSecretName(util.TopicName(channel))
 }

@@ -47,10 +47,10 @@ spec:
           value: "false"
         - name: CHANNEL_IMAGE
           value: {{ .Values.environment.channelImage | quote }}
+        - name: CHANNEL_REPLICAS
+          value: {{ .Values.environment.channelReplicas | quote }}
         - name: DISPATCHER_IMAGE
           value: {{ .Values.environment.dispatcherImage | quote }}
-        - name: DEFAULT_TENANT_ID
-          value: {{ .Values.environment.defaultTenantId | quote }}
         - name: DEFAULT_NUM_PARTITIONS
           value: {{ .Values.environment.defaultNumPartitions | quote }}
         - name: DEFAULT_REPLICATION_FACTOR
@@ -60,7 +60,7 @@ spec:
         - name: DEFAULT_KAFKA_CONSUMERS
           value: {{ .Values.environment.defaultKafkaConsumers | quote }}
         - name: "DISPATCHER_REPLICAS"
-          value: "1"
+          value: {{ .Values.environment.dispatcherReplicas | quote }}
         - name: DISPATCHER_RETRY_INITIAL_INTERVAL_MILLIS
           value: "500"
         - name: DISPATCHER_RETRY_TIME_MILLIS
