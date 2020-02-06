@@ -157,6 +157,16 @@ func TestDispatcher(t *testing.T) {
 	// Verify The Consumer Offset Commit Messages
 	verifyConsumerCommits(t, testDispatcher.consumers, 3)
 
+	// Remove 2 Consumers
+	subscriptionResults = testDispatcher.UpdateSubscriptions([]Subscription{
+		{
+			URI:     testSubscriberUri1,
+			GroupId: testGroupId,
+		},
+	})
+	verifyConsumersCount(t, testDispatcher.consumers, 1)
+	assert.Len(t, subscriptionResults, 0)
+
 	// Stop Consumers
 	testDispatcher.StopConsumers()
 
