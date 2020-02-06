@@ -1173,6 +1173,7 @@
     "github.com/cloudevents/sdk-go",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/context",
     "github.com/confluentinc/confluent-kafka-go/kafka",
+    "github.com/google/go-cmp/cmp",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",
