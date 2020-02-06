@@ -16,6 +16,14 @@
   version = "v0.51.0"
 
 [[projects]]
+  digest = "1:a0f79124a2fba5112d3d1466b917daf508e548c6c2da106399df92a79e06628b"
+  name = "contrib.go.opencensus.io/exporter/prometheus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f4a2c1e53ec45636355d35fb9022b64e4bdd4a91"
+  version = "v0.1.0"
+
+[[projects]]
   digest = "1:5d98ddff2b0590887ec18d7b38d6a043fc1721b32ab8b372e6a36ae1806aa23b"
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   packages = [
@@ -142,6 +150,14 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:2b5f431fa18891a2ac0e02353c83fb3bf458fced6ccecd664b429054e0c4ce3b"
+  name = "github.com/evanphx/json-patch"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bf22ed9311622d93e213ba31e4ae7a5771e5d379"
+  version = "v4.6.0"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -187,7 +203,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:f0ae868d945753df81e797524bb7f3c577bcf751ce515c18162d259ca3ff8de7"
+  digest = "1:010d46ea3c1e730897e53058d1013a963f3f987675dda87df64f891b945281db"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
@@ -198,8 +214,7 @@
     "cmp/internal/value",
   ]
   pruneopts = "UT"
-  revision = "5a6f75716e1203a923a78c9efb94089d857df0f6"
-  version = "v0.4.0"
+  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
 
 [[projects]]
   digest = "1:a6181aca1fd5e27103f9a920876f29ac72854df7345a39f3b01e61c8c94cc8af"
@@ -249,6 +264,14 @@
   version = "v0.5.4"
 
 [[projects]]
+  digest = "1:78d28d5b84a26159c67ea51996a230da4bc07cac648adaae1dfb5fc0ec8e40d3"
+  name = "github.com/imdario/mergo"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1afb36080aec31e0d1528973ebe6721b191b0369"
+  version = "v0.3.8"
+
+[[projects]]
   digest = "1:bb81097a5b62634f3e9fec1014657855610c82d19b9a40c17612e32651e35dca"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
@@ -264,8 +287,8 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:0aab9a06851443fac0ddf72a8bdbca24cac5efbc8a013ddd3f2c45207ac4aeba"
+  branch = "channel-consolidation"
+  digest = "1:eb1e2d918e8101f3cc15f767d6cb9915623b21cee6a3d9e5ddb854c81887a4ec"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -273,9 +296,28 @@
     "components/common/pkg/kafka/util",
     "components/common/pkg/log",
     "components/common/pkg/prometheus",
+    "components/controller/constants",
+    "components/controller/pkg/apis/knativekafka/v1alpha1",
+    "components/controller/pkg/client/clientset/versioned",
+    "components/controller/pkg/client/clientset/versioned/scheme",
+    "components/controller/pkg/client/clientset/versioned/typed/knativekafka/v1alpha1",
+    "components/controller/pkg/client/informers/externalversions",
+    "components/controller/pkg/client/informers/externalversions/internalinterfaces",
+    "components/controller/pkg/client/informers/externalversions/knativekafka",
+    "components/controller/pkg/client/informers/externalversions/knativekafka/v1alpha1",
+    "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "92ce5fb5109d65a05dd085b373ef110ba4322c1c"
+  revision = "881f73694509950a16a843a55b72fe7340fda075"
+  source = "github.com/travis-minke-sap/knative-kafka"
+
+[[projects]]
+  branch = "master"
+  digest = "1:fc2b04b0069d6b10bdef96d278fe20c345794009685ed3c8c7f1a6dc023eefec"
+  name = "github.com/mattbaird/jsonpatch"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "81af80346b1a01caae0cbc27fd3c1ba5b11e189f"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -315,6 +357,14 @@
   pruneopts = "UT"
   revision = "c29478e51bfb2e9c93e0e9f5e015e5993a490399"
   version = "v0.2.2"
+
+[[projects]]
+  digest = "1:9e1d37b58d17113ec3cb5608ac0382313c5b59470b94ed97d0976e69c7022314"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "614d223910a179a466c1767a985424175c39b465"
+  version = "v0.9.1"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -367,6 +417,14 @@
   pruneopts = "UT"
   revision = "6d489fc7f1d9cd890a250f3ea3431b1744b9623f"
   version = "v0.0.8"
+
+[[projects]]
+  digest = "1:524b71991fc7d9246cc7dc2d9e0886ccb97648091c63e30eef619e6862c955dd"
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2e9d26c8c37aae03e3f9d4e90b7116f5accb7cab"
+  version = "v1.0.5"
 
 [[projects]]
   digest = "1:8548c309c65a85933a625be5e7d52b6ac927ca30c56869fae58123b8a77a75e1"
@@ -568,17 +626,6 @@
   ]
   pruneopts = "UT"
   revision = "2b6af5f9ace725aefaab9e4e3abbcdd9f07ef5bc"
-
-[[projects]]
-  branch = "master"
-  digest = "1:918a46e4a2fb83df33f668f5a6bd51b2996775d073fce1800d3ec01b0a5ddd2b"
-  name = "golang.org/x/xerrors"
-  packages = [
-    ".",
-    "internal",
-  ]
-  pruneopts = "UT"
-  revision = "9bdfabe68543c54f90421aeb9a60ef8061b5b544"
 
 [[projects]]
   branch = "master"
@@ -792,16 +839,18 @@
   version = "kubernetes-1.15.3"
 
 [[projects]]
-  digest = "1:407988ce7dbddaed16ff7eecc3bbf0b8617ae1794927fb5a98bd704e9adae00e"
+  digest = "1:848174da3c026f09e27bc81279df1c0660a2274098624ee70c9c2c32459fec61"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
+    "pkg/api/validation",
     "pkg/apis/meta/internalversion",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
+    "pkg/apis/meta/v1/validation",
     "pkg/apis/meta/v1beta1",
     "pkg/conversion",
     "pkg/conversion/queryparams",
@@ -824,16 +873,19 @@
     "pkg/util/framer",
     "pkg/util/intstr",
     "pkg/util/json",
+    "pkg/util/mergepatch",
     "pkg/util/naming",
     "pkg/util/net",
     "pkg/util/runtime",
     "pkg/util/sets",
+    "pkg/util/strategicpatch",
     "pkg/util/validation",
     "pkg/util/validation/field",
     "pkg/util/wait",
     "pkg/util/yaml",
     "pkg/version",
     "pkg/watch",
+    "third_party/forked/golang/json",
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
@@ -841,10 +893,11 @@
   version = "kubernetes-1.15.3"
 
 [[projects]]
-  digest = "1:6f8c9133cbd1e774406251a080339cb231498ddfc01f053c9f069df4ead99846"
+  digest = "1:9114af97f0377643cd9bbe0ac73ada8a790d7ffb252b0ca3f2344d87e628e747"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
+    "dynamic",
     "informers",
     "informers/admissionregistration",
     "informers/admissionregistration/v1beta1",
@@ -973,17 +1026,25 @@
     "plugin/pkg/client/auth/exec",
     "rest",
     "rest/watch",
+    "tools/auth",
     "tools/cache",
+    "tools/clientcmd",
     "tools/clientcmd/api",
+    "tools/clientcmd/api/latest",
+    "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
+    "tools/record",
+    "tools/record/util",
     "tools/reference",
     "transport",
     "util/cert",
     "util/connrotation",
     "util/flowcontrol",
+    "util/homedir",
     "util/keyutil",
     "util/retry",
+    "util/workqueue",
   ]
   pruneopts = "UT"
   revision = "e14f31a72a77f7aa82a95eaf542d1194fb027d04"
@@ -999,6 +1060,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:22abb5d4204ab1a0dcc9cda64906a31c43965ff5159e8b9f766c9d2a162dbed5"
+  name = "k8s.io/kube-openapi"
+  packages = ["pkg/util/proto"]
+  pruneopts = "UT"
+  revision = "bf4fb3bd569c8c84504d856598edbc66c10d8744"
+
+[[projects]]
+  branch = "master"
   digest = "1:2d3f59daa4b479ff4e100a2e1d8fea6780040fdadc177869531fe4cc29407f55"
   name = "k8s.io/utils"
   packages = [
@@ -1010,9 +1079,10 @@
   revision = "94aeca20bf0991bf33922a5938174b9147ab8ca7"
 
 [[projects]]
-  digest = "1:0014361ed51e4a6f0ff8a3ad6e965846b75cdfdca9d674e581004d44f315a8fa"
+  digest = "1:59645784f4a6aae70d96d8ce659909dcb3aa1437d335a4b4b558f398222248e1"
   name = "knative.dev/eventing"
   packages = [
+    "pkg/apis/duck/v1alpha1",
     "pkg/channel",
     "pkg/configmap",
     "pkg/kncloudevents",
@@ -1025,15 +1095,40 @@
 
 [[projects]]
   branch = "release-0.10"
-  digest = "1:81d5eb6e917adc861daa08978cd784f7a954cd22486b8ae6693b92d6ba55b1df"
+  digest = "1:f6ba86cd086cb7e000666aac7961368fbf2faf1ef2ec3ee3ea05b30f8ddc0ed5"
   name = "knative.dev/pkg"
   packages = [
+    "apis",
+    "apis/duck",
+    "apis/duck/v1",
+    "apis/duck/v1alpha1",
+    "apis/duck/v1beta1",
+    "apis/v1alpha1",
+    "changeset",
     "configmap",
+    "controller",
+    "kmeta",
+    "kmp",
+    "logging",
+    "logging/logkey",
+    "metrics",
+    "metrics/metricskey",
     "tracing",
     "tracing/config",
   ]
   pruneopts = "UT"
   revision = "884d50f09454909de6f343c165fdba5f59c5c19a"
+
+[[projects]]
+  digest = "1:68cd93696d4de06936c94bf0c510802140c2d3c956b557f3d001430d58cf676c"
+  name = "sigs.k8s.io/controller-runtime"
+  packages = [
+    "pkg/runtime/scheme",
+    "pkg/scheme",
+  ]
+  pruneopts = "UT"
+  revision = "198197fe0fd7553cadd8afcd3338f8ee4b8a7e3f"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
@@ -1048,15 +1143,31 @@
   analyzer-version = 1
   input-imports = [
     "github.com/cloudevents/sdk-go",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/context",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/types",
     "github.com/confluentinc/confluent-kafka-go/kafka",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",
+    "github.com/kyma-incubator/knative-kafka/components/controller/constants",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions",
+    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1",
     "github.com/stretchr/testify/assert",
     "go.uber.org/zap",
+    "k8s.io/api/core/v1",
+    "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/apis/meta/v1",
+    "k8s.io/apimachinery/pkg/labels",
+    "k8s.io/client-go/tools/clientcmd",
     "knative.dev/eventing/pkg/channel",
     "knative.dev/eventing/pkg/kncloudevents",
+    "knative.dev/pkg/apis",
+    "knative.dev/pkg/apis/duck/v1",
+    "knative.dev/pkg/controller",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
