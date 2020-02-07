@@ -94,22 +94,26 @@ func (r *Reconciler) reconcileKafkaChannelService(ctx context.Context, channel *
 				return err
 			} else {
 				r.logger.Info("Successfully Created KafkaChannel Service")
-				channel.Status.MarkChannelServiceTrue()
-				channel.Status.SetAddress(&apis.URL{
-					Scheme: "http",
-					Host:   eventingNames.ServiceHostName(service.Name, service.Namespace),
-				})
-				return nil
+				// Continue To Update Channel Status
 			}
 		} else {
 			r.logger.Error("Failed To Get KafkaChannel Service", zap.Error(err))
 			channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
 			return err
 		}
+	} else {
+		r.logger.Info("Successfully Verified KafkaChannel Service")
+		// Continue To Update Channel Status
 	}
 
+	// Update Channel Status
+	channel.Status.MarkChannelServiceTrue()
+	channel.Status.SetAddress(&apis.URL{
+		Scheme: "http",
+		Host:   eventingNames.ServiceHostName(service.Name, service.Namespace),
+	})
+
 	// Return Success
-	r.logger.Info("Successfully Verified KafkaChannel Service")
 	return nil
 }
 
@@ -183,8 +187,7 @@ func (r *Reconciler) reconcileChannelDeploymentService(ctx context.Context, chan
 				return err
 			} else {
 				r.logger.Info("Successfully Created Channel Deployment Service")
-				channel.Status.MarkChannelDeploymentServiceTrue()
-				return nil
+				// Continue To Update Channel Status
 			}
 
 		} else {
@@ -194,10 +197,15 @@ func (r *Reconciler) reconcileChannelDeploymentService(ctx context.Context, chan
 			channel.Status.MarkChannelDeploymentServiceFailed("ChannelDeploymentServiceFailed", fmt.Sprintf("Channel Deployment Service Failed: %s", err))
 			return err
 		}
+	} else {
+		r.logger.Info("Successfully Verified Channel Deployment Service")
+		// Continue To Update Channel Status
 	}
 
-	// Service Already Exists - Mark Status & Return Success
+	// Update Channel Status
 	channel.Status.MarkChannelDeploymentServiceTrue()
+
+	// Return Success
 	return nil
 }
 
@@ -287,8 +295,7 @@ func (r *Reconciler) reconcileChannelDeployment(ctx context.Context, channel *kn
 					return err
 				} else {
 					r.logger.Info("Successfully Created KafkaChannel Deployment")
-					channel.Status.MarkChannelDeploymentTrue()
-					return nil
+					// Continue To Update Channel Status
 				}
 			}
 
@@ -299,10 +306,15 @@ func (r *Reconciler) reconcileChannelDeployment(ctx context.Context, channel *kn
 			channel.Status.MarkChannelDeploymentFailed("ChannelDeploymentFailed", fmt.Sprintf("Channel Deployment Failed: %s", err))
 			return err
 		}
+	} else {
+		r.logger.Info("Successfully Verified Channel Deployment")
+		// Continue To Update Channel Status
 	}
 
-	// Deployment Already Exists - Mark Status & Return Success
+	// Update Channel Status
 	channel.Status.MarkChannelDeploymentTrue()
+
+	// Return Success
 	return nil
 }
 

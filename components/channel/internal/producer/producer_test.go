@@ -5,6 +5,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
+	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -15,6 +16,31 @@ var _ = log.TestLogger() // Force The Use Of The TestLogger!
 
 // TODO - Implement Test for initialize?  probably have to wrap the call to the knative createProducer()
 //      - check code coverage - not great
+
+// Test The InitializeProducer Functionality
+func TestInitializeProducer(t *testing.T) {
+
+	// Test Data
+	brokers := "TestBrokers"
+	username := "TestUsername"
+	password := "TestPassword"
+	mockProducer := test.NewMockProducer(test.TopicName)
+
+	// Stub The Kafka Producer Creation Wrapper With Test Version Returning MockProducer
+	createProducerFunctionWrapper = func(brokers string, username string, password string) (kafkaproducer.ProducerInterface, error) {
+		return mockProducer, nil
+	}
+
+	// Perform The Test
+	err := InitializeProducer(brokers, username, password)
+
+	// Verify The Results
+	assert.Nil(t, err)
+	assert.Equal(t, mockProducer, kafkaProducer)
+
+	// Close The Producer (Or Subsequent Tests Will Fail Because processProducerEvents() GO Routine Is Still Running)
+	Close()
+}
 
 // Test The ProduceKafkaMessage() Functionality
 func TestProduceKafkaMessage(t *testing.T) {
@@ -56,6 +82,10 @@ func TestClose(t *testing.T) {
 	// Replace The Package Singleton With A Mock Producer
 	mockProducer := test.NewMockProducer(test.TopicName)
 	kafkaProducer = mockProducer
+
+	// Reset The Stop Channels
+	stopChannel = make(chan struct{})
+	stoppedChannel = make(chan struct{})
 
 	// Block On The StopChannel & Close The StoppedChannel (Play the part of processProducerEvents())
 	go func() {

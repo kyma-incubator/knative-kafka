@@ -15,15 +15,20 @@ import (
 // Package Variables
 var (
 	kafkaProducer  kafkaproducer.ProducerInterface
-	stopChannel    = make(chan struct{})
-	stoppedChannel = make(chan struct{})
+	stopChannel    chan struct{}
+	stoppedChannel chan struct{}
 )
+
+// Wrapper Around Common Kafka Producer Creation To Facilitate Unit Testing
+var createProducerFunctionWrapper = func(brokers string, username string, password string) (kafkaproducer.ProducerInterface, error) {
+	return kafkaproducer.CreateProducer(brokers, username, password)
+}
 
 // Initialize The Producer
 func InitializeProducer(brokers string, username string, password string) error {
 
 	// Create The Producer Using The Specified Kafka Authentication
-	producer, err := kafkaproducer.CreateProducer(brokers, username, password)
+	producer, err := createProducerFunctionWrapper(brokers, username, password)
 	if err != nil {
 		log.Logger().Error("Failed To Create Kafka Producer - Exiting", zap.Error(err))
 		return err
@@ -32,6 +37,10 @@ func InitializeProducer(brokers string, username string, password string) error 
 	// Assign The Producer Singleton Instance
 	log.Logger().Info("Successfully Created Kafka Producer")
 	kafkaProducer = producer
+
+	// Reset The Stop Channels
+	stopChannel = make(chan struct{})
+	stoppedChannel = make(chan struct{})
 
 	// Fork A Go Routine To Process Kafka Events Asynchronously
 	log.Logger().Info("Starting Kafka Producer Event Processing")
