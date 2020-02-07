@@ -3,6 +3,8 @@ package channel
 import (
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
+	fakeclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"testing"
@@ -14,13 +16,17 @@ var _ = log.TestLogger() // Force The Use Of The TestLogger!
 // Test The InitializeKafkaChannelLister() Functionality
 func TestInitializeKafkaChannelLister(t *testing.T) {
 
-	// TODO - need to create a var function for getting the client and see if the rest is ok to test - otherwise... might have to skip?
+	// Stub The K8S Client Creation Wrapper With Test Version Returning The Fake KafkaClient Clientset
+	getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
+		return fakeclientset.NewSimpleClientset(), nil
+	}
+	
+	// Perform The Test
+	err := InitializeKafkaChannelLister("", "")
 
-	//// Perform The Test
-	//InitializeKafkaChannelLister()
-	//
-	//// Verify The Results
-	//assert.NotNil(t, kafkaChannelLister)
+	// Verify The Results
+	assert.Nil(t, err)
+	assert.NotNil(t, kafkaChannelLister)
 }
 
 // Test All The ValidateKafkaChannel() Functionality

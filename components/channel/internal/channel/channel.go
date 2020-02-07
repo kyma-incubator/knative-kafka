@@ -19,18 +19,29 @@ var (
 	stopChan           chan struct{}
 )
 
-// Initialize The KafkaChannel Lister Singleton
-func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string) error {
+// Wrapper Around KnativeKafka Client Creation To Facilitate Unit Testing
+var getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
 
 	// Create The K8S Configuration (In-Cluster With Cmd Line Flags For Out-Of-Cluster Usage)
 	k8sConfig, err := k8sclientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 	if err != nil {
 		log.Logger().Error("Failed To Build Kubernetes Config", zap.Error(err))
-		return err
+		return nil, err
 	}
 
-	// Create The K8S Client For KafkaChannels
-	client := knativekafkaclientset.NewForConfigOrDie(k8sConfig)
+	// Create A New KnativeKafka Client From The K8S Config & Return The Result
+	return knativekafkaclientset.NewForConfigOrDie(k8sConfig), nil
+}
+
+// Initialize The KafkaChannel Lister Singleton
+func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string) error {
+
+	// Create The K8S KnativeKafka Client For KafkaChannels
+	client, err := getKnativeKafkaClient(masterUrl, kubeconfigPath)
+	if err != nil {
+		log.Logger().Error("Failed To Create KnativeKafka Client", zap.Error(err))
+		return err
+	}
 
 	// Create A New KafkaChannel SharedInformerFactory For ALL Namespaces (Default Resync Is 10 Hrs)
 	sharedInformerFactory := knativekafkainformers.NewSharedInformerFactory(client, knativecontroller.DefaultResyncPeriod)
