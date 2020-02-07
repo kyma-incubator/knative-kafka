@@ -377,6 +377,7 @@ func (r *Reconciler) newChannelDeployment(channel *knativekafkav1alpha1.KafkaCha
 					},
 				},
 				Spec: corev1.PodSpec{
+					ServiceAccountName: r.environment.ServiceAccount,
 					Containers: []corev1.Container{
 						{
 							Name:  deploymentName,

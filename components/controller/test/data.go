@@ -349,6 +349,7 @@ func GetNewK8SChannelDeployment(topicName string) *appsv1.Deployment {
 					},
 				},
 				Spec: corev1.PodSpec{
+					ServiceAccountName: ServiceAccount,
 					Containers: []corev1.Container{
 						{
 							Name:  ChannelDeploymentName,
