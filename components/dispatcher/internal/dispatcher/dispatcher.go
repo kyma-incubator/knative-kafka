@@ -37,6 +37,7 @@ type ConsumerOffset struct {
 	consumer         kafkaconsumer.ConsumerInterface
 	lastOffsetCommit time.Time
 	offsets          map[int32]kafka.Offset
+	stopCh           chan bool
 }
 
 // Define a Dispatcher Struct to hold Dispatcher Config and dispatcher implementation details
@@ -68,10 +69,8 @@ func (d *Dispatcher) StopConsumers() {
 
 func (d *Dispatcher) stopConsumer(subscription Subscription) {
 	log.Logger().Info("Stopping Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
-	err := d.consumers[subscription].consumer.Close()
-	if err != nil {
-		log.Logger().Error("Unable To Stop Consumer", zap.Error(err))
-	}
+
+	d.consumers[subscription].stopCh <- true
 	delete(d.consumers, subscription)
 }
 
@@ -93,7 +92,8 @@ func (d *Dispatcher) initConsumer(subscription Subscription) (*ConsumerOffset, e
 		return nil, err
 	}
 
-	consumerOffset := ConsumerOffset{consumer: consumer, lastOffsetCommit: time.Now(), offsets: make(map[int32]kafka.Offset)}
+	stopCh := make(chan bool)
+	consumerOffset := ConsumerOffset{consumer: consumer, lastOffsetCommit: time.Now(), offsets: make(map[int32]kafka.Offset), stopCh: stopCh}
 
 	// Start Consuming Messages From Topic (Async)
 	go d.handleKafkaMessages(consumerOffset, subscription)
@@ -108,59 +108,74 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 	// Configure The Logger
 	logger := log.Logger().With(zap.String("GroupID", subscription.GroupId))
 
-	// Infinite Message Processing Loop
-	for {
+	stopped := false
+	// Message Processing Loop
+	for !stopped {
 
 		// Poll For A New Event Message Until We Get One (Timeout is how long to wait before requesting again)
 		event := consumerOffset.consumer.Poll(d.PollTimeoutMillis)
 
-		if event == nil {
-			// Commit Offsets If The Amount Of Time Since Last Commit Is "OffsetCommitDuration" Or More
-			currentTimeDuration := time.Now().Sub(consumerOffset.lastOffsetCommit)
+		select {
+		// Handle Shutdown Case
+		case <-consumerOffset.stopCh:
+			stopped = true
+		default:
 
-			if currentTimeDuration > d.OffsetCommitDurationMinimum && currentTimeDuration >= d.OffsetCommitDuration {
-				d.commitOffsets(logger, &consumerOffset)
-			}
+			if event == nil {
+				// Commit Offsets If The Amount Of Time Since Last Commit Is "OffsetCommitDuration" Or More
+				currentTimeDuration := time.Now().Sub(consumerOffset.lastOffsetCommit)
 
-			// Continue Polling For Events
-			continue
-		}
+				if currentTimeDuration > d.OffsetCommitDurationMinimum && currentTimeDuration >= d.OffsetCommitDuration {
+					d.commitOffsets(logger, &consumerOffset)
+				}
 
-		// Handle Event Messages / Errors Based On Type
-		switch e := event.(type) {
-
-		case *kafka.Message:
-			// Dispatch The Message - Send To Target URL
-			logger.Debug("Received Kafka Message - Dispatching",
-				zap.String("Message", string(e.Value)),
-				zap.String("Topic", *e.TopicPartition.Topic),
-				zap.Int32("Partition", e.TopicPartition.Partition),
-				zap.Any("Offset", e.TopicPartition.Offset))
-
-			cloudEvent, err := convertToCloudEvent(e)
-			if err != nil {
-				logger.Error("Unable To Convert Kafka Message To CloudEvent, Skipping", zap.Any("message", e))
+				// Continue Polling For Events
 				continue
 			}
 
-			_ = d.Client.Dispatch(*cloudEvent, subscription.URI) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
+			// Handle Event Messages / Errors Based On Type
+			switch e := event.(type) {
 
-			// Update Stored Offsets Based On The Processed Message
-			d.updateOffsets(consumerOffset.consumer, e)
-			currentTimeDuration := time.Now().Sub(consumerOffset.lastOffsetCommit)
+			case *kafka.Message:
+				// Dispatch The Message - Send To Target URL
+				logger.Debug("Received Kafka Message - Dispatching",
+					zap.String("Message", string(e.Value)),
+					zap.String("Topic", *e.TopicPartition.Topic),
+					zap.Int32("Partition", e.TopicPartition.Partition),
+					zap.Any("Offset", e.TopicPartition.Offset))
 
-			// If "OffsetCommitCount" Number Of Messages Have Been Processed Since Last Offset Commit, Then Do One Now
-			if currentTimeDuration > d.OffsetCommitDurationMinimum &&
-				int64(e.TopicPartition.Offset-consumerOffset.offsets[e.TopicPartition.Partition]) >= d.OffsetCommitCount {
-				d.commitOffsets(logger, &consumerOffset)
+				cloudEvent, err := convertToCloudEvent(e)
+				if err != nil {
+					logger.Error("Unable To Convert Kafka Message To CloudEvent, Skipping", zap.Any("message", e))
+					continue
+				}
+
+				_ = d.Client.Dispatch(*cloudEvent, subscription.URI) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
+
+				// Update Stored Offsets Based On The Processed Message
+				d.updateOffsets(consumerOffset.consumer, e)
+				currentTimeDuration := time.Now().Sub(consumerOffset.lastOffsetCommit)
+
+				// If "OffsetCommitCount" Number Of Messages Have Been Processed Since Last Offset Commit, Then Do One Now
+				if currentTimeDuration > d.OffsetCommitDurationMinimum &&
+					int64(e.TopicPartition.Offset-consumerOffset.offsets[e.TopicPartition.Partition]) >= d.OffsetCommitCount {
+					d.commitOffsets(logger, &consumerOffset)
+				}
+
+			case kafka.Error:
+				logger.Warn("Received Kafka Error", zap.Error(e))
+
+			default:
+				logger.Info("Received Unknown Event Type - Ignoring", zap.String("Message", e.String()))
 			}
-
-		case kafka.Error:
-			logger.Warn("Received Kafka Error", zap.Error(e))
-
-		default:
-			logger.Info("Received Unknown Event Type - Ignoring", zap.String("Message", e.String()))
 		}
+	}
+
+	// Safe To Shutdown The Consumer
+	logger.Debug("Shutting Down Consumer")
+	err := consumerOffset.consumer.Close()
+	if err != nil {
+		logger.Error("Unable To Stop Consumer", zap.Error(err))
 	}
 }
 
@@ -200,7 +215,7 @@ func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) map[Subsc
 
 	for _, subscription := range subscriptions {
 
-		// Create Consumer If Doesn't Already Exist
+		// Create Consumer If Doesn't Already Exist, Tracking Active Subscriptions
 		if _, ok := d.consumers[subscription]; !ok {
 			consumer, err := d.initConsumer(subscription)
 			if err != nil {
@@ -209,6 +224,8 @@ func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) map[Subsc
 				d.consumers[subscription] = consumer
 				activeSubscriptions[subscription] = true
 			}
+		} else {
+			activeSubscriptions[subscription] = true
 		}
 	}
 
