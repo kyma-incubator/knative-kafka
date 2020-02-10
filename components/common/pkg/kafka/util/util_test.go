@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"github.com/stretchr/testify/assert"
@@ -63,4 +64,33 @@ func TestTopicName(t *testing.T) {
 	// Verify The Results
 	expectedTopicName := namespace + "." + name
 	assert.Equal(t, expectedTopicName, actualTopicName)
+}
+
+// Test The AppendChannelServiceNameSuffix() Functionality
+func TestAppendChannelServiceNameSuffix(t *testing.T) {
+
+	// Test Data
+	channelName := "TestChannelName"
+
+	// Perform The Test
+	actualResult := AppendKafkaChannelServiceNameSuffix(channelName)
+
+	// Verify The Results
+	expectedResult := fmt.Sprintf("%s-%s", channelName, constants.KafkaChannelServiceNameSuffix)
+	assert.Equal(t, expectedResult, actualResult)
+}
+
+// Test The TrimKafkaChannelServiceNameSuffix() Functionality
+func TestTrimKafkaChannelServiceNameSuffix(t *testing.T) {
+
+	// Test Data
+	channelName := "TestChannelName"
+	channelServiceName := fmt.Sprintf("%s-%s", channelName, constants.KafkaChannelServiceNameSuffix)
+
+	// Perform The Test
+	actualResult := TrimKafkaChannelServiceNameSuffix(channelServiceName)
+
+	// Verify The Results
+	expectedResult := channelName
+	assert.Equal(t, expectedResult, actualResult)
 }
