@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
+	"strings"
 )
 
 // Utility Function For Adding Authentication Credentials To Kafka ConfigMap
@@ -36,4 +37,14 @@ func AddDebugFlags(configMap *kafka.ConfigMap, flags string) {
 // Get The Formatted Kafka Topic Name From The Specified Components
 func TopicName(namespace string, name string) string {
 	return fmt.Sprintf("%s.%s", namespace, name)
+}
+
+// Append The KafkaChannel Service Name Suffix To The Specified String (To Workaround Kyma Naming Conflict)
+func AppendKafkaChannelServiceNameSuffix(channelName string) string {
+	return fmt.Sprintf("%s-%s", channelName, constants.KafkaChannelServiceNameSuffix)
+}
+
+// Remove The KafkaChannel Service Name Suffix From The Specified String (To Workaround Kyma Naming Conflict)
+func TrimKafkaChannelServiceNameSuffix(serviceName string) string {
+	return strings.TrimSuffix(serviceName, "-"+constants.KafkaChannelServiceNameSuffix)
 }

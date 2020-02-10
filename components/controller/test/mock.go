@@ -7,6 +7,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
+	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -209,7 +210,7 @@ var MockCreateFnServiceError MockCreateFn = func(innerClient client.Client, ctx 
 // Handle Any KafkaChannel Services By Returning An Error
 var MockCreateFnKafkaChannelServiceError MockCreateFn = func(innerClient client.Client, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) (MockHandled, error) {
 	if _, ok := obj.(*corev1.Service); ok {
-		if obj.(*corev1.Service).Name == ChannelName {
+		if obj.(*corev1.Service).Name == kafkautil.AppendKafkaChannelServiceNameSuffix(ChannelName) {
 			err := errors.New(MockCreateFnServiceErrorMessage)
 			return Handled, err
 		}

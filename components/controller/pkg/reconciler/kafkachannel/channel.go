@@ -3,6 +3,7 @@ package kafkachannel
 import (
 	"context"
 	"fmt"
+	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
@@ -120,9 +121,12 @@ func (r *Reconciler) reconcileKafkaChannelService(ctx context.Context, channel *
 // Get The KafkaChannel Service Associated With The Specified Channel
 func (r *Reconciler) getKafkaChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
+	// Get The KafkaChannel Service Name
+	serviceName := kafkautil.AppendKafkaChannelServiceNameSuffix(channel.Name)
+
 	// Create A Namespace / Name ObjectKey For The Specified KafkaChannel
 	serviceKey := types.NamespacedName{
-		Name:      channel.Name,      // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
+		Name:      serviceName,       // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 		Namespace: channel.Namespace, // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 	}
 
@@ -137,6 +141,9 @@ func (r *Reconciler) getKafkaChannelService(ctx context.Context, channel *knativ
 // Create KafkaChannel Service Model For The Specified Channel
 func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaChannel) *corev1.Service {
 
+	// Get The KafkaChannel Service Name
+	serviceName := kafkautil.AppendKafkaChannelServiceNameSuffix(channel.Name)
+
 	// Get The Dispatcher Service Name For The Channel (One Channel Service Per KafkaChannel Instance)
 	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))
 	deploymentServiceAddress := fmt.Sprintf("%s.%s.svc.%s", deploymentName, constants.KnativeEventingNamespace, eventingUtils.GetClusterDomainName())
@@ -144,7 +151,7 @@ func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 	// Create & Return The Service Model
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      channel.Name,      // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
+			Name:      serviceName,       // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 			Namespace: channel.Namespace, // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 			Labels: map[string]string{
 				K8sAppChannelSelectorLabel: K8sAppChannelSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)

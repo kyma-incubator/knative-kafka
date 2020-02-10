@@ -288,7 +288,7 @@
 
 [[projects]]
   branch = "channel-consolidation"
-  digest = "1:9529cc6917b1eaf71f4ca1f5181d97644be5f04d14a4fa4ab22f18060dae5983"
+  digest = "1:dd484a83f3938f231eea54f1acd4d8ed1dbb0c72a9e46eea4582dba748029329"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -310,7 +310,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "881f73694509950a16a843a55b72fe7340fda075"
+  revision = "dfa95026973ac3818f222df951a72bef8affec6c"
   source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]

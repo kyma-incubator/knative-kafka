@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
@@ -235,7 +236,7 @@ func GetChannelStatus(topic, channelService, channelDeploymentService, channelDe
 		kafkaChannelStatus.MarkChannelServiceTrue()
 		kafkaChannelStatus.SetAddress(&apis.URL{
 			Scheme: "http",
-			Host:   eventingNames.ServiceHostName(ChannelName, NamespaceName),
+			Host:   eventingNames.ServiceHostName(kafkautil.AppendKafkaChannelServiceNameSuffix(ChannelName), NamespaceName),
 		})
 	} else {
 		kafkaChannelStatus.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", MockCreateFnServiceErrorMessage))
@@ -270,7 +271,7 @@ func GetNewKafkaChannelService() *corev1.Service {
 			Kind:       "Service",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ChannelName,
+			Name:      kafkautil.AppendKafkaChannelServiceNameSuffix(ChannelName),
 			Namespace: NamespaceName,
 			Labels: map[string]string{
 				"k8s-app": "knative-kafka-channels",

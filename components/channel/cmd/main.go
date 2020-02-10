@@ -7,6 +7,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/env"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/producer"
+	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"go.uber.org/zap"
@@ -90,6 +91,9 @@ func handleEvent(ctx context.Context, channelReference eventingChannel.ChannelRe
 
 	logger.Debug("~~~~~~~~~~~~~~~~~~~~  Processing Request  ~~~~~~~~~~~~~~~~~~~~")
 	logger.Debug("Received Cloud Event", zap.Any("CloudEvent", cloudEvent), zap.Any("ChannelReference", channelReference))
+
+	// Trim The "-kafkachannel" Suffix From The Service Name (Added Only To Workaround Kyma Naming Conflict)
+	channelReference.Name = kafkautil.TrimKafkaChannelServiceNameSuffix(channelReference.Name)
 
 	// Validate The KafkaChannel Prior To Producing Kafka Message
 	err := channel.ValidateKafkaChannel(channelReference)
