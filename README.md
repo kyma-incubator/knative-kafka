@@ -54,15 +54,15 @@ namespace. The knative-kafka-controller will guarantee that the Data Plane is co
 defined by [Subscriptions](https://knative.dev/docs/reference/eventing/#messaging.knative.dev/v1alpha1.Subscription) to
 a KafkaChannel.  The underlying Kafka infrastructure to be used is defined in a specially
 labeled [secret](./resources/README.md#Credentials) in the knative-eventing namespace.  Knative-Kafka supports several
-different kafka (and kafka-like) [infrastructures](./resources/README.md#Kafka Providers).
+different Kafka (and Kafka-like) [infrastructures](./resources/README.md#Kafka Providers).
 
 ## Data Plane
 
 The data plane for all `KafkaChannels` runs in the knative-eventing namespace.  There is a single deployment for the
-receiver side of all channels which accepts CloudEvents and sends them to Kafka.  Each channel uses one kafka topic.
+receiver side of all channels which accepts CloudEvents and sends them to Kafka.  Each `KafkaChannel` uses one Kafka topic.
 This deployment supports horizontal scaling with linearly increasing performance characteristics through specifying the number of replicas.
 
-Each `KafkaChannel` has one deployment for the dispatcher side which reads from the kafka topic and sends to subscribers.
+Each `KafkaChannel` has one deployment for the dispatcher side which reads from the Kafka topic and sends to subscribers.
 Each subscriber has its own Kafka consumer group. This deployment can be scaled up to a replica count equalling the
 number of partitions in the Kafka topic.
 
