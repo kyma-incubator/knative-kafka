@@ -35,7 +35,9 @@
 
 [[constraint]]
    name = "github.com/kyma-incubator/knative-kafka"
-   branch = "master"
+   source = "github.com/travis-minke-sap/knative-kafka"
+   branch = "channel-consolidation"
+   # TODO branch = "master"
 
 # Match Azure version in common component
 [[override]]

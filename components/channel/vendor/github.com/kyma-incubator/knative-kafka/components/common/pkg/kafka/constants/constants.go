@@ -55,4 +55,7 @@ const (
 	// EventHub Constraints
 	MaxEventHubNamespaces    = 100
 	MaxEventHubsPerNamespace = 10
+
+	// KafkaChannel Constants
+	KafkaChannelServiceNameSuffix = "kafkachannel"
 )

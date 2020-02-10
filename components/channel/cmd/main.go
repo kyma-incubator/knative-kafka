@@ -2,20 +2,24 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/env"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/producer"
+	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"go.uber.org/zap"
 	eventingChannel "knative.dev/eventing/pkg/channel"
 	"knative.dev/eventing/pkg/kncloudevents"
-	"os"
 )
 
 // Variables
 var (
-	logger *zap.Logger
-	c      *channel.Channel
+	logger     *zap.Logger
+	masterURL  = flag.String("masterurl", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
 // The Main Function (Go Command)
@@ -24,98 +28,87 @@ func main() {
 	// Initialize The Logger
 	logger = log.Logger()
 
+	// Parse The Flags For Local Development Usage
+	flag.Parse()
+
 	// Load Environment Variables
-	metricsPort := os.Getenv("METRICS_PORT")
-	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
-	kafkaTopic := os.Getenv("KAFKA_TOPIC")
-	clientId := os.Getenv("CLIENT_ID")
-	kafkaUsername := os.Getenv("KAFKA_USERNAME")
-	kafkaPass := os.Getenv("KAFKA_PASSWORD")
-	kafkaPassLog := ""
-
-	if len(kafkaPass) > 0 {
-		kafkaPassLog = "*************"
-	}
-
-	// Log Environment Variables
-	logger.Info("Environment Variables",
-		zap.String("METRICS_PORT", metricsPort),
-		zap.Any("KAFKA_BROKERS", kafkaBrokers),
-		zap.String("KAFKA_TOPIC", kafkaTopic),
-		zap.String("CLIENT_ID", clientId),
-		zap.String("KAFKA_USERNAME", kafkaUsername),
-		zap.String("KAFKA_PASSWORD", kafkaPassLog))
-
-	// Validate Required Environment Variables
-	if len(metricsPort) == 0 ||
-		len(kafkaBrokers) == 0 ||
-		len(kafkaTopic) == 0 ||
-		len(clientId) == 0 {
+	environment, err := env.GetEnvironment()
+	if err != nil {
 		logger.Fatal("Invalid / Missing Environment Variables - Terminating")
-	}
-
-	ctx := context.Background()
-
-	// The EventReceiver is responsible for processing the context
-	// (headers and binary/json content) of each request and then
-	// passing the context, channel details, and the constructed
-	// CloudEvent event to our handleEvent function.
-	eventReceiver, err := eventingChannel.NewEventReceiver(handleEvent, logger)
-	if err != nil {
-		logger.Error("failed to create the event_receiver", zap.Error(err))
-		return
-	}
-
-	// The Knative CloudEvent Client handles the mux http server
-	// setup (middlewares and transport options) and invokes
-	// the eventReceiver. Althought the NewEventReceiver method
-	// above will also invoke kncloudevents.NewDefaultClient
-	// internally, that client goes unused when using the ServeHTTP
-	// on the eventReceiver.
-	// IMPORTANT: Because the kncloudevents package does not allow
-	// injecting modified configuration, we can't override the
-	// default port being used, 8080.
-	knCloudEventClient, err := kncloudevents.NewDefaultClient()
-	if err != nil {
-		logger.Error("failed to create knative cloud event client", zap.Error(err))
-		return
+		return // Quiet The Compiler ; )
 	}
 
 	// Start The Prometheus Metrics Server (Prometheus)
-	metricsServer := prometheus.NewMetricsServer(metricsPort, "/metrics")
+	metricsServer := prometheus.NewMetricsServer(environment.MetricsPort, "/metrics")
 	metricsServer.Start()
 
-	// Create The Channel With Specified Configuration
-	channelConfig := channel.ChannelConfig{
-		Brokers:       kafkaBrokers,
-		Topic:         kafkaTopic,
-		ClientId:      clientId,
-		KafkaUsername: kafkaUsername,
-		KafkaPassword: kafkaPass,
+	// Initialize The KafkaChannel Lister Used To Validate Events
+	err = channel.InitializeKafkaChannelLister(*masterURL, *kubeconfig)
+	if err != nil {
+		logger.Fatal("Failed To Initialize KafkaChannel Lister", zap.Error(err))
 	}
-	c = channel.NewChannel(channelConfig)
 
-	// Start Receiving Events
-	knCloudEventClient.StartReceiver(ctx, eventReceiver.ServeHTTP)
+	// Initialize The Kafka Producer In Order To Start Processing Status Events
+	err = producer.InitializeProducer(environment.KafkaBrokers, environment.KafkaUsername, environment.KafkaPassword)
+	if err != nil {
+		logger.Fatal("Failed To Initialize Kafka Producer", zap.Error(err))
+	}
 
-	// Close The Channel
-	c.Close()
+	// The EventReceiver is responsible for processing the context (headers and binary/json content) of each request,
+	// and then passing the context, channel details, and the constructed CloudEvent event to our handleEvent() function.
+	eventReceiver, err := eventingChannel.NewEventReceiver(handleEvent, logger)
+	if err != nil {
+		logger.Fatal("Failed To Create Knative EventReceiver", zap.Error(err))
+	}
+
+	// The Knative CloudEvent Client handles the mux http server setup (middlewares and transport options) and invokes
+	// the eventReceiver. Although the NewEventReceiver method above will also invoke kncloudevents.NewDefaultClient
+	// internally, that client goes unused when using the ServeHTTP on the eventReceiver.
+	//
+	// IMPORTANT: Because the kncloudevents package does not allow injecting modified configuration,
+	//            we can't override the default port being used (8080).
+	knCloudEventClient, err := kncloudevents.NewDefaultClient()
+	if err != nil {
+		logger.Fatal("Failed To Create Knative CloudEvent Client", zap.Error(err))
+	}
+
+	// Start Receiving Events (Blocking Call :)
+	err = knCloudEventClient.StartReceiver(context.Background(), eventReceiver.ServeHTTP)
+	if err != nil {
+		logger.Error("Failed To Start Event Receiver", zap.Error(err))
+	}
+
+	// Close The K8S KafkaChannel Lister & The Kafka Producer
+	channel.Close()
+	producer.Close()
 
 	// Shutdown The Prometheus Metrics Server
 	metricsServer.Stop()
 }
 
 // Handler For Receiving Cloud Events And Sending The Event To Kafka
-func handleEvent(ctx context.Context, channelReference eventingChannel.ChannelReference, event cloudevents.Event) error {
+func handleEvent(ctx context.Context, channelReference eventingChannel.ChannelReference, cloudEvent cloudevents.Event) error {
 
 	logger.Debug("~~~~~~~~~~~~~~~~~~~~  Processing Request  ~~~~~~~~~~~~~~~~~~~~")
-	logger.Debug("Received Cloud Event", zap.Any("Event", event))
+	logger.Debug("Received Cloud Event", zap.Any("CloudEvent", cloudEvent), zap.Any("ChannelReference", channelReference))
 
-	err := c.SendMessage(event)
+	// Trim The "-kafkachannel" Suffix From The Service Name (Added Only To Workaround Kyma Naming Conflict)
+	channelReference.Name = kafkautil.TrimKafkaChannelServiceNameSuffix(channelReference.Name)
+
+	// Validate The KafkaChannel Prior To Producing Kafka Message
+	err := channel.ValidateKafkaChannel(channelReference)
 	if err != nil {
-		logger.Error("Unable To Send Message To Kafka", zap.Error(err))
+		logger.Warn("Unable To Validate ChannelReference", zap.Any("ChannelReference", channelReference), zap.Error(err))
 		return err
 	}
 
+	// Send The Event To The Appropriate Channel/Topic
+	err = producer.ProduceKafkaMessage(cloudEvent, channelReference)
+	if err != nil {
+		logger.Error("Failed To Produce Kafka Message", zap.Error(err))
+		return err
+	}
+
+	// Return Success
 	return nil
 }

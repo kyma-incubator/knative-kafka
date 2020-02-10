@@ -34,7 +34,6 @@ An example overrides.yaml file for Azure Event Hubs:
 ```
 environment:
   kafkaProvider: azure
-  defaultTenantId: my-tenant-id
   defaultNumPartitions: 1
   defaultReplicationFactor: 3
   defaultKafkaConsumers: 1
@@ -52,7 +51,6 @@ An example overrides.yaml file for Confluent Cloud:
 ```
 environment:
   kafkaProvider: confluent
-  defaultTenantId: my-tenant-id
   defaultNumPartitions: 1
   defaultReplicationFactor: 3
   defaultKafkaConsumers: 1

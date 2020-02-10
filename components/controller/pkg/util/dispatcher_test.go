@@ -9,12 +9,6 @@ import (
 	"testing"
 )
 
-// Test Constants
-const (
-	channelName      = "testname"
-	channelNamespace = "testnamespace"
-)
-
 // Test The newControllerRef() Functionality
 func TestNewControllerRef(t *testing.T) {
 

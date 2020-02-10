@@ -16,29 +16,45 @@ func ChannelLogger(logger *zap.Logger, channel *knativekafkav1alpha1.KafkaChanne
 	return logger.With(zap.String("Namespace", channel.Namespace), zap.String("Name", channel.Name))
 }
 
-// Create A New ControllerReference Model For The Specified Channel
-func NewChannelControllerRef(channel *knativekafkav1alpha1.KafkaChannel) metav1.OwnerReference {
-	return *metav1.NewControllerRef(channel, schema.GroupVersionKind{
-		Group:   knativekafkav1alpha1.SchemeGroupVersion.Group,
-		Version: knativekafkav1alpha1.SchemeGroupVersion.Version,
-		Kind:    constants.KafkaChannelKind,
-	})
-}
-
 // Create A Knative Reconciler "Key" Formatted Representation Of The Specified Channel
 func ChannelKey(channel *knativekafkav1alpha1.KafkaChannel) string {
 	return fmt.Sprintf("%s/%s", channel.Namespace, channel.Name)
 }
 
-// Create A DNS Safe Name For The Specified KafkaChannel Suitable For Use With K8S Services
-func ChannelDnsSafeName(channel *knativekafkav1alpha1.KafkaChannel) string {
+// Create A New OwnerReference For The Specified KafkaChannel (Non-Controller)
+func NewChannelOwnerReference(channel *knativekafkav1alpha1.KafkaChannel) metav1.OwnerReference {
 
-	// In order for the resulting name to be a valid DNS component is 63 characters.  We are appending 9 characters to separate
-	// the components and to indicate this is a Channel which reduces the available length to 54.  We will allocate 30 characters
-	// to the channel, and 20 to the namespace, leaving some extra buffer.
-	safeChannelName := GenerateValidDnsName(channel.Name, 30)
-	safeChannelNamespace := GenerateValidDnsName(channel.Namespace, 20)
-	return fmt.Sprintf("%s-%s-channel", safeChannelName, safeChannelNamespace)
+	kafkaChannelGroupVersion := schema.GroupVersion{
+		Group:   knativekafkav1alpha1.SchemeGroupVersion.Group,
+		Version: knativekafkav1alpha1.SchemeGroupVersion.Version,
+	}
+
+	blockOwnerDeletion := true
+	controller := true
+
+	return metav1.OwnerReference{
+		APIVersion:         kafkaChannelGroupVersion.String(),
+		Kind:               constants.KafkaChannelKind,
+		Name:               channel.GetName(),
+		UID:                channel.GetUID(),
+		BlockOwnerDeletion: &blockOwnerDeletion,
+		Controller:         &controller,
+	}
+}
+
+//
+// Create A DNS Safe Name For The Channel Deployment Using The Specified Kafka Secret
+//
+// Note - The current implementation creates a single Channel Deployment for each
+//        Kafka Authentication (K8S Secrets) instance.
+//
+func ChannelDeploymentDnsSafeName(kafkaSecretName string) string {
+
+	// In order for the resulting name to be a valid DNS component it's length must be no more than 63 characters.
+	// We are consuming 9 chars for the component separators, and the Channel suffix, which reduces the available
+	// length to 54. We will allocate 50 characters to the kafka secret name leaving an extra buffer.
+	safeSecretName := GenerateValidDnsName(kafkaSecretName, 50, true, false)
+	return fmt.Sprintf("%s-channel", safeSecretName)
 }
 
 // Channel Host Naming Utility

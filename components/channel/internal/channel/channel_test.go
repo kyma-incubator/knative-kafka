@@ -1,226 +1,78 @@
 package channel
 
 import (
-	"errors"
-	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
+	fakeclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	"testing"
 )
 
-// Test Constants
-const (
-	testBrokers      = "TestBrokers"
-	testTopic        = "TestTopic"
-	testClientId     = "TestClientId"
-	testPartitionKey = "TestPartitionKey"
-	testMessage      = "{ \"TestMessage\": \"TestMessage\"}"
-	testUsername     = "TestUsername"
-	testPassword     = "TestPassword"
-)
+// Package Variables
+var _ = log.TestLogger() // Force The Use Of The TestLogger!
 
-var testCloudEvent cloudevents.Event
+// Test The InitializeKafkaChannelLister() Functionality
+func TestInitializeKafkaChannelLister(t *testing.T) {
 
-func init() {
-	testCloudEvent = cloudevents.NewEvent(cloudevents.VersionV03)
-	testCloudEvent.SetID("ABC-123")
-	testCloudEvent.SetType("com.cloudevents.readme.sent")
-	testCloudEvent.SetSource("http://localhost:8080/")
-	testCloudEvent.SetDataContentType("application/json")
-	testCloudEvent.SetData(testMessage)
-}
-
-// Setup A Test Logger (Ignore Unused Warning - This Updates The log.Logger Reference!)
-var logger = log.TestLogger()
-
-// Test The Whole Shebang - Create New Channel, Send Messages & Process Responses
-func TestChannel(t *testing.T) {
-
-	produceChannel := make(chan *kafka.Message, 1)
-	eventsChannel := make(chan kafka.Event, 1)
-
-	// String pointer hell
-	topicName := testTopic
-	testResponseMessage := &kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic:     &topicName,
-			Partition: 1,
-			Offset:    1,
-			Error:     nil,
-		},
+	// Stub The K8S Client Creation Wrapper With Test Version Returning The Fake KafkaClient Clientset
+	getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
+		return fakeclientset.NewSimpleClientset(), nil
 	}
+	
+	// Perform The Test
+	err := InitializeKafkaChannelLister("", "")
 
-	var mockProducer kafkaproducer.ProducerInterface
-
-	// Replace The NewProducer Wrapper To Provide Mock Producer & Defer Reset
-	newProducerWrapperPlaceholder := kafkaproducer.NewProducerWrapper
-	kafkaproducer.NewProducerWrapper = func(configMap *kafka.ConfigMap) (kafkaproducer.ProducerInterface, error) {
-		verifyKafkaProducerConfig(t, configMap)
-		mockProducer = MockProducer{configMap, produceChannel, eventsChannel, testResponseMessage}
-		return mockProducer, nil
-	}
-	defer func() { kafkaproducer.NewProducerWrapper = newProducerWrapperPlaceholder }()
-
-	// Create A New Channel
-	config := ChannelConfig{
-		Brokers:       testBrokers,
-		Topic:         testTopic,
-		ClientId:      testClientId,
-		KafkaUsername: testUsername,
-		KafkaPassword: testPassword,
-	}
-	testChannel := NewChannel(config)
-
-	// Verify Channel Configuration
-	verifyChannel(t, testChannel, testBrokers, testTopic, testClientId, testUsername, testPassword, mockProducer)
-
-	// Send TestMessage To The Channel & Wait A Short Bit For It To Be Processed
-	err := testChannel.SendMessage(testCloudEvent)
+	// Verify The Results
 	assert.Nil(t, err)
-
-	// Close The Channel
-	testChannel.Close()
+	assert.NotNil(t, kafkaChannelLister)
 }
 
-func TestChannelReturnsError(t *testing.T) {
+// Test All The ValidateKafkaChannel() Functionality
+func TestValidateKafkaChannel(t *testing.T) {
+	channelName := "TestChannelName"
+	channelNamespace := "TestChannelNamespace"
 
-	produceChannel := make(chan *kafka.Message, 1)
-	eventsChannel := make(chan kafka.Event, 1)
-
-	expectedError := errors.New("mock kafka failure")
-
-	// String pointer hell
-	topicName := testTopic
-	testResponseMessage := &kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic:     &topicName,
-			Partition: 1,
-			Offset:    -1,
-			Error:     expectedError,
-		},
-	}
-
-	var mockProducer kafkaproducer.ProducerInterface
-
-	// Replace The NewAsyncProducerFromClient Wrapper To Provide Mock AsyncProducer & Defer Reset
-	newProducerWrapperPlaceholder := kafkaproducer.NewProducerWrapper
-	kafkaproducer.NewProducerWrapper = func(configMap *kafka.ConfigMap) (kafkaproducer.ProducerInterface, error) {
-		verifyKafkaProducerConfig(t, configMap)
-		mockProducer = MockProducer{configMap, produceChannel, eventsChannel, testResponseMessage}
-		return mockProducer, nil
-	}
-	defer func() { kafkaproducer.NewProducerWrapper = newProducerWrapperPlaceholder }()
-
-	// Create A New Channel
-	config := ChannelConfig{
-		Brokers:       testBrokers,
-		Topic:         testTopic,
-		ClientId:      testClientId,
-		KafkaUsername: testUsername,
-		KafkaPassword: testPassword,
-	}
-	testChannel := NewChannel(config)
-
-	// Verify Channel Configuration
-	verifyChannel(t, testChannel, testBrokers, testTopic, testClientId, testUsername, testPassword, mockProducer)
-
-	// Send TestMessage To The Channel & Wait A Short Bit For It To Be Processed
-	err := testChannel.SendMessage(testCloudEvent)
-	assert.NotNil(t, err)
-
-	// Close The Channel
-	testChannel.Close()
+	performValidateKafkaChannelTest(t, "", channelNamespace, false, corev1.ConditionFalse, true)
+	performValidateKafkaChannelTest(t, channelName, "", false, corev1.ConditionFalse, true)
+	performValidateKafkaChannelTest(t, channelName, channelNamespace, true, corev1.ConditionTrue, false)
+	performValidateKafkaChannelTest(t, channelName, channelNamespace, true, corev1.ConditionFalse, true)
+	performValidateKafkaChannelTest(t, channelName, channelNamespace, true, corev1.ConditionTrue, true)
+	performValidateKafkaChannelTest(t, channelName, channelNamespace, false, corev1.ConditionFalse, true)
 }
 
-// Verify The Channel Is Configured As Specified
-func verifyChannel(t *testing.T,
-	channel *Channel,
-	expectedBrokers string,
-	expectedTopic string,
-	expectedClientId string,
-	expectedUsername string,
-	expectedPassword string,
-	expectedProducer kafkaproducer.ProducerInterface) {
+// Utility Function To Perform A Single Instance Of The ValidateKafkaChannel Test
+func performValidateKafkaChannelTest(t *testing.T, channelName string, channelNamespace string, exists bool, ready corev1.ConditionStatus, err bool) {
 
-	assert.NotNil(t, channel)
-	assert.Equal(t, expectedBrokers, channel.Brokers)
-	assert.Equal(t, expectedTopic, channel.Topic)
-	assert.Equal(t, expectedClientId, channel.ClientId)
-	assert.Equal(t, expectedProducer, channel.producer)
-	assert.Equal(t, expectedUsername, channel.KafkaUsername)
-	assert.Equal(t, expectedPassword, channel.KafkaPassword)
+	// Create The Channel Reference To Test
+	channelReference := test.CreateChannelReference(channelName, channelNamespace)
+
+	// Mock The Package Level KafkaChannel Lister For The Specified Use Case
+	kafkaChannelLister = test.NewMockKafkaChannelLister(channelReference.Name, channelReference.Namespace, exists, ready, err)
+
+	// Perform The Test
+	validationError := ValidateKafkaChannel(channelReference)
+
+	// Verify The Results
+	assert.Equal(t, err, validationError != nil)
 }
 
-// Verify The Specified Kafka Producer Config
-func verifyKafkaProducerConfig(t *testing.T, configMap *kafka.ConfigMap) {
+// Test The Close() Functionality
+func TestClose(t *testing.T) {
 
-	assert.NotNil(t, configMap)
+	// Test With Nil stopChan Instance
+	Close()
 
-	verifyConfigMapValue(t, configMap, KafkaProducerConfigPropertyBootstrapServers, testBrokers)
-	verifyConfigMapValue(t, configMap, KafkaProducerConfigPropertyPartitioner, KafkaProducerConfigPropertyPartitionerValue)
+	// Initialize The stopChan Instance
+	stopChan = make(chan struct{})
 
-	idempotenceProperty, err := configMap.Get(KafkaProducerConfigPropertyIdempotence, nil)
-	assert.Nil(t, err)
-	assert.False(t, idempotenceProperty.(bool))
+	// Close In The Background
+	go Close()
 
-	verifyConfigMapValue(t, configMap, KafkaProducerConfigPropertyUsername, testUsername)
-	verifyConfigMapValue(t, configMap, KafkaProducerConfigPropertyPassword, testPassword)
-}
+	// Block On The stopChan
+	_, ok := <-stopChan
 
-func verifyConfigMapValue(t *testing.T, configMap *kafka.ConfigMap, key string, expected string) {
-	property, err := configMap.Get(key, nil)
-	assert.Nil(t, err)
-	assert.Equal(t, expected, property.(string))
-}
-
-//
-// Mock Confluent Producer
-//
-
-var _ kafkaproducer.ProducerInterface = &MockProducer{}
-
-type MockProducer struct {
-	config              *kafka.ConfigMap
-	produce             chan *kafka.Message
-	events              chan kafka.Event
-	testResponseMessage *kafka.Message
-}
-
-// String returns a human readable name for a Producer instance
-func (p MockProducer) String() string {
-	return ""
-}
-
-func (p MockProducer) Produce(msg *kafka.Message, deliveryChan chan kafka.Event) error {
-	p.produce <- msg
-
-	// Write back to the deliveryChan has to be done in a separate goroutine
-	go func() {
-		deliveryChan <- p.testResponseMessage
-	}()
-
-	return nil
-}
-
-func (p MockProducer) Events() chan kafka.Event {
-	return p.events
-}
-
-func (p MockProducer) ProduceChannel() chan *kafka.Message {
-	return p.produce
-}
-
-func (p MockProducer) Len() int {
-	return 0
-}
-
-func (p MockProducer) Flush(timeoutMs int) int {
-	return 0
-}
-
-func (p MockProducer) Close() {
-	close(p.events)
-	close(p.produce)
+	// Verify stopChan Was Closed
+	assert.False(t, ok)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
+	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -206,10 +207,21 @@ var MockCreateFnServiceError MockCreateFn = func(innerClient client.Client, ctx 
 	return Unhandled, nil
 }
 
-// Handle Any Channel Services By Returning An Error
-var MockCreateFnChannelServiceError MockCreateFn = func(innerClient client.Client, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) (MockHandled, error) {
+// Handle Any KafkaChannel Services By Returning An Error
+var MockCreateFnKafkaChannelServiceError MockCreateFn = func(innerClient client.Client, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) (MockHandled, error) {
 	if _, ok := obj.(*corev1.Service); ok {
-		if strings.HasSuffix(obj.(*corev1.Service).Name, "-channel") {
+		if obj.(*corev1.Service).Name == kafkautil.AppendKafkaChannelServiceNameSuffix(ChannelName) {
+			err := errors.New(MockCreateFnServiceErrorMessage)
+			return Handled, err
+		}
+	}
+	return Unhandled, nil
+}
+
+// Handle Any Channel Deployment Services By Returning An Error
+var MockCreateFnChannelDeploymentServiceError MockCreateFn = func(innerClient client.Client, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) (MockHandled, error) {
+	if _, ok := obj.(*corev1.Service); ok {
+		if obj.(*corev1.Service).Name == ChannelDeploymentName {
 			err := errors.New(MockCreateFnServiceErrorMessage)
 			return Handled, err
 		}
@@ -253,7 +265,7 @@ var MockCreateFnDeploymentError MockCreateFn = func(innerClient client.Client, c
 // Handle Any Channel Deployment By Returning An Error
 var MockCreateFnChannelDeploymentError MockCreateFn = func(innerClient client.Client, ctx context.Context, obj runtime.Object, opts ...client.CreateOption) (MockHandled, error) {
 	if _, ok := obj.(*appsv1.Deployment); ok {
-		if strings.HasSuffix(obj.(*appsv1.Deployment).Name, "-channel") {
+		if obj.(*appsv1.Deployment).Name == ChannelDeploymentName {
 			err := errors.New(MockCreateFnDeploymentErrorMessage)
 			return Handled, err
 		}
@@ -448,8 +460,8 @@ var _ kafkaadmin.AdminClientInterface = &MockAdminClient{}
 type MockAdminClient struct {
 	createTopicsCalled  bool
 	deleteTopicsCalled  bool
-	MockCreateTopicFunc func(context.Context, []kafka.TopicSpecification, ...kafka.CreateTopicsAdminOption) (result []kafka.TopicResult, err error)
-	MockDeleteTopicFunc func(context.Context, []string, ...kafka.DeleteTopicsAdminOption) (result []kafka.TopicResult, err error)
+	MockCreateTopicFunc func(context.Context, []kafka.TopicSpecification, ...kafka.CreateTopicsAdminOption) ([]kafka.TopicResult, error)
+	MockDeleteTopicFunc func(context.Context, []string, ...kafka.DeleteTopicsAdminOption) ([]kafka.TopicResult, error)
 }
 
 // Mock Kafka AdminClient CreateTopics Function - Calls Custom CreateTopics If Specified, Otherwise Returns Success

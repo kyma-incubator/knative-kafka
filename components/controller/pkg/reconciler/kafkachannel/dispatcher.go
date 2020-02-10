@@ -32,7 +32,7 @@ func (r *Reconciler) reconcileDispatcher(ctx context.Context, channel *knativeka
 		return nil
 	}
 
-	// Reconcile The Dispatcher's Service (K8s)
+	// Reconcile The Dispatcher's Service (For Prometheus Only)
 	_, serviceErr := r.createK8sDispatcherService(ctx, channel)
 	if serviceErr != nil {
 		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherServiceReconciliationFailed.String(), "Failed To Reconcile K8S Service For Dispatcher: %v", serviceErr)
@@ -41,13 +41,15 @@ func (r *Reconciler) reconcileDispatcher(ctx context.Context, channel *knativeka
 		logger.Info("Successfully Reconciled Dispatcher Service")
 	}
 
-	// Reconcile The Dispatcher's Deployment (K8s)
+	// Reconcile The Dispatcher's Deployment
 	_, deploymentErr := r.createK8sDispatcherDeployment(ctx, channel)
 	if deploymentErr != nil {
 		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Reconcile K8S Deployment For Dispatcher: %v", deploymentErr)
 		logger.Error("Failed To Reconcile Dispatcher Deployment", zap.Error(deploymentErr))
+		channel.Status.MarkDispatcherDeploymentFailed("DispatcherDeploymentFailed", fmt.Sprintf("Dispatcher Deployment Failed: %s", deploymentErr))
 	} else {
 		logger.Info("Successfully Reconciled Dispatcher Deployment")
+		channel.Status.MarkDispatcherDeploymentTrue()
 	}
 
 	// Return Results
@@ -118,7 +120,7 @@ func (r *Reconciler) newK8sDispatcherService(channel *knativekafkav1alpha1.Kafka
 				K8sAppDispatcherSelectorLabel: K8sAppDispatcherSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				util.NewChannelControllerRef(channel),
+				util.NewChannelOwnerReference(channel),
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -211,7 +213,7 @@ func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.Ka
 				ChannelLabel:    channel.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				util.NewChannelControllerRef(channel),
+				util.NewChannelOwnerReference(channel),
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -278,7 +280,7 @@ func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.Ka
 func (r *Reconciler) dispatcherDeploymentEnvVars(channel *knativekafkav1alpha1.KafkaChannel) ([]corev1.EnvVar, error) {
 
 	// Get The TopicName For Specified Channel
-	topicName := util.TopicName(channel, r.environment)
+	topicName := util.TopicName(channel)
 
 	// Create The Dispatcher Deployment EnvVars
 	envVars := []corev1.EnvVar{

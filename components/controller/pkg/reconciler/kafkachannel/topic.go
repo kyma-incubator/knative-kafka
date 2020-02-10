@@ -2,6 +2,7 @@ package kafkachannel
 
 import (
 	"context"
+	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
@@ -20,7 +21,7 @@ const (
 func (r *Reconciler) reconcileTopic(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) error {
 
 	// Get The TopicName For Specified Channel
-	topicName := util.TopicName(channel, r.environment)
+	topicName := util.TopicName(channel)
 
 	// Get Channel Specific Logger & Add Topic Name
 	logger := util.ChannelLogger(r.logger, channel).With(zap.String("TopicName", topicName))
@@ -57,8 +58,10 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *kafkav1alpha1.
 	if err != nil {
 		r.recorder.Eventf(channel, corev1.EventTypeWarning, event.KafkaTopicReconciliationFailed.String(), "Failed To Reconcile Kafka Topic For Channel: %v", err)
 		logger.Error("Failed To Reconcile Topic", zap.Error(err))
+		channel.Status.MarkTopicFailed("TopicFailed", fmt.Sprintf("Channel Kafka Topic Failed: %s", err))
 	} else {
 		logger.Info("Successfully Reconciled Topic")
+		channel.Status.MarkTopicTrue()
 	}
 	return err
 }

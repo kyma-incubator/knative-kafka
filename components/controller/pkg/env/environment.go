@@ -12,12 +12,8 @@ import (
 // Package Constants
 const (
 	// Knative-Kafka Configuration
-	ServiceAccountEnvVarKey     = "SERVICE_ACCOUNT"
-	HttpPortEnvVarKey           = "HTTP_PORT"
-	MetricsPortEnvVarKey        = "METRICS_PORT"
-	ChannelImageEnvVarKey       = "CHANNEL_IMAGE"
-	DispatcherReplicasEnvVarKey = "DISPATCHER_REPLICAS"
-	DispatcherImageEnvVarKey    = "DISPATCHER_IMAGE"
+	ServiceAccountEnvVarKey = "SERVICE_ACCOUNT"
+	MetricsPortEnvVarKey    = "METRICS_PORT"
 
 	// Kafka Authorization
 	KafkaBrokerEnvVarKey   = "KAFKA_BROKERS"
@@ -29,11 +25,9 @@ const (
 	KafkaOffsetCommitMessageCountEnvVarKey   = "KAFKA_OFFSET_COMMIT_MESSAGE_COUNT"
 	KafkaOffsetCommitDurationMillisEnvVarKey = "KAFKA_OFFSET_COMMIT_DURATION_MILLIS"
 	KafkaTopicEnvVarKey                      = "KAFKA_TOPIC"
-	KafkaClientIdEnvVarKey                   = "CLIENT_ID"
 
 	// Dispatcher Configuration
 	ChannelKeyEnvVarKey           = "CHANNEL_KEY"
-	SubscriberUriEnvVarKey        = "SUBSCRIBER_URI"
 	ExponentialBackoffEnvVarKey   = "EXPONENTIAL_BACKOFF"
 	InitialRetryIntervalEnvVarKey = "INITIAL_RETRY_INTERVAL"
 	MaxRetryTimeEnvVarKey         = "MAX_RETRY_TIME"
@@ -43,7 +37,6 @@ const (
 	DefaultKafkaOffsetCommitDurationMillis = "5000"
 
 	// Default Values To Use If Not Available In Knative Channels Argument
-	DefaultTenantIdEnvVarKey          = "DEFAULT_TENANT_ID"
 	DefaultNumPartitionsEnvVarKey     = "DEFAULT_NUM_PARTITIONS"
 	DefaultReplicationFactorEnvVarKey = "DEFAULT_REPLICATION_FACTOR"
 	DefaultRetentionMillisEnvVarKey   = "DEFAULT_RETENTION_MILLIS"
@@ -54,7 +47,6 @@ const (
 	DispatcherRetryExponentialBackoffEnvVarKey    = "DISPATCHER_RETRY_EXPONENTIAL_BACKOFF"
 
 	// Default Values If Optional Environment Variable Defaults Not Specified
-	DefaultTenantId                        = "default-tenant"
 	DefaultRetentionMillis                 = "604800000" // 1 Week
 	DefaultEventRetryInitialIntervalMillis = "500"       // 0.5 seconds
 	DefaultEventRetryTimeMillisMax         = "300000"    // 5 minutes
@@ -66,12 +58,16 @@ const (
 	KafkaProviderValueAzure     = "azure"
 
 	// Dispatcher Resources
+	DispatcherImageEnvVarKey         = "DISPATCHER_IMAGE"
+	DispatcherReplicasEnvVarKey      = "DISPATCHER_REPLICAS"
 	DispatcherCpuRequestEnvVarKey    = "DISPATCHER_CPU_REQUEST"
 	DispatcherCpuLimitEnvVarKey      = "DISPATCHER_CPU_LIMIT"
 	DispatcherMemoryRequestEnvVarKey = "DISPATCHER_MEMORY_REQUEST"
 	DispatcherMemoryLimitEnvVarKey   = "DISPATCHER_MEMORY_LIMIT"
 
 	// Channel Resources
+	ChannelImageEnvVarKey         = "CHANNEL_IMAGE"
+	ChannelReplicasEnvVarKey      = "CHANNEL_REPLICAS"
 	ChannelMemoryRequestEnvVarKey = "CHANNEL_MEMORY_REQUEST"
 	ChannelMemoryLimitEnvVarKey   = "CHANNEL_MEMORY_LIMIT"
 	ChannelCpuRequestEnvVarKey    = "CHANNEL_CPU_REQUEST"
@@ -82,10 +78,8 @@ const (
 type Environment struct {
 
 	// Knative-Kafka Configuration
-	ServiceAccount  string // Required
-	MetricsPort     int    // Required
-	ChannelImage    string // Required
-	DispatcherImage string // Required
+	ServiceAccount string // Required
+	MetricsPort    int    // Required
 
 	// Kafka Configuration / Authorization
 	KafkaProvider                   string // Required
@@ -93,24 +87,26 @@ type Environment struct {
 	KafkaOffsetCommitDurationMillis int64  // Optional
 
 	// Default Values To Use If Not Available In Knative Channels Argument
-	DefaultTenantId          string // Optional
-	DefaultNumPartitions     int    // Required
-	DefaultReplicationFactor int    // Required
-	DefaultRetentionMillis   int64  // Optional
-
-	// Dispatcher Retry Settings
-	DispatcherRetryInitialIntervalMillis int64 // Optional
-	DispatcherRetryTimeMillisMax         int64 // Optional
-	DispatcherRetryExponentialBackoff    bool  // Optional
+	DefaultNumPartitions     int   // Required
+	DefaultReplicationFactor int   // Required
+	DefaultRetentionMillis   int64 // Optional
 
 	// Resource configuration
+	DispatcherImage         string            // Required
 	DispatcherReplicas      int               // Required
 	DispatcherMemoryRequest resource.Quantity // Required
 	DispatcherMemoryLimit   resource.Quantity // Required
 	DispatcherCpuRequest    resource.Quantity // Required
 	DispatcherCpuLimit      resource.Quantity // Required
 
+	// Dispatcher Retry Settings
+	DispatcherRetryInitialIntervalMillis int64 // Optional
+	DispatcherRetryTimeMillisMax         int64 // Optional
+	DispatcherRetryExponentialBackoff    bool  // Optional
+
 	// Resource Limits for each Channel Deployment
+	ChannelImage         string            // Required
+	ChannelReplicas      int               // Required
 	ChannelMemoryRequest resource.Quantity // Required
 	ChannelMemoryLimit   resource.Quantity // Required
 	ChannelCpuRequest    resource.Quantity // Required
@@ -142,18 +138,6 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 			logger.Error("Invalid MetricsPort (Non Integer)", zap.String("Value", metricsPortString), zap.Error(err))
 			return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", metricsPortString, MetricsPortEnvVarKey)
 		}
-	}
-
-	// Get The Required ChannelImage Config Value
-	environment.ChannelImage, err = getRequiredConfigValue(logger, ChannelImageEnvVarKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get The Required DispatcherImage Config Value
-	environment.DispatcherImage, err = getRequiredConfigValue(logger, DispatcherImageEnvVarKey)
-	if err != nil {
-		return nil, err
 	}
 
 	// Get The Required Kafka Provider Config Value
@@ -190,9 +174,6 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 		return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", kafkaOffsetCommitDurationMillisString, DefaultKafkaOffsetCommitDurationMillis)
 	}
 
-	// Get The Optional DefaultTenantId Config Value
-	environment.DefaultTenantId = getOptionalConfigValue(logger, DefaultTenantIdEnvVarKey, DefaultTenantId)
-
 	// Get The Required DefaultNumPartitions Config Value & Convert To Int
 	defaultNumPartitionsString, err := getRequiredConfigValue(logger, DefaultNumPartitionsEnvVarKey)
 	if err != nil {
@@ -225,6 +206,56 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 		return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", defaultRetentionMillisString, DefaultRetentionMillisEnvVarKey)
 	}
 
+	//
+	// Dispatcher Configuration
+	//
+
+	// Get The Required DispatcherImage Config Value
+	environment.DispatcherImage, err = getRequiredConfigValue(logger, DispatcherImageEnvVarKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get The Required DispatcherReplicas Config Value & Convert To Int
+	dispatcherReplicasString, err := getRequiredConfigValue(logger, DispatcherReplicasEnvVarKey)
+	if err != nil {
+		return nil, err
+	} else {
+		environment.DispatcherReplicas, err = strconv.Atoi(dispatcherReplicasString)
+		if err != nil {
+			logger.Error("Invalid DispatcherRepli	cas (Non Integer)", zap.String("Value", dispatcherReplicasString), zap.Error(err))
+			return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", dispatcherReplicasString, DispatcherReplicasEnvVarKey)
+		}
+	}
+
+	quantity, err := getRequiredQuantityConfigValue(logger, DispatcherMemoryRequestEnvVarKey)
+	if err != nil {
+		return nil, err
+	} else {
+		environment.DispatcherMemoryRequest = *quantity
+	}
+
+	quantity, err = getRequiredQuantityConfigValue(logger, DispatcherMemoryLimitEnvVarKey)
+	if err != nil {
+		return nil, err
+	} else {
+		environment.DispatcherMemoryLimit = *quantity
+	}
+
+	quantity, err = getRequiredQuantityConfigValue(logger, DispatcherCpuRequestEnvVarKey)
+	if err != nil {
+		return nil, err
+	} else {
+		environment.DispatcherCpuRequest = *quantity
+	}
+
+	quantity, err = getRequiredQuantityConfigValue(logger, DispatcherCpuLimitEnvVarKey)
+	if err != nil {
+		return nil, err
+	} else {
+		environment.DispatcherCpuLimit = *quantity
+	}
+
 	// Get The Optional DispatcherRetryInitialIntervalMillis Config Value & Convert To Int
 	dispatcherRetryInitialIntervalMillisString := getOptionalConfigValue(logger, DispatcherRetryInitialIntervalMillisEnvVarKey, DefaultEventRetryInitialIntervalMillis)
 	environment.DispatcherRetryInitialIntervalMillis, err = strconv.ParseInt(dispatcherRetryInitialIntervalMillisString, 10, 64)
@@ -249,94 +280,54 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 		return nil, fmt.Errorf("invalid (non-boolean) value '%s' for environment variable '%s'", dispatcherRetryExponentialBackoffString, DispatcherRetryExponentialBackoffEnvVarKey)
 	}
 
-	// Get The Required DispatcherReplicas Config Value & Convert To Int
-	dispatcherReplicasString, err := getRequiredConfigValue(logger, DispatcherReplicasEnvVarKey)
+	//
+	// Channel Configuration
+	//
+
+	// Get The Required ChannelImage Config Value
+	environment.ChannelImage, err = getRequiredConfigValue(logger, ChannelImageEnvVarKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get The Required ChannelReplicas Config Value & Convert To Int
+	channelReplicasString, err := getRequiredConfigValue(logger, ChannelReplicasEnvVarKey)
 	if err != nil {
 		return nil, err
 	} else {
-		environment.DispatcherReplicas, err = strconv.Atoi(dispatcherReplicasString)
+		environment.ChannelReplicas, err = strconv.Atoi(channelReplicasString)
 		if err != nil {
-			logger.Error("Invalid DispatcherReplicas (Non Integer)", zap.String("Value", dispatcherReplicasString), zap.Error(err))
-			return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", dispatcherReplicasString, DispatcherReplicasEnvVarKey)
+			logger.Error("Invalid ChannelReplicas (Non Integer)", zap.String("Value", channelReplicasString), zap.Error(err))
+			return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", channelReplicasString, ChannelReplicasEnvVarKey)
 		}
 	}
 
-	// Get The Values For Dispatcher Requests And Limits
-	dispatcherMemRequest, err := getRequiredConfigValue(logger, DispatcherMemoryRequestEnvVarKey)
-	if err != nil {
-		return nil, err
-	}
-	environment.DispatcherMemoryRequest = resource.MustParse(dispatcherMemRequest)
-
-	dispatcherMemLimit, err := getRequiredConfigValue(logger, DispatcherMemoryLimitEnvVarKey)
-	if err != nil {
-		return nil, err
-	}
-	environment.DispatcherMemoryLimit = resource.MustParse(dispatcherMemLimit)
-
-	dispatcherCpuRequest, err := getRequiredConfigValue(logger, DispatcherCpuRequestEnvVarKey)
-	if err != nil {
-		return nil, err
-	}
-	environment.DispatcherCpuRequest = resource.MustParse(dispatcherCpuRequest)
-
-	dispatcherCpuLimit, err := getRequiredConfigValue(logger, DispatcherCpuLimitEnvVarKey)
-	if err != nil {
-		return nil, err
-	}
-	environment.DispatcherCpuLimit = resource.MustParse(dispatcherCpuLimit)
-
-	// Get The Values For Channel Requests And Limits
-	memoryRequest, err := getRequiredConfigValue(logger, ChannelMemoryRequestEnvVarKey)
+	quantity, err = getRequiredQuantityConfigValue(logger, ChannelMemoryRequestEnvVarKey)
 	if err != nil {
 		return nil, err
 	} else {
-		quantity, err := resource.ParseQuantity(memoryRequest)
-		if err != nil {
-			message := fmt.Sprintf("Invalid value %s for environment varaible %s, failed to parse as resource.Quantity", memoryRequest, ChannelMemoryRequestEnvVarKey)
-			logger.Error(message, zap.Error(err))
-			return nil, fmt.Errorf(message)
-		}
-		environment.ChannelMemoryRequest = quantity
+		environment.ChannelMemoryRequest = *quantity
 	}
 
-	memoryLimit, err := getRequiredConfigValue(logger, ChannelMemoryLimitEnvVarKey)
+	quantity, err = getRequiredQuantityConfigValue(logger, ChannelMemoryLimitEnvVarKey)
 	if err != nil {
 		return nil, err
 	} else {
-		quantity, err := resource.ParseQuantity(memoryLimit)
-		if err != nil {
-			message := fmt.Sprintf("Invalid value %s for environment varaible %s, failed to parse as resource.Quantity", memoryLimit, ChannelMemoryLimitEnvVarKey)
-			logger.Error(message, zap.Error(err))
-			return nil, fmt.Errorf(message)
-		}
-		environment.ChannelMemoryLimit = quantity
+		environment.ChannelMemoryLimit = *quantity
 	}
 
-	cpuRequest, err := getRequiredConfigValue(logger, ChannelCpuRequestEnvVarKey)
+	quantity, err = getRequiredQuantityConfigValue(logger, ChannelCpuRequestEnvVarKey)
 	if err != nil {
 		return nil, err
 	} else {
-		quantity, err := resource.ParseQuantity(cpuRequest)
-		if err != nil {
-			message := fmt.Sprintf("Invalid value %s for environment varaible %s, failed to parse as resource.Quantity", cpuRequest, ChannelCpuRequestEnvVarKey)
-			logger.Error(message, zap.Error(err))
-			return nil, fmt.Errorf(message)
-		}
-		environment.ChannelCpuRequest = quantity
+		environment.ChannelCpuRequest = *quantity
 	}
 
-	cpuLimit, err := getRequiredConfigValue(logger, ChannelCpuLimitEnvVarKey)
+	quantity, err = getRequiredQuantityConfigValue(logger, ChannelCpuLimitEnvVarKey)
 	if err != nil {
 		return nil, err
 	} else {
-		quantity, err := resource.ParseQuantity(cpuLimit)
-		if err != nil {
-			message := fmt.Sprintf("Invalid value %s for environment varaible %s, failed to parse as resource.Quantity", cpuLimit, ChannelCpuLimitEnvVarKey)
-			logger.Error(message, zap.Error(err))
-			return nil, fmt.Errorf(message)
-		}
-		environment.ChannelCpuLimit = quantity
+		environment.ChannelCpuLimit = *quantity
 	}
 
 	// Log The ControllerConfig Loaded From Environment Variables
@@ -365,4 +356,25 @@ func getOptionalConfigValue(logger *zap.Logger, key string, defaultValue string)
 		value = defaultValue
 	}
 	return value
+}
+
+// Parse Quantity Value
+func getRequiredQuantityConfigValue(logger *zap.Logger, envVarKey string) (*resource.Quantity, error) {
+
+	// Get The Required Config Value As String
+	value, err := getRequiredConfigValue(logger, envVarKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Attempt To Parse The Value As A Quantity
+	quantity, err := resource.ParseQuantity(value)
+	if err != nil {
+		message := fmt.Sprintf("invalid (non-quantity) value '%s' for environment variable '%s'", value, envVarKey)
+		logger.Error(message, zap.Error(err))
+		return nil, fmt.Errorf(message)
+	}
+
+	// Return The Parsed Quantity
+	return &quantity, nil
 }

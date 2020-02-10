@@ -36,9 +36,10 @@ environment:
   kafkaBrokers: kafka-broker:9092
   # Konduit-Kafka Channel "Producer" Docker Image Path
   channelImage: eu.gcr.io/kyma-project/incubator/knative-kafka-channel:latest
+  channelReplicas: 1
   # Konduit-Kafka Dispatcher "Consumer" Docker Image Path
   dispatcherImage: eu.gcr.io/kyma-project/incubator/knative-kafka-dispatcher:latest
-  defaultTenantId: default-tenant
+  dispatcherReplicas: 1
   defaultNumPartitions: 4
   defaultReplicationFactor: 1
   defaultKafkaConsumers: 4

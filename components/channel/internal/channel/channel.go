@@ -2,235 +2,109 @@ package channel
 
 import (
 	"errors"
-	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/types"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
+	knativekafkainformers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions"
+	knativekafkalisters "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	"go.uber.org/zap"
-	"strconv"
-	"time"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	k8sclientcmd "k8s.io/client-go/tools/clientcmd"
+	eventingChannel "knative.dev/eventing/pkg/channel"
+	knativecontroller "knative.dev/pkg/controller"
 )
 
-// Constants
-const (
-	KafkaProducerConfigPropertyBootstrapServers = "bootstrap.servers"
-	KafkaProducerConfigPropertyPartitioner      = "partitioner"
-	KafkaProducerConfigPropertyPartitionerValue = "murmur2_random"
-	KafkaProducerConfigPropertyIdempotence      = "enable.idempotence"
-	KafkaProducerConfigPropertyUsername         = "sasl.username"
-	KafkaProducerConfigPropertyPassword         = "sasl.password"
+// Package Variables
+var (
+	kafkaChannelLister knativekafkalisters.KafkaChannelLister
+	stopChan           chan struct{}
 )
 
-// Define A Channel Config Struct To Hold Configuration
-type ChannelConfig struct {
-	Brokers       string
-	Topic         string
-	ClientId      string
-	KafkaUsername string
-	KafkaPassword string
-}
+// Wrapper Around KnativeKafka Client Creation To Facilitate Unit Testing
+var getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
 
-// Define a Channel Struct to hold channel config and channel implementation details
-type Channel struct {
-	ChannelConfig
-	producer    kafkaproducer.ProducerInterface
-	stopChan    chan struct{}
-	stoppedChan chan struct{}
-}
-
-// Create A New Channel Of Specified Configuration
-func NewChannel(channelConfig ChannelConfig) *Channel {
-
-	// Create The Channel With Specified Configuration
-	channel := &Channel{
-		ChannelConfig: channelConfig,
-		stopChan:      make(chan struct{}),
-		stoppedChan:   make(chan struct{}),
-	}
-
-	// Create The Kafka Producer
-	producer, err := kafkaproducer.CreateProducer(channelConfig.Brokers, channelConfig.KafkaUsername, channelConfig.KafkaPassword)
+	// Create The K8S Configuration (In-Cluster With Cmd Line Flags For Out-Of-Cluster Usage)
+	k8sConfig, err := k8sclientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 	if err != nil {
-		log.Logger().Fatal("Failed To Create Kafka Producer - Exiting", zap.Error(err))
-	}
-
-	// Assign The Producer To Channel And Start Processing!
-	channel.producer = producer
-	channel.processSuccessesAndErrors()
-
-	// Return The Channel
-	return channel
-}
-
-//
-// Channel Functions
-//
-
-// Send The Specified Message To The Kafka Topic With Partition Key And Wait For The Delivery Report
-func (c *Channel) SendMessage(event cloudevents.Event) error {
-
-	// Create The Producer Message
-	producerMessage, err := c.createProducerMessage(event)
-	if err != nil {
-		return err
-	}
-
-	log.Logger().Debug("Sending Kafka Message", zap.Any("message", producerMessage.Value), zap.Any("headers", producerMessage.Headers))
-
-	// Create a channel that corresponds to only this message being sent. The Kafka Producer will deliver the
-	// report on this channel thus informing us that the message is persisted in kafka.
-	deliveryReportChannel := make(chan kafka.Event)
-
-	// Send The Producer Message To Kafka Via Producer
-	err = c.producer.Produce(producerMessage, deliveryReportChannel)
-	if err != nil {
-		log.Logger().Error("Failed To Produce Message", zap.Error(err))
-		return err
-	}
-
-	// Block on the deliveryReportChannel for this message and return the m.TopicPartition.Error if there is one.
-	select {
-	case msg := <-deliveryReportChannel:
-		// Close the channel for safety
-		close(deliveryReportChannel)
-		switch ev := msg.(type) {
-		case *kafka.Message:
-			m := ev
-			if m.TopicPartition.Error != nil {
-				log.Logger().Error("Delivery failed", zap.Error(m.TopicPartition.Error))
-			} else {
-				log.Logger().Debug("Delivered message to kafka",
-					zap.String("topic", *m.TopicPartition.Topic),
-					zap.Int32("partition", m.TopicPartition.Partition),
-					zap.String("offset", m.TopicPartition.Offset.String()))
-			}
-			return m.TopicPartition.Error
-		case kafka.Error:
-			log.Logger().Warn("Kafka error", zap.Error(ev))
-			return errors.New("kafka error occurred")
-		default:
-			log.Logger().Info("Ignored event", zap.String("event", ev.String()))
-			return errors.New("kafka ignored the event")
-		}
-	}
-}
-
-// Close The Channel (Stop Processing)
-func (c *Channel) Close() {
-
-	// Setup The Logger
-	logger := log.Logger().With(zap.String("ClientId", c.ClientId), zap.String("Topic", c.Topic))
-
-	// Stop Processing Success/Error Messages From Producer
-	logger.Info("Stopping Kafka Producer Success/Error Processing")
-	close(c.stopChan)
-	<-c.stoppedChan // Block On Stop Completion
-
-	// Close The Producer
-	logger.Info("Closing Kafka Producer")
-	c.producer.Close()
-}
-
-// Fork A Go Routine With Infinite Loop To Process Any
-// Errors That The Kafka Producer Might Send Back To The
-// Default Delivery Report Channel
-func (c *Channel) processSuccessesAndErrors() {
-	go func() {
-		for {
-			select {
-			case msg := <-c.producer.Events():
-				switch ev := msg.(type) {
-				case *kafka.Message:
-					log.Logger().Warn("Message arrived on the wrong channel", zap.Any("Message", msg))
-				case kafka.Error:
-					log.Logger().Warn("Kafka error", zap.Error(ev))
-				default:
-					log.Logger().Info("Ignored event", zap.String("event", ev.String()))
-				}
-
-			case <-c.stopChan:
-				close(c.stoppedChan) // Inform On Stop Completion & Return
-				return
-			}
-		}
-	}()
-}
-
-// Map CloudEvent Context Headers To Kafka Message Headers
-func (c *Channel) createProducerHeaders(context cloudevents.EventContext) []kafka.Header {
-	headers := []kafka.Header{
-		{Key: "ce_specversion", Value: []byte(context.GetSpecVersion())},
-		{Key: "ce_type", Value: []byte(context.GetType())},
-		{Key: "ce_source", Value: []byte(context.GetSource())},
-		{Key: "ce_id", Value: []byte(context.GetID())},
-		{Key: "ce_time", Value: []byte(context.GetTime().Format(time.RFC3339))},
-	}
-
-	if context.GetDataContentType() != "" {
-		headers = append(headers, kafka.Header{Key: "ce_datacontenttype", Value: []byte(context.GetDataContentType())})
-	}
-
-	if context.GetSubject() != "" {
-		headers = append(headers, kafka.Header{Key: "ce_subject", Value: []byte(context.GetSubject())})
-	}
-
-	if context.GetDataSchema() != "" {
-		headers = append(headers, kafka.Header{Key: "ce_dataschema", Value: []byte(context.GetDataSchema())})
-	}
-
-	// Only Supports string, int, and float64 Extensions
-	for k, v := range context.GetExtensions() {
-		log.Logger().Debug("Add Event Extensions", zap.Any(k, v))
-		if vs, ok := v.(string); ok {
-			headers = append(headers, kafka.Header{Key: "ce_" + k, Value: []byte(vs)})
-		} else if vi, ok := v.(int); ok {
-			strInt := strconv.Itoa(vi)
-			headers = append(headers, kafka.Header{Key: "ce_" + k, Value: []byte(strInt)})
-		} else if vf, ok := v.(float64); ok {
-			strFloat := strconv.FormatFloat(vf, 'f', -1, 64)
-			headers = append(headers, kafka.Header{Key: "ce_" + k, Value: []byte(strFloat)})
-		}
-	}
-
-	return headers
-}
-
-// Create A Kafka Message From Message
-func (c *Channel) createProducerMessage(event cloudevents.Event) (*kafka.Message, error) {
-
-	eventBytes, err := event.DataBytes()
-	if err != nil {
+		log.Logger().Error("Failed To Build Kubernetes Config", zap.Error(err))
 		return nil, err
 	}
-	headers := c.createProducerHeaders(event.Context)
 
-	// Create The Producer Message
-	producerMessage := kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic:     &c.Topic,
-			Partition: kafka.PartitionAny, // Required For Producer Level Partitioner! (see KafkaProducerConfigPropertyPartitioner)
-		},
-		Key:     determinePartitionKey(event),
-		Value:   eventBytes,
-		Headers: headers,
-	}
-
-	// Return The Constructed Kafka Message
-	return &producerMessage, nil
+	// Create A New KnativeKafka Client From The K8S Config & Return The Result
+	return knativekafkaclientset.NewForConfigOrDie(k8sConfig), nil
 }
 
-// Precedence For Partitioning Is The Cloudevent Partitionkey Extension Followed By The Cloudevent Subject
-func determinePartitionKey(event cloudevents.Event) []byte {
+// Initialize The KafkaChannel Lister Singleton
+func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string) error {
 
-	pkExtension, err := types.ToString(event.Extensions()["partitionkey"])
-	if err == nil && len(pkExtension) > 0 {
-		return []byte(pkExtension)
+	// Create The K8S KnativeKafka Client For KafkaChannels
+	client, err := getKnativeKafkaClient(masterUrl, kubeconfigPath)
+	if err != nil {
+		log.Logger().Error("Failed To Create KnativeKafka Client", zap.Error(err))
+		return err
 	}
 
-	if len(event.Subject()) > 0 {
-		return []byte(event.Subject())
-	}
+	// Create A New KafkaChannel SharedInformerFactory For ALL Namespaces (Default Resync Is 10 Hrs)
+	sharedInformerFactory := knativekafkainformers.NewSharedInformerFactory(client, knativecontroller.DefaultResyncPeriod)
 
+	// Initialize The Stop Channel (Close If Previously Created)
+	Close()
+	stopChan = make(chan struct{})
+
+	// Get A KafkaChannel Informer From The SharedInformerFactory - Start The Informer & Wait For It
+	kafkaChannelInformer := sharedInformerFactory.Knativekafka().V1alpha1().KafkaChannels()
+	go kafkaChannelInformer.Informer().Run(stopChan)
+	sharedInformerFactory.WaitForCacheSync(stopChan)
+
+	// Get A KafkaChannel Lister From The Informer
+	kafkaChannelLister = kafkaChannelInformer.Lister()
+
+	// Return Success
+	log.Logger().Info("Successfully Initialized KafkaChannel Lister")
 	return nil
+}
+
+// Validate The Specified ChannelReference Is For A Valid (Existing / READY) KafkaChannel
+func ValidateKafkaChannel(channelReference eventingChannel.ChannelReference) error {
+
+	// Update The Logger With ChannelReference
+	logger := log.Logger().With(zap.Any("ChannelReference", channelReference))
+
+	// Validate The Specified Channel Reference
+	if len(channelReference.Name) <= 0 || len(channelReference.Namespace) <= 0 {
+		logger.Warn("Invalid KafkaChannel - Invalid ChannelReference")
+		return errors.New("invalid ChannelReference specified")
+	}
+
+	// Attempt To Get The KafkaChannel From The KafkaChannel Lister
+	kafkaChannel, err := kafkaChannelLister.KafkaChannels(channelReference.Namespace).Get(channelReference.Name)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			// Note - Returning Knative UnknownChannelError Type For EventReceiver.StartHTTP()
+			//        Ideally we'd be able to populate the UnknownChannelError's ChannelReference
+			//        but once again Knative has made this private.
+			logger.Warn("Invalid KafkaChannel - Not Found")
+			return &eventingChannel.UnknownChannelError{}
+		} else {
+			logger.Error("Invalid KafkaChannel - Failed To Find", zap.Error(err))
+			return err
+		}
+	}
+
+	// Check KafkaChannel READY Status
+	if !kafkaChannel.Status.IsReady() {
+		logger.Info("Invalid KafkaChannel - Not READY")
+		return errors.New("channel status not READY")
+	}
+
+	// Return Valid KafkaChannel
+	logger.Debug("Valid KafkaChannel - Found & READY")
+	return nil
+}
+
+// Close The Channel Lister (Stop Processing)
+func Close() {
+	if stopChan != nil {
+		log.Logger().Info("Closing Informer's Stop Channel")
+		close(stopChan)
+	}
 }

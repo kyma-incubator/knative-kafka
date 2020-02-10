@@ -41,6 +41,9 @@ func main() {
 	// Initialize The Logger
 	logger = log.Logger()
 
+	// Parse The Flags For Local Development Usage
+	flag.Parse()
+
 	// Load Environment Variables
 	metricsPort := os.Getenv("METRICS_PORT")
 	rawExpBackoff, expBackoffPresent := os.LookupEnv("EXPONENTIAL_BACKOFF")
