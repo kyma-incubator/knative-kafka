@@ -287,7 +287,7 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "channel-consolidation"
+  branch = "master"
   digest = "1:dd484a83f3938f231eea54f1acd4d8ed1dbb0c72a9e46eea4582dba748029329"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
@@ -310,8 +310,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "dfa95026973ac3818f222df951a72bef8affec6c"
-  source = "github.com/travis-minke-sap/knative-kafka"
+  revision = "0cf553b4589a13abffe41e29e8885c057a24de70"
 
 [[projects]]
   branch = "master"

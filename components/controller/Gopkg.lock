@@ -400,7 +400,7 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  branch = "channel-consolidation"
+  branch = "master"
   digest = "1:367506b8d8e46974c14c4e4bbefba9e07234adc9b0417fb547331bfb869d0a76"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
@@ -415,8 +415,7 @@
     "components/common/pkg/prometheus",
   ]
   pruneopts = "NUT"
-  revision = "dfa95026973ac3818f222df951a72bef8affec6c"
-  source = "github.com/travis-minke-sap/knative-kafka"
+  revision = "0cf553b4589a13abffe41e29e8885c057a24de70"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"

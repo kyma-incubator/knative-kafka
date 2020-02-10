@@ -34,7 +34,11 @@ func WithInitKafkaChannelConditions(nc *v1alpha1.KafkaChannel) {
 }
 
 func WithKafkaChannelReady(nc *v1alpha1.KafkaChannel) {
+	nc.Status.MarkTopicTrue()
 	nc.Status.MarkChannelServiceTrue()
+	nc.Status.MarkChannelDeploymentTrue()
+	nc.Status.MarkChannelDeploymentServiceTrue()
+	nc.Status.MarkDispatcherDeploymentTrue()
 }
 
 func WithKafkaChannelDeleted(nc *v1alpha1.KafkaChannel) {
