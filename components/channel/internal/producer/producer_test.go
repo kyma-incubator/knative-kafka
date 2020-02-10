@@ -66,14 +66,14 @@ func TestProduceKafkaMessage(t *testing.T) {
 	assert.Equal(t, kafka.PartitionAny, kafkaMessage.TopicPartition.Partition)
 	assert.Equal(t, kafka.Offset(0), kafkaMessage.TopicPartition.Offset)
 	assert.Nil(t, kafkaMessage.TopicPartition.Error)
-	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.HeaderKeyCeSpecVersion, cloudevents.CloudEventsVersionV1)
-	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.HeaderKeyCeType, test.EventType)
-	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.HeaderKeyCeId, test.EventId)
-	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.HeaderKeyCeSource, test.EventSource)
-	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.HeaderKeyCeDataContentType, test.EventDataContentType)
-	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.HeaderKeyCeSubject, test.EventSubject)
-	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.HeaderKeyCeDataSchema, test.EventDataSchema)
-	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.HeaderKeyCePartitionKey, test.PartitionKey)
+	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.CeKafkaHeaderKeySpecVersion, cloudevents.CloudEventsVersionV1)
+	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.CeKafkaHeaderKeyType, test.EventType)
+	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.CeKafkaHeaderKeyId, test.EventId)
+	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.CeKafkaHeaderKeySource, test.EventSource)
+	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.CeKafkaHeaderKeyDataContentType, test.EventDataContentType)
+	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.CeKafkaHeaderKeySubject, test.EventSubject)
+	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.CeKafkaHeaderKeyDataSchema, test.EventDataSchema)
+	test.ValidateKafkaMessageHeader(t, kafkaMessage.Headers, constants.CeKafkaHeaderKeyPartitionKey, test.PartitionKey)
 }
 
 // Test The Producer's Close() Functionality

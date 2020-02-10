@@ -46,23 +46,23 @@ func CreateKafkaMessage(event cloudevents.Event, kafkaTopic string) (*kafka.Mess
 func getKafkaHeaders(context cloudevents.EventContext) []kafka.Header {
 
 	kafkaHeaders := []kafka.Header{
-		{Key: constants.HeaderKeyCeSpecVersion, Value: []byte(context.GetSpecVersion())},
-		{Key: constants.HeaderKeyCeType, Value: []byte(context.GetType())},
-		{Key: constants.HeaderKeyCeSource, Value: []byte(context.GetSource())},
-		{Key: constants.HeaderKeyCeId, Value: []byte(context.GetID())},
-		{Key: constants.HeaderKeyCeTime, Value: []byte(context.GetTime().Format(time.RFC3339))},
+		{Key: constants.CeKafkaHeaderKeySpecVersion, Value: []byte(context.GetSpecVersion())},
+		{Key: constants.CeKafkaHeaderKeyType, Value: []byte(context.GetType())},
+		{Key: constants.CeKafkaHeaderKeySource, Value: []byte(context.GetSource())},
+		{Key: constants.CeKafkaHeaderKeyId, Value: []byte(context.GetID())},
+		{Key: constants.CeKafkaHeaderKeyTime, Value: []byte(context.GetTime().Format(time.RFC3339))},
 	}
 
 	if context.GetDataContentType() != "" {
-		kafkaHeaders = append(kafkaHeaders, kafka.Header{Key: constants.HeaderKeyCeDataContentType, Value: []byte(context.GetDataContentType())})
+		kafkaHeaders = append(kafkaHeaders, kafka.Header{Key: constants.CeKafkaHeaderKeyDataContentType, Value: []byte(context.GetDataContentType())})
 	}
 
 	if context.GetSubject() != "" {
-		kafkaHeaders = append(kafkaHeaders, kafka.Header{Key: constants.HeaderKeyCeSubject, Value: []byte(context.GetSubject())})
+		kafkaHeaders = append(kafkaHeaders, kafka.Header{Key: constants.CeKafkaHeaderKeySubject, Value: []byte(context.GetSubject())})
 	}
 
 	if context.GetDataSchema() != "" {
-		kafkaHeaders = append(kafkaHeaders, kafka.Header{Key: constants.HeaderKeyCeDataSchema, Value: []byte(context.GetDataSchema())})
+		kafkaHeaders = append(kafkaHeaders, kafka.Header{Key: constants.CeKafkaHeaderKeyDataSchema, Value: []byte(context.GetDataSchema())})
 	}
 
 	// Only Supports string, int, and float64 Extensions
