@@ -142,8 +142,8 @@ func (r Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaC
 	subscriptions := make([]dispatcher.Subscription, 0)
 	for _, subscriber := range channel.Spec.Subscribable.Subscribers {
 		groupId := fmt.Sprintf("kafka.%s", subscriber.UID)
-		subscriptions = append(subscriptions, dispatcher.Subscription{URI: subscriber.SubscriberURI, GroupId: groupId})
-		r.Logger.Debug("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.String("URI", subscriber.SubscriberURI))
+		subscriptions = append(subscriptions, dispatcher.Subscription{URI: subscriber.SubscriberURI.String(), GroupId: groupId})
+		r.Logger.Debug("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.Any("URI", subscriber.SubscriberURI))
 	}
 
 	failedSubscriptions := r.dispatcher.UpdateSubscriptions(subscriptions)
@@ -169,7 +169,7 @@ func (r *Reconciler) createSubscribableStatus(subscribable *eventingduck.Subscri
 			Ready:              corev1.ConditionTrue,
 		}
 		groupId := fmt.Sprintf("kafka.%s", sub.UID)
-		subscription := dispatcher.Subscription{URI: sub.SubscriberURI, GroupId: groupId}
+		subscription := dispatcher.Subscription{URI: sub.SubscriberURI.String(), GroupId: groupId}
 		if err, ok := failedSubscriptions[subscription]; ok {
 			status.Ready = corev1.ConditionFalse
 			status.Message = err.Error()
