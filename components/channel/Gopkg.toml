@@ -42,20 +42,20 @@
   name = "github.com/Azure/azure-event-hubs-go"
   version = "v1.3.1"
 
-# Reconciling compilation errors : (
-[[override]]
-  name = "contrib.go.opencensus.io/exporter/ocagent"
-  version = " v0.5.0"
-
-# Align With Knative Eventing 0.10.2
+# Align With Knative Eventing 0.12.0
 [[constraint]]
   name = "knative.dev/eventing"
-  version = "v0.10.2"
+  version = "v0.12.0"
 
-# Align With Knative Eventing 0.10.2 (Check the Gopkg.toml of knative.dev/eventing to determine the correct version)
+# Align With Knative Eventing 0.12.0
 [[override]]
   name = "knative.dev/pkg"
-  branch = "release-0.10"
+  branch = "release-0.12"
+
+# Align With Knative Eventing 0.12.0
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.16.4"
 
 [prune]
   go-tests = true
