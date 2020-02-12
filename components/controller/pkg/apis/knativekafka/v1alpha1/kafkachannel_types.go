@@ -62,6 +62,7 @@ type KafkaChannelStatus struct {
 }
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // KafkaChannel is the Schema for the kafkachannels API

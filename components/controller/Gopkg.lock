@@ -549,7 +549,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:108d65ea68bad2eb706522d1e43c41aec81133a38c672adf4ae9bccd97632cc6"
+  digest = "1:bbdcf51c0eabff7e64d44a2f92c95684638e18b790089117e510fc8c0a01ed4d"
   name = "golang.org/x/tools"
   packages = [
     "go/analysis",
@@ -563,8 +563,11 @@
     "go/packages",
     "go/types/objectpath",
     "go/types/typeutil",
+    "imports",
     "internal/fastwalk",
     "internal/gopathwalk",
+    "internal/imports",
+    "internal/module",
     "internal/semver",
     "internal/span",
   ]
@@ -706,7 +709,7 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:90bae9a26d98f85900a8fd7ce76ea9bc429e90b279efbcdfd8814d92b39ccfe0"
+  digest = "1:2247b6bb5eee69c002300061a6b3456388e7fbef0c4ad7c219e9775af3b4646f"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -745,6 +748,7 @@
     "pkg/util/net",
     "pkg/util/runtime",
     "pkg/util/sets",
+    "pkg/util/sets/types",
     "pkg/util/strategicpatch",
     "pkg/util/uuid",
     "pkg/util/validation",
@@ -885,6 +889,52 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
+  digest = "1:a6aa236db5d07dff9ea1160ef316b17e131d2b1b2ad7d177431206bf389d241e"
+  name = "k8s.io/code-generator"
+  packages = [
+    "cmd/client-gen",
+    "cmd/client-gen/args",
+    "cmd/client-gen/generators",
+    "cmd/client-gen/generators/fake",
+    "cmd/client-gen/generators/scheme",
+    "cmd/client-gen/generators/util",
+    "cmd/client-gen/path",
+    "cmd/client-gen/types",
+    "cmd/deepcopy-gen",
+    "cmd/deepcopy-gen/args",
+    "cmd/defaulter-gen",
+    "cmd/defaulter-gen/args",
+    "cmd/informer-gen",
+    "cmd/informer-gen/args",
+    "cmd/informer-gen/generators",
+    "cmd/lister-gen",
+    "cmd/lister-gen/args",
+    "cmd/lister-gen/generators",
+    "pkg/namer",
+    "pkg/util",
+  ]
+  pruneopts = "T"
+  revision = "8e001e5d18949be7e823ccb9cfe9b60026e7bda0"
+  version = "kubernetes-1.16.4"
+
+[[projects]]
+  branch = "master"
+  digest = "1:23f13ef61af8242699a71ecb4aa2aca9a4873347beae7d2d51e14f370eecbdd5"
+  name = "k8s.io/gengo"
+  packages = [
+    "args",
+    "examples/deepcopy-gen/generators",
+    "examples/defaulter-gen/generators",
+    "examples/set-gen/sets",
+    "generator",
+    "namer",
+    "parser",
+    "types",
+  ]
+  pruneopts = "NUT"
+  revision = "e0e292d8aa122d458174e1bef5f142b4d0a67a05"
+
+[[projects]]
   digest = "1:c0693cb981f43d82a767a3217b7640a4bdb341731d3814b38602f4e5dc4f01b3"
   name = "k8s.io/klog"
   packages = ["."]
@@ -937,6 +987,9 @@
     "apis/duck/v1",
     "apis/duck/v1alpha1",
     "apis/duck/v1beta1",
+    "codegen/cmd/injection-gen",
+    "codegen/cmd/injection-gen/args",
+    "codegen/cmd/injection-gen/generators",
     "kmeta",
     "kmp",
     "signals",
@@ -1032,6 +1085,7 @@
     "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/sets",
+    "k8s.io/apimachinery/pkg/util/sets/types",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
@@ -1041,6 +1095,11 @@
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/flowcontrol",
+    "k8s.io/code-generator/cmd/client-gen",
+    "k8s.io/code-generator/cmd/deepcopy-gen",
+    "k8s.io/code-generator/cmd/defaulter-gen",
+    "k8s.io/code-generator/cmd/informer-gen",
+    "k8s.io/code-generator/cmd/lister-gen",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/eventing/pkg/apis/messaging/v1alpha1",
     "knative.dev/eventing/pkg/reconciler/names",
@@ -1049,6 +1108,7 @@
     "knative.dev/pkg/apis/duck/v1",
     "knative.dev/pkg/apis/duck/v1alpha1",
     "knative.dev/pkg/apis/duck/v1beta1",
+    "knative.dev/pkg/codegen/cmd/injection-gen",
     "knative.dev/pkg/signals",
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
