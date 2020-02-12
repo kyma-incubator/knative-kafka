@@ -68,78 +68,69 @@ required = [
   unused-packages = false
   non-go = false
 
-# # Align With Knative Eventing 0.10.2
+# Align With Knative Eventing 0.12.0
+[[constraint]]
+  name = "knative.dev/eventing"
+  version = "v0.12.0"
+
+# Align With Knative Eventing 0.12.0
 [[override]]
   name = "knative.dev/pkg"
-  branch = "release-0.10"
+  branch = "release-0.12"
 
+# Align With Knative Eventing 0.12.0
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.16.4"
+
+# Align With Knative Eventing 0.12.0
+[[override]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.16.4"
+
+# Align With Knative Eventing 0.12.0
+[[override]]
+  name = "k8s.io/apiextensions-apiserver"
+  version = "kubernetes-1.16.4"
+
+# Align With Knative Eventing 0.12.0
+[[override]]
+  name = "k8s.io/code-generator"
+  version = "kubernetes-1.16.4"
+
+# Align With Knative Eventing 0.12.0
+[[override]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.16.4"
+
+# Align With Knative Eventing 0.10.2
 [[override]]
   name = "gopkg.in/yaml.v2"
   version = "v2.2.4"
-
-# Align With Knative Eventing 0.10.2 (GKE Compatability)
-[[override]]
-  name = "k8s.io/api"
-  version = "kubernetes-1.15.3"
-
-# Align With Knative Eventing 0.10.2 (GKE Compatability)
-[[override]]
-  name = "k8s.io/apimachinery"
-  version = "kubernetes-1.15.3"
-
-# Overridden to ensure compatibility with GKE
-# GKE version as of 2019-01-24 is 1.11
-# controller-runtime 0.1.9 requires at least 1.12
-[[override]]
-  name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.15.3"
-
-# Align With Knative Eventing 0.10.2 (GKE Compatability)
-[[override]]
-  name = "k8s.io/code-generator"
-  version = "kubernetes-1.15.3"
-
-# Align With Knative Eventing 0.10.2 (GKE Compatability)
-[[override]]
-  name = "k8s.io/client-go"
-  version = "kubernetes-1.15.3"
-
-# Align With Knative Eventing 0.10.2 (Can be removed once Knative is on K8S 1.13 which has fix https://github.com/kubernetes/kubernetes/pull/71296)
-[[override]]
-  name = "github.com/json-iterator/go"
-  revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
-
-# Align With Knative Eventing 0.10.2
-[[constraint]]
-  name = "knative.dev/eventing"
-  version = "v0.10.2"
 
 # Knative-Kafka Dependency Only!
 [[constraint]]
   name = "github.com/confluentinc/confluent-kafka-go"
   version = "~v1.0.0"
 
-# Align With Knative Eventing 0.10.2
-# 0.1.9 is most recent version that still uses K8s 1.12. 0.1.10 uses K8s 1.13.
+# Align With k8s.io Version Required By Knative Eventing 0.12.0 (v0.4.0 is "oldest" that aligns)
 [[constraint]]
   name = "sigs.k8s.io/controller-runtime"
-  version = "=0.2.1"
+  version = "v0.4.0"
 
 #
 [[constraint]]
   name="sigs.k8s.io/controller-tools"
-  version = "=0.2.1"
+  version = "v0.2.1"
 
-# Align With Knative Eventing 0.10.2
+# Align With Knative Eventing 0.12.0
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  version = "=0.10.0"
+  version = "=0.11.0"
 
-# Align With Knative Eventing 0.10.2
-# needed because pkg upgraded
 [[override]]
   name = "go.uber.org/zap"
-  revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
+  version = "v1.11.0"
 
 # For dependency below: Refer to issue https://github.com/golang/dep/issues/1799
 [[override]]
@@ -150,8 +141,3 @@ required = [
 [[constraint]]
    name = "github.com/kyma-incubator/knative-kafka"
    branch = "master"
-
-# Align With Knative Eventing 0.10.2 (Manually extracted from knative-eventing Gopkg.lock)
-[[override]]
-  name = "contrib.go.opencensus.io/exporter/stackdriver"
-  revision = "68e3d742b03c099c35428443886e65d9587c8d76"

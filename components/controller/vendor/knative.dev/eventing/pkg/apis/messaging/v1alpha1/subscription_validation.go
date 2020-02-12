@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmp"
 )
 
@@ -44,7 +44,7 @@ func (ss *SubscriptionSpec) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	missingSubscriber := isDestinationNilOrEmpty(ss.Subscriber)
-	missingReply := isReplyStrategyNilOrEmpty(ss.Reply)
+	missingReply := isDestinationNilOrEmpty(ss.Reply)
 	if missingSubscriber && missingReply {
 		fe := apis.ErrMissingField("reply", "subscriber")
 		fe.Details = "the Subscription must reference at least one of (reply or a subscriber)"
@@ -52,33 +52,25 @@ func (ss *SubscriptionSpec) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	if !missingSubscriber {
-		if fe := ss.Subscriber.ValidateDisallowDeprecated(ctx); fe != nil {
+		if fe := ss.Subscriber.Validate(ctx); fe != nil {
 			errs = errs.Also(fe.ViaField("subscriber"))
 		}
 	}
 
 	if !missingReply {
-		if fe := ss.Reply.Channel.Validate(ctx); fe != nil {
-			errs = errs.Also(fe.ViaField("reply.channel"))
+		if fe := ss.Reply.Validate(ctx); fe != nil {
+			errs = errs.Also(fe.ViaField("reply"))
 		}
 	}
 
 	return errs
 }
 
-func isDestinationNilOrEmpty(d *apisv1alpha1.Destination) bool {
-	return d == nil || equality.Semantic.DeepEqual(d, &apisv1alpha1.Destination{})
+func isDestinationNilOrEmpty(d *duckv1.Destination) bool {
+	return d == nil || equality.Semantic.DeepEqual(d, &duckv1.Destination{})
 }
 
-func isReplyStrategyNilOrEmpty(r *ReplyStrategy) bool {
-	return r == nil || equality.Semantic.DeepEqual(r, &ReplyStrategy{}) || equality.Semantic.DeepEqual(r.Channel, &apisv1alpha1.Destination{})
-}
-
-func (s *Subscription) CheckImmutableFields(ctx context.Context, og apis.Immutable) *apis.FieldError {
-	original, ok := og.(*Subscription)
-	if !ok {
-		return &apis.FieldError{Message: "The provided original was not a Subscription"}
-	}
+func (s *Subscription) CheckImmutableFields(ctx context.Context, original *Subscription) *apis.FieldError {
 	if original == nil {
 		return nil
 	}
