@@ -15,7 +15,6 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"go.uber.org/zap"
 	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
-	istiov1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 	"knative.dev/pkg/signals"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -75,12 +74,6 @@ func main() {
 	err = messagingv1alpha1.AddToScheme(mgr.GetScheme())
 	if err != nil {
 		logger.Fatal("Failed To Add Knative Messaging Custom Types To Manager's Scheme", zap.Error(err))
-	}
-
-	// Add Istio Custom Types To The Manager's Scheme
-	err = istiov1alpha3.AddToScheme(mgr.GetScheme())
-	if err != nil {
-		logger.Fatal("Failed To Add Istio Custom Types To Manager's Scheme", zap.Error(err))
 	}
 
 	// Determine The Kafka AdminClient Type (Assume Kafka Unless Azure EventHubs Are Specified)

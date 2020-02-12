@@ -24,22 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-# Manually Created To Mirror Kubebuilder (Since pre-existing Gopkg.toml)
-required = [
-    "k8s.io/client-go/plugin/pkg/client/auth/gcp", # for development against gcp
-    "k8s.io/code-generator/cmd/client-gen", # for go generate
-    "k8s.io/code-generator/cmd/deepcopy-gen", # for go generate
-	  "k8s.io/gengo/args", # required by client-gen
-	  "k8s.io/gengo/examples/defaulter-gen/generators", # required by client-gen
-	  "sigs.k8s.io/controller-tools/cmd/controller-gen", # for crd/rbac generation
-    "sigs.k8s.io/controller-runtime/pkg/client/config",
-    "sigs.k8s.io/controller-runtime/pkg/controller",
-    "sigs.k8s.io/controller-runtime/pkg/handler",
-    "sigs.k8s.io/controller-runtime/pkg/manager",
-    "sigs.k8s.io/controller-runtime/pkg/runtime/signals",
-    "sigs.k8s.io/controller-runtime/pkg/source",
-    ]
-
 #
 # Knative-Kafka Dependency Specification
 #
@@ -71,7 +55,7 @@ required = [
 # # Align With Knative Eventing 0.10.2
 [[override]]
   name = "knative.dev/pkg"
-  branch = "release-0.10"
+  branch = "master"
 
 [[override]]
   name = "gopkg.in/yaml.v2"
@@ -80,29 +64,29 @@ required = [
 # Align With Knative Eventing 0.10.2 (GKE Compatability)
 [[override]]
   name = "k8s.io/api"
-  version = "kubernetes-1.15.3"
+  version = "kubernetes-1.16.4"
 
 # Align With Knative Eventing 0.10.2 (GKE Compatability)
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.15.3"
+  version = "kubernetes-1.16.4"
 
 # Overridden to ensure compatibility with GKE
 # GKE version as of 2019-01-24 is 1.11
 # controller-runtime 0.1.9 requires at least 1.12
 [[override]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.15.3"
+  version = "kubernetes-1.16.4"
 
 # Align With Knative Eventing 0.10.2 (GKE Compatability)
 [[override]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.15.3"
+  version = "kubernetes-1.16.4"
 
 # Align With Knative Eventing 0.10.2 (GKE Compatability)
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.15.3"
+  version = "kubernetes-1.16.4"
 
 # Align With Knative Eventing 0.10.2 (Can be removed once Knative is on K8S 1.13 which has fix https://github.com/kubernetes/kubernetes/pull/71296)
 [[override]]
@@ -112,23 +96,12 @@ required = [
 # Align With Knative Eventing 0.10.2
 [[constraint]]
   name = "knative.dev/eventing"
-  version = "v0.10.2"
+  branch = "master"
 
 # Knative-Kafka Dependency Only!
 [[constraint]]
   name = "github.com/confluentinc/confluent-kafka-go"
   version = "~v1.0.0"
-
-# Align With Knative Eventing 0.10.2
-# 0.1.9 is most recent version that still uses K8s 1.12. 0.1.10 uses K8s 1.13.
-[[constraint]]
-  name = "sigs.k8s.io/controller-runtime"
-  version = "=0.2.1"
-
-#
-[[constraint]]
-  name="sigs.k8s.io/controller-tools"
-  version = "=0.2.1"
 
 # Align With Knative Eventing 0.10.2
 [[override]]

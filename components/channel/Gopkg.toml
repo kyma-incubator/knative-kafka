@@ -47,15 +47,16 @@
   name = "contrib.go.opencensus.io/exporter/ocagent"
   version = " v0.5.0"
 
-# Align With Knative Eventing 0.10.2
+# TODO decide how to handle this version, master used for ongoing knative dev compatibility
 [[constraint]]
   name = "knative.dev/eventing"
-  version = "v0.10.2"
+  branch = "master"
 
-# Align With Knative Eventing 0.10.2 (Check the Gopkg.toml of knative.dev/eventing to determine the correct version)
+# TODO decide how to handle this version, master used for ongoing knative dev compatibility
+# Align With Knative Eventing (Check the Gopkg.toml of knative.dev/eventing to determine the correct version)
 [[override]]
   name = "knative.dev/pkg"
-  branch = "release-0.10"
+  branch = "master"
 
 [prune]
   go-tests = true

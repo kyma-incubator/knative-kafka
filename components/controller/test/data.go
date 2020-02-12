@@ -15,7 +15,7 @@ import (
 	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	eventingNames "knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	apisv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"strconv"
 )
 
@@ -453,7 +453,7 @@ func GetNewSubscription(namespaceName string, subscriberName string, includeAnno
 				Kind:       constants.KafkaChannelKind,
 				Name:       ChannelName,
 			},
-			Subscriber: &apisv1alpha1.Destination{
+			Subscriber: &apisv1beta1.Destination{
 				URI: subscriberURI,
 			},
 		},

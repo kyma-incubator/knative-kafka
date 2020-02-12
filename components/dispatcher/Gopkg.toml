@@ -48,11 +48,11 @@
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.15.3"
+  version = "kubernetes-1.16.4"
 
 [[override]]
   name = "knative.dev/pkg"
-  branch = "release-0.10"
+  branch = "master"
 
 [prune]
   go-tests = true

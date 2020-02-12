@@ -26,10 +26,10 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/kmeta"
-	"knative.dev/pkg/webhook"
 )
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Channel represents a generic Channel. It is normally used when we want a Channel, but don't need a specific Channel implementation.
@@ -55,8 +55,7 @@ var (
 	// Check that Channel can return its spec untyped.
 	_ apis.HasSpec = (*Channel)(nil)
 
-	_ runtime.Object     = (*Channel)(nil)
-	_ webhook.GenericCRD = (*Channel)(nil)
+	_ runtime.Object = (*Channel)(nil)
 
 	// Check that we can create OwnerReferences to a Channel.
 	_ kmeta.OwnerRefable = (*Channel)(nil)

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2019 The Knative Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ type fakeInformerGenerator struct {
 	generator.DefaultGen
 	outputPackage string
 	imports       namer.ImportTracker
-	filtered      bool
 
 	typeToGenerate          *types.Type
 	groupVersion            clientgentypes.GroupVersion

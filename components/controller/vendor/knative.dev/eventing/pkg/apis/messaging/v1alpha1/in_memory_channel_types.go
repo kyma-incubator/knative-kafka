@@ -25,10 +25,10 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/kmeta"
-	"knative.dev/pkg/webhook"
 )
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // InMemoryChannel is a resource representing an in memory channel
@@ -54,8 +54,7 @@ var (
 	// Check that InMemoryChannel can return its spec untyped.
 	_ apis.HasSpec = (*InMemoryChannel)(nil)
 
-	_ runtime.Object     = (*InMemoryChannel)(nil)
-	_ webhook.GenericCRD = (*InMemoryChannel)(nil)
+	_ runtime.Object = (*InMemoryChannel)(nil)
 
 	// Check that we can create OwnerReferences to an InMemoryChannel.
 	_ kmeta.OwnerRefable = (*InMemoryChannel)(nil)
