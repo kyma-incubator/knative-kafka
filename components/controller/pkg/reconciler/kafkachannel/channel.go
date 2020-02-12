@@ -154,6 +154,8 @@ func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 			Name:      serviceName,       // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 			Namespace: channel.Namespace, // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 			Labels: map[string]string{
+				KafkaChannelLabel:          channel.Name,
+				KafkaChannelChannelLabel:   "true",                     // Allows for identification of KafkaChannels
 				K8sAppChannelSelectorLabel: K8sAppChannelSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 			OwnerReferences: []metav1.OwnerReference{
@@ -248,6 +250,7 @@ func (r *Reconciler) newChannelDeploymentService(channel *knativekafkav1alpha1.K
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
+				KafkaChannelChannelLabel:   "true",                     // Allows for identification of KafkaChannels
 				K8sAppChannelSelectorLabel: K8sAppChannelSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 		},
@@ -265,7 +268,7 @@ func (r *Reconciler) newChannelDeploymentService(channel *knativekafkav1alpha1.K
 				},
 			},
 			Selector: map[string]string{
-				"app": deploymentName, // Matches Deployment Label Key/Value
+				AppLabel: deploymentName, // Matches Deployment Label Key/Value
 			},
 		},
 	}
@@ -367,20 +370,21 @@ func (r *Reconciler) newChannelDeployment(channel *knativekafkav1alpha1.KafkaCha
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"app": deploymentName, // Matches Service Selector Key/Value Below
+				AppLabel:                 deploymentName, // Matches Service Selector Key/Value Below
+				KafkaChannelChannelLabel: "true",         // Allows for identification of KafkaChannels
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": deploymentName, // Matches Template ObjectMeta Pods
+					AppLabel: deploymentName, // Matches Template ObjectMeta Pods
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": deploymentName, // Matched By Deployment Selector Above
+						AppLabel: deploymentName, // Matched By Deployment Selector Above
 					},
 				},
 				Spec: corev1.PodSpec{

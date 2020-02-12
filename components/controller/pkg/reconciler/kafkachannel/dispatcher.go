@@ -115,8 +115,8 @@ func (r *Reconciler) newK8sDispatcherService(channel *knativekafkav1alpha1.Kafka
 			Name:      serviceName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"channel":                     channel.Name,
-				DispatcherLabel:               "true",                        // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
+				KafkaChannelLabel:             channel.Name,
+				KafkaChannelDispatcherLabel:   "true",                        // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
 				K8sAppDispatcherSelectorLabel: K8sAppDispatcherSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 			OwnerReferences: []metav1.OwnerReference{
@@ -132,7 +132,7 @@ func (r *Reconciler) newK8sDispatcherService(channel *knativekafkav1alpha1.Kafka
 				},
 			},
 			Selector: map[string]string{
-				"app": serviceName, // Matches Deployment Label Key/Value
+				AppLabel: serviceName, // Matches Deployment Label Key/Value
 			},
 		},
 	}
@@ -208,9 +208,9 @@ func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.Ka
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"app":           deploymentName, // Matches K8S Service Selector Key/Value Below
-				DispatcherLabel: "true",         // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
-				ChannelLabel:    channel.Name,
+				AppLabel:                    deploymentName, // Matches K8S Service Selector Key/Value Below
+				KafkaChannelDispatcherLabel: "true",         // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
+				KafkaChannelLabel:           channel.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				util.NewChannelOwnerReference(channel),
@@ -220,13 +220,13 @@ func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.Ka
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": deploymentName, // Matches Template ObjectMeta Pods
+					AppLabel: deploymentName, // Matches Template ObjectMeta Pods
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": deploymentName, // Matched By Deployment Selector Above
+						AppLabel: deploymentName, // Matched By Deployment Selector Above
 					},
 				},
 				Spec: corev1.PodSpec{

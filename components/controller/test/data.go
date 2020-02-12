@@ -276,7 +276,9 @@ func GetNewKafkaChannelService(resourceVersion int) *corev1.Service {
 			Name:      kafkautil.AppendKafkaChannelServiceNameSuffix(ChannelName),
 			Namespace: NamespaceName,
 			Labels: map[string]string{
-				"k8s-app": "knative-kafka-channels",
+				"kafkachannel":         ChannelName,
+				"kafkachannel-channel": "true",
+				"k8s-app":              "knative-kafka-channels",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				GetNewChannelOwnerRef(true),
@@ -301,7 +303,8 @@ func GetNewChannelDeploymentService(resourceVersion int) *corev1.Service {
 			Name:      ChannelDeploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"k8s-app": "knative-kafka-channels",
+				"k8s-app":              "knative-kafka-channels",
+				"kafkachannel-channel": "true",
 			},
 			ResourceVersion: strconv.Itoa(resourceVersion),
 		},
@@ -337,7 +340,8 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 			Name:      ChannelDeploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"app": ChannelDeploymentName,
+				"app":                  ChannelDeploymentName,
+				"kafkachannel-channel": "true",
 			},
 			ResourceVersion: strconv.Itoa(resourceVersion),
 		},
@@ -447,9 +451,9 @@ func GetNewK8SDispatcherService(resourceVersion int) *corev1.Service {
 			Name:      DispatcherDeploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"channel":    ChannelName,
-				"dispatcher": "true",
-				"k8s-app":    "knative-kafka-dispatchers",
+				"kafkachannel":            ChannelName,
+				"kafkachannel-dispatcher": "true",
+				"k8s-app":                 "knative-kafka-dispatchers",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				GetNewChannelOwnerRef(true),
@@ -483,9 +487,9 @@ func GetNewK8SDispatcherDeployment(topicName string, resourceVersion int) *appsv
 			Name:      DispatcherDeploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"app":        DispatcherDeploymentName,
-				"dispatcher": "true",
-				"channel":    ChannelName,
+				"app":                     DispatcherDeploymentName,
+				"kafkachannel-dispatcher": "true",
+				"kafkachannel":            ChannelName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				GetNewChannelOwnerRef(true),
