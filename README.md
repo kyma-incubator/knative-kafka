@@ -54,7 +54,7 @@ namespace. The knative-kafka-controller will guarantee that the Data Plane is co
 defined by [Subscriptions](https://knative.dev/docs/reference/eventing/#messaging.knative.dev/v1alpha1.Subscription) to
 a KafkaChannel.  The underlying Kafka infrastructure to be used is defined in a specially
 labeled [secret](./resources/README.md#Credentials) in the knative-eventing namespace.  Knative-Kafka supports several
-different Kafka (and Kafka-like) [infrastructures](./resources/README.md#Kafka Providers).
+different Kafka (and Kafka-like) [infrastructures](./resources/README.md#Kafka%20Providers).
 
 ## Data Plane
 
