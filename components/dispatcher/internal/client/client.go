@@ -3,11 +3,14 @@ package client
 import (
 	"context"
 	cloudevents "github.com/cloudevents/sdk-go"
-	cloudeventcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/context"
+	cloudeventhttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/slok/goresilience/retry"
 	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/kncloudevents"
+	knativeeventingtracing "knative.dev/eventing/pkg/tracing"
+	"knative.dev/pkg/tracing"
 	"math"
 	"net/http"
 	"strconv"
@@ -38,18 +41,21 @@ type retriableCloudEventClient struct {
 var _ RetriableClient = &retriableCloudEventClient{}
 
 func NewRetriableCloudEventClient(exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
-	transport, err := cloudevents.NewHTTPTransport(
+	tOpts := []cloudeventhttp.Option{
 		cloudevents.WithBinaryEncoding(),
-	)
+		cloudevents.WithMiddleware(tracing.HTTPSpanMiddleware),
+	}
 
+	// Make an http transport for the CloudEvents client.
+	transport, err := cloudevents.NewHTTPTransport(tOpts...)
 	if err != nil {
 		panic("Failed To Create Transport, " + err.Error())
 	}
 	transport.Client = httpClient
 
-	ceClient, err := cloudevents.NewClient(transport)
+	ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(transport)
 	if err != nil {
-		panic("Unable To Create CloudEvent Client: " + err.Error())
+		panic("Unable To Create KnativeCloudEvent Client: " + err.Error())
 	}
 
 	return retriableCloudEventClient{
@@ -69,12 +75,19 @@ func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event, uri stri
 		logger = log.Logger().With(zap.String("uri", uri))
 	}
 
-	ctx := context.Background()
+	// Build the runner for retry capabilities
 	runner := retry.New(retry.Config{DisableBackoff: rcec.exponentialBackoff, Times: rcec.calculateNumberOfRetries(), WaitBase: time.Millisecond * time.Duration(rcec.initialRetryInterval)})
-	ctx = cloudeventcontext.WithTarget(ctx, uri)
 
-	err := runner.Run(ctx, func(ctx context.Context) error {
-		responseContext, _, err := rcec.cloudEventClient.Send(ctx, event)
+	// Build the sending context for the event
+	sendingCtx := cloudevents.ContextWithTarget(context.Background(), uri)
+
+	sendingCtx, err := knativeeventingtracing.AddSpanFromTraceparentAttribute(sendingCtx, uri, event)
+	if err != nil {
+		logger.Error("Unable to connect outgoing span", zap.Error(err))
+	}
+
+	err = runner.Run(sendingCtx, func(ctx context.Context) error {
+		responseContext, _, err := rcec.cloudEventClient.Send(sendingCtx, event)
 		transportContext := cloudevents.HTTPTransportContextFrom(responseContext)
 		return logResponse(logger, transportContext.StatusCode, err)
 	})

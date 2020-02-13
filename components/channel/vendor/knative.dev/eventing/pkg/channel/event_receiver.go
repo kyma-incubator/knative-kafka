@@ -29,6 +29,7 @@ import (
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/eventing/pkg/utils"
+	"go.opencensus.io/trace"
 )
 
 var (
@@ -160,6 +161,24 @@ func (r *EventReceiver) ServeHTTP(ctx context.Context, event cloudevents.Event, 
 
 	sctx := utils.ContextFrom(tctx, nil)
 	AppendHistory(&event, host)
+
+
+	span := trace.FromContext(ctx)
+	r.logger.Info("span.sampled", zap.Any("sampled", span.SpanContext().IsSampled()))
+	flags := "00"
+	if span.SpanContext().IsSampled() {
+		flags = "01"
+	}
+
+	r.logger.Info("Trace Span", zap.String("span", fmt.Sprintf("00-%s-%s-%s",
+		span.SpanContext().TraceID.String(),
+		span.SpanContext().SpanID.String(),
+		flags)))
+
+	for k, v := range tctx.Header {
+		r.logger.Info("Headers", zap.Any("header", k), zap.Any("value", v))
+	}
+
 
 	event = tracing.AddTraceparentAttributeFromContext(ctx, event)
 	err = r.receiverFunc(sctx, channel, event)

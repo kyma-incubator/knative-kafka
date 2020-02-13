@@ -31,9 +31,13 @@ clean:
 # Dep / Fmt / Vet / Lint / Test / Sonar
 #
 
+# HACK! knative/eventing is patching the opencensus library via the same patch being used here.
+# They recognize that this is a horrible thing to do, but say that there isn't another way
+# around it as of yet.
+# Refer to: https://github.com/knative/eventing/blob/master/hack/update-deps.sh#L42
 dep:
 	@echo 'Ensuring Dependencies'
-	cd $(BUILD_ROOT); dep ensure -v
+	cd $(BUILD_ROOT); dep ensure -v; git apply --directory=components/dispatcher hack/set-span-id.patch
 
 format:
 	@echo 'Formatting Go Source'
