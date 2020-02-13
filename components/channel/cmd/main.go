@@ -49,7 +49,7 @@ func main() {
 	}
 
 	// Initialize The Kafka Producer In Order To Start Processing Status Events
-	err = producer.InitializeProducer(environment.KafkaBrokers, environment.KafkaUsername, environment.KafkaPassword)
+	err = producer.InitializeProducer(environment.KafkaBrokers, environment.KafkaUsername, environment.KafkaPassword, metricsServer)
 	if err != nil {
 		logger.Fatal("Failed To Initialize Kafka Producer", zap.Error(err))
 	}
