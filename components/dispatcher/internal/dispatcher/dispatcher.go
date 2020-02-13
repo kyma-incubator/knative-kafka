@@ -6,6 +6,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"go.uber.org/zap"
 	"strings"
@@ -26,6 +27,7 @@ type DispatcherConfig struct {
 	Password                    string
 	Client                      client.RetriableClient
 	ChannelKey                  string
+	Metrics                     *prometheus.MetricsServer
 }
 
 type Subscription struct {
@@ -161,6 +163,10 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 					int64(e.TopicPartition.Offset-consumerOffset.offsets[e.TopicPartition.Partition]) >= d.OffsetCommitCount {
 					d.commitOffsets(logger, &consumerOffset)
 				}
+
+			case *kafka.Stats:
+				// Update Kafka Prometheus Metrics
+				d.Metrics.Observe(e.String())
 
 			case kafka.Error:
 				logger.Warn("Received Kafka Error", zap.Error(e))

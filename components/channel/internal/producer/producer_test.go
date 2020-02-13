@@ -7,6 +7,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -32,7 +33,7 @@ func TestInitializeProducer(t *testing.T) {
 	}
 
 	// Perform The Test
-	err := InitializeProducer(brokers, username, password)
+	err := InitializeProducer(brokers, username, password, prometheus.NewMetricsServer("8888", "/metrics"))
 
 	// Verify The Results
 	assert.Nil(t, err)

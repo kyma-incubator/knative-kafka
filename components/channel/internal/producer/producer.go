@@ -8,6 +8,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/util"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"go.uber.org/zap"
 	eventingChannel "knative.dev/eventing/pkg/channel"
 )
@@ -17,6 +18,7 @@ var (
 	kafkaProducer  kafkaproducer.ProducerInterface
 	stopChannel    chan struct{}
 	stoppedChannel chan struct{}
+	metrics        *prometheus.MetricsServer
 )
 
 // Wrapper Around Common Kafka Producer Creation To Facilitate Unit Testing
@@ -25,7 +27,7 @@ var createProducerFunctionWrapper = func(brokers string, username string, passwo
 }
 
 // Initialize The Producer
-func InitializeProducer(brokers string, username string, password string) error {
+func InitializeProducer(brokers string, username string, password string, metricsServer *prometheus.MetricsServer) error {
 
 	// Create The Producer Using The Specified Kafka Authentication
 	producer, err := createProducerFunctionWrapper(brokers, username, password)
@@ -41,6 +43,9 @@ func InitializeProducer(brokers string, username string, password string) error 
 	// Reset The Stop Channels
 	stopChannel = make(chan struct{})
 	stoppedChannel = make(chan struct{})
+
+	// Used For Reporting Kafka Metrics
+	metrics = metricsServer
 
 	// Fork A Go Routine To Process Kafka Events Asynchronously
 	log.Logger().Info("Starting Kafka Producer Event Processing")
@@ -131,6 +136,9 @@ func processProducerEvents() {
 				log.Logger().Warn("Kafka Message Arrived On The Wrong Channel", zap.Any("Message", msg))
 			case kafka.Error:
 				log.Logger().Warn("Kafka Error", zap.Error(ev))
+			case *kafka.Stats:
+				// Update Kafka Prometheus Metrics
+				metrics.Observe(ev.String())
 			default:
 				log.Logger().Info("Ignored Event", zap.String("Event", ev.String()))
 			}
