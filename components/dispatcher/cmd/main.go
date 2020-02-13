@@ -110,6 +110,7 @@ func main() {
 		Password:                    kafkaPassword,
 		Client:                      ceClient,
 		ChannelKey:                  channelKey,
+		Metrics:                     metricsServer,
 	}
 	dispatcher = dispatch.NewDispatcher(dispatcherConfig)
 
