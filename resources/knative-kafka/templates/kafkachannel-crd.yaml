@@ -66,11 +66,6 @@ spec:
               format: int64
               minimum: 1
               type: integer
-            tenantId:
-              maxLength: 200
-              minLength: 1
-              pattern: '[a-zA-Z0-9_\-\.\\]+'
-              type: string
             subscribable:
               type: object
               properties:

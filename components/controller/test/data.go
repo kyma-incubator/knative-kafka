@@ -11,11 +11,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	messagingv1beta1 "knative.dev/eventing/pkg/apis/messaging/v1beta1"
 	eventingNames "knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
-	apisv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	apisv1 "knative.dev/pkg/apis/duck/v1"
 	"strconv"
 )
 
@@ -150,12 +150,11 @@ func GetNewChannel(includeFinalizer bool, includeSpecProperties bool, includeSub
 
 	// Append Subscribers To Channel Spec If Specified
 	if includeSubscribers {
-		channel.Spec.Subscribable = &eventingduckv1alpha1.Subscribable{
-			Subscribers: []eventingduckv1alpha1.SubscriberSpec{
-				{
-					UID:           SubscriberName,
-					SubscriberURI: SubscriberURI,
-				},
+		url, _ := apis.ParseURL(SubscriberURI)
+		channel.Spec.Subscribers = []eventingduckv1beta1.SubscriberSpec{
+			{
+				UID:           SubscriberName,
+				SubscriberURI: url,
 			},
 		}
 	}
@@ -432,28 +431,28 @@ func GetNewK8SChannelDeployment(topicName string) *appsv1.Deployment {
 }
 
 // Utility Function For Creating A Test Subscription With Specified State
-func GetNewSubscription(namespaceName string, subscriberName string, includeAnnotations bool, includeFinalizer bool, eventStartTime string) *messagingv1alpha1.Subscription {
+func GetNewSubscription(namespaceName string, subscriberName string, includeAnnotations bool, includeFinalizer bool, eventStartTime string) *messagingv1beta1.Subscription {
 
 	// Parse The Subscriber URI String Into A URI
 	subscriberURI, _ := apis.ParseURL(SubscriberURI)
 
 	// Create The Specified Subscription
-	subscription := &messagingv1alpha1.Subscription{
+	subscription := &messagingv1beta1.Subscription{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
+			APIVersion: messagingv1beta1.SchemeGroupVersion.String(),
 			Kind:       constants.KnativeSubscriptionKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespaceName,
 			Name:      subscriberName,
 		},
-		Spec: messagingv1alpha1.SubscriptionSpec{
+		Spec: messagingv1beta1.SubscriptionSpec{
 			Channel: corev1.ObjectReference{
 				APIVersion: kafkav1alpha1.SchemeGroupVersion.String(),
 				Kind:       constants.KafkaChannelKind,
 				Name:       ChannelName,
 			},
-			Subscriber: &apisv1beta1.Destination{
+			Subscriber: &apisv1.Destination{
 				URI: subscriberURI,
 			},
 		},
@@ -479,7 +478,7 @@ func GetNewSubscription(namespaceName string, subscriberName string, includeAnno
 }
 
 // Utility Function For Creating A Test Subscription (Provisioned) With Deletion Timestamp
-func GetNewSubscriptionDeleted(namespaceName string, subscriberName string, includeAnnotations bool, includeFinalizer bool) *messagingv1alpha1.Subscription {
+func GetNewSubscriptionDeleted(namespaceName string, subscriberName string, includeAnnotations bool, includeFinalizer bool) *messagingv1beta1.Subscription {
 	subscription := GetNewSubscription(namespaceName, subscriberName, includeAnnotations, includeFinalizer, EventStartTime)
 	subscription.DeletionTimestamp = &DeletedTimestamp
 	return subscription

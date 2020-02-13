@@ -76,19 +76,14 @@ required = [
   name = "k8s.io/api"
   version = "kubernetes-1.16.4"
 
-# Align With Knative Eventing 0.10.2 (GKE Compatability)
 [[override]]
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.16.4"
 
-# Overridden to ensure compatibility with GKE
-# GKE version as of 2019-01-24 is 1.11
-# controller-runtime 0.1.9 requires at least 1.12
 [[override]]
   name = "k8s.io/apiextensions-apiserver"
   version = "kubernetes-1.16.4"
 
-# Align With Knative Eventing 0.10.2 (GKE Compatability)
 [[override]]
   name = "k8s.io/code-generator"
   version = "kubernetes-1.16.4"
@@ -137,4 +132,4 @@ required = [
 # Align With Knative Eventing 0.10.2 (Manually extracted from knative-eventing Gopkg.lock)
 [[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
-  revision = "68e3d742b03c099c35428443886e65d9587c8d76"
+  revision = "59d068f8d8ff5b653916aa30cdc4e13c7f15d56e"

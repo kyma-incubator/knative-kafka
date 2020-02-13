@@ -32,14 +32,14 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:83bd9ccdcc61bb43f45e4336cf9622849b5a867ef137f8b53303968202970225"
+  digest = "1:c3fd5ddaad733530174bba5dd787d98a45d181851a95a0b7362be7bce7144f56"
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   packages = [
     ".",
     "monitoredresource",
   ]
   pruneopts = "NUT"
-  revision = "68e3d742b03c099c35428443886e65d9587c8d76"
+  revision = "59d068f8d8ff5b653916aa30cdc4e13c7f15d56e"
 
 [[projects]]
   digest = "1:9c42fe8a82e80960d096b67f9cf6ad579cadd279fabe39f2b0227de79aa95fa6"
@@ -388,7 +388,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ab431fa9981259d219f83fa37325d47c7cb637646795d83d73252f7334ddb9a7"
+  digest = "1:f865ad6b9b03a0a2511745dba8667b049de44b5cb9e0a34a8b3b339334654b3f"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/k8s",
@@ -396,7 +396,6 @@
     "components/common/pkg/kafka/admin/eventhubcache",
     "components/common/pkg/kafka/admin/util",
     "components/common/pkg/kafka/constants",
-    "components/common/pkg/kafka/consumer",
     "components/common/pkg/kafka/util",
     "components/common/pkg/log",
   ]
@@ -1017,7 +1016,7 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:1be324f094c1bbe885286de90f7648e9d0bab271401f82a60c760be60932a719"
+  digest = "1:9cac846b916ca657bea8edd7dfd90b73ae98c1534eecc5f8ad631eabaa425d49"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1198,7 +1197,6 @@
     "plugin/pkg/client/auth/gcp",
     "rest",
     "rest/watch",
-    "restmapper",
     "testing",
     "third_party/forked/golang/template",
     "tools/auth",
@@ -1400,20 +1398,6 @@
   version = "v0.12.4"
 
 [[projects]]
-  digest = "1:444f2a12747369f497d2090da97cbdf526295b5c17a23249f9c83704ccd5cbf8"
-  name = "sigs.k8s.io/controller-runtime"
-  packages = [
-    "pkg/client",
-    "pkg/client/apiutil",
-    "pkg/client/fake",
-    "pkg/internal/objectutil",
-    "pkg/reconcile",
-  ]
-  pruneopts = "NUT"
-  revision = "1592b5ee945140d042351098bf3217d71f36cace"
-  version = "v0.2.1"
-
-[[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
   name = "sigs.k8s.io/yaml"
   packages = ["."]
@@ -1426,10 +1410,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/confluentinc/confluent-kafka-go/kafka",
-    "github.com/google/go-cmp/cmp",
-    "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin",
-    "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/stretchr/testify/assert",
@@ -1438,7 +1419,6 @@
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/equality",
     "k8s.io/apimachinery/pkg/api/errors",
-    "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
@@ -1467,16 +1447,15 @@
     "k8s.io/code-generator/cmd/defaulter-gen",
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
-    "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/eventing/pkg/apis/duck/v1beta1",
     "knative.dev/eventing/pkg/apis/messaging/v1alpha1",
+    "knative.dev/eventing/pkg/apis/messaging/v1beta1",
     "knative.dev/eventing/pkg/logging",
     "knative.dev/eventing/pkg/reconciler",
     "knative.dev/eventing/pkg/reconciler/names",
     "knative.dev/eventing/pkg/utils",
     "knative.dev/pkg/apis",
-    "knative.dev/pkg/apis/duck/v1alpha1",
-    "knative.dev/pkg/apis/duck/v1beta1",
+    "knative.dev/pkg/apis/duck/v1",
     "knative.dev/pkg/client/injection/kube/client",
     "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/service",
@@ -1487,9 +1466,6 @@
     "knative.dev/pkg/injection/sharedmain",
     "knative.dev/pkg/logging",
     "knative.dev/pkg/reconciler",
-    "sigs.k8s.io/controller-runtime/pkg/client",
-    "sigs.k8s.io/controller-runtime/pkg/client/fake",
-    "sigs.k8s.io/controller-runtime/pkg/reconcile",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
