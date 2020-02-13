@@ -1168,7 +1168,7 @@
   revision = "94aeca20bf0991bf33922a5938174b9147ab8ca7"
 
 [[projects]]
-  digest = "1:f6769a41d13d71bb32f3f82a6facbe5fd5532babbf5d8f81fae23f4c77bccb38"
+  digest = "1:286f5357f7e9dbda0fa92e95d992576313973c4ffc00c062b203fcb511c8153f"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck/v1alpha1",
@@ -1182,7 +1182,7 @@
 
 [[projects]]
   branch = "release-0.12"
-  digest = "1:d96b0ebf558aa72609cc1e0844653907d11545f22a2bfb5d267922ddec1c3b8a"
+  digest = "1:a27eee0ee352cd206247f68dbf8972af619f3f91b02d4ddd4f897feb3ca11399"
   name = "knative.dev/pkg"
   packages = [
     "apis",
