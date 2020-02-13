@@ -2,8 +2,8 @@ package consumer
 
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/stretchr/testify/assert"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -54,6 +54,7 @@ func createKafkaConsumerConfigMap(t *testing.T, brokers string, groupId string, 
 		constants.ConfigPropertyEnableAutoOffset:        constants.ConfigPropertyEnableAutoOffsetValue,
 		constants.ConfigPropertyAutoOffsetReset:         offset,
 		constants.ConfigPropertyQueuedMaxMessagesKbytes: constants.ConfigPropertyQueuedMaxMessagesKbytesValue,
+		constants.ConfigPropertyStatisticsInterval:      constants.ConfigPropertyStatisticsIntervalValue,
 	}
 
 	// Optionally Add The SASL ConfigMap Entries
