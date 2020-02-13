@@ -2,8 +2,8 @@ package producer
 
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/stretchr/testify/assert"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -48,9 +48,10 @@ func createKafkaProducerConfigMap(t *testing.T, brokers string, username string,
 
 	// Create The Expected Kafka Base ConfigMap
 	configMap := &kafka.ConfigMap{
-		constants.ConfigPropertyBootstrapServers: brokers,
-		constants.ConfigPropertyPartitioner:      constants.ConfigPropertyPartitionerValue,
-		constants.ConfigPropertyIdempotence:      constants.ConfigPropertyIdempotenceValue,
+		constants.ConfigPropertyBootstrapServers:   brokers,
+		constants.ConfigPropertyPartitioner:        constants.ConfigPropertyPartitionerValue,
+		constants.ConfigPropertyIdempotence:        constants.ConfigPropertyIdempotenceValue,
+		constants.ConfigPropertyStatisticsInterval: constants.ConfigPropertyStatisticsIntervalValue,
 	}
 
 	// Optionally Add The SASL ConfigMap Entries

@@ -49,8 +49,9 @@ var NewProducerWrapper = func(configMap *kafka.ConfigMap) (ProducerInterface, er
 // Utility Function For Returning The Base/Common Kafka ConfigMap (Values Shared By All Connections)
 func getBaseProducerConfigMap(brokers string) *kafka.ConfigMap {
 	return &kafka.ConfigMap{
-		constants.ConfigPropertyBootstrapServers: brokers,
-		constants.ConfigPropertyPartitioner:      constants.ConfigPropertyPartitionerValue,
-		constants.ConfigPropertyIdempotence:      constants.ConfigPropertyIdempotenceValue,
+		constants.ConfigPropertyBootstrapServers:   brokers,
+		constants.ConfigPropertyPartitioner:        constants.ConfigPropertyPartitionerValue,
+		constants.ConfigPropertyIdempotence:        constants.ConfigPropertyIdempotenceValue,
+		constants.ConfigPropertyStatisticsInterval: constants.ConfigPropertyStatisticsIntervalValue,
 	}
 }
