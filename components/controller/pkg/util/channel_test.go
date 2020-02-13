@@ -17,7 +17,6 @@ import (
 const (
 	channelName              = "testname"
 	channelNamespace         = "testnamespace"
-	channelUID               = "testuid"
 	numPartitions            = 123
 	defaultNumPartitions     = 987
 	replicationFactor        = 22
