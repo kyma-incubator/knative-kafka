@@ -61,3 +61,4 @@ controller:
   memoryLimit: 50Mi
   cpuRequest: 20m
   cpuLimit: 100m
+  metricsDomain: kyma.io/knative-kafka

@@ -388,7 +388,7 @@
 
 [[projects]]
   branch = "controller-update"
-  digest = "1:f865ad6b9b03a0a2511745dba8667b049de44b5cb9e0a34a8b3b339334654b3f"
+  digest = "1:8fe2f6b5653dc40560c7c7a185d27d58d60980207b6255a7f6f38a921b78d1fd"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/k8s",
@@ -400,7 +400,7 @@
     "components/common/pkg/log",
   ]
   pruneopts = "NUT"
-  revision = "b2c19d88e3b8ee1268f58662ee7e090f0342b296"
+  revision = "1c2c15e36f9587e896b23793e687f0587f21e430"
   source = "github.com/davyodom/knative-kafka"
 
 [[projects]]
