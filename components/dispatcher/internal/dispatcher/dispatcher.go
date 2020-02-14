@@ -8,6 +8,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"go.uber.org/zap"
+	"knative.dev/pkg/apis"
 	"strings"
 	"sync"
 	"time"
@@ -29,7 +30,7 @@ type DispatcherConfig struct {
 }
 
 type Subscription struct {
-	URI     string
+	URI     *apis.URL
 	GroupId string
 }
 
@@ -68,7 +69,7 @@ func (d *Dispatcher) StopConsumers() {
 }
 
 func (d *Dispatcher) stopConsumer(subscription Subscription) {
-	log.Logger().Info("Stopping Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
+	log.Logger().Info("Stopping Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI.String()))
 
 	d.consumers[subscription].stopCh <- true
 	delete(d.consumers, subscription)
@@ -78,7 +79,7 @@ func (d *Dispatcher) stopConsumer(subscription Subscription) {
 func (d *Dispatcher) initConsumer(subscription Subscription) (*ConsumerOffset, error) {
 
 	// Create Consumer
-	log.Logger().Info("Creating Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
+	log.Logger().Info("Creating Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI.String()))
 	consumer, err := kafkaconsumer.CreateConsumer(d.Brokers, subscription.GroupId, d.Offset, d.Username, d.Password)
 	if err != nil {
 		log.Logger().Error("Failed To Create New Consumer", zap.Error(err))
@@ -150,7 +151,7 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 					continue
 				}
 
-				_ = d.Client.Dispatch(*cloudEvent, subscription.URI) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
+				_ = d.Client.Dispatch(*cloudEvent, subscription.URI.String()) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
 
 				// Update Stored Offsets Based On The Processed Message
 				d.updateOffsets(consumerOffset.consumer, e)

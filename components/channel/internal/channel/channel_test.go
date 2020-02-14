@@ -20,7 +20,7 @@ func TestInitializeKafkaChannelLister(t *testing.T) {
 	getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
 		return fakeclientset.NewSimpleClientset(), nil
 	}
-	
+
 	// Perform The Test
 	err := InitializeKafkaChannelLister("", "")
 

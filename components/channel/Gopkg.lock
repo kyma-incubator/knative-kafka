@@ -310,8 +310,8 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:dd484a83f3938f231eea54f1acd4d8ed1dbb0c72a9e46eea4582dba748029329"
+  branch = "controller-update"
+  digest = "1:355a5581342007b19cbc1ce382db33b1d872c091e4f249567358a73368ae2c50"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -320,6 +320,7 @@
     "components/common/pkg/log",
     "components/common/pkg/prometheus",
     "components/controller/constants",
+    "components/controller/pkg/apis/knativekafka",
     "components/controller/pkg/apis/knativekafka/v1alpha1",
     "components/controller/pkg/client/clientset/versioned",
     "components/controller/pkg/client/clientset/versioned/fake",
@@ -333,7 +334,8 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "0cf553b4589a13abffe41e29e8885c057a24de70"
+  revision = "b2c19d88e3b8ee1268f58662ee7e090f0342b296"
+  source = "github.com/davyodom/knative-kafka"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -1116,10 +1118,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:35cf7a583ce19215a4f20c8ced9046e67de23461c8dbe93165a9c5adf93024cd"
+  digest = "1:4ff5d3314c4faba97e5aab2b2476f302d7b85c661f4ce80fee9f70b896c4fab6"
   name = "knative.dev/eventing"
   packages = [
-    "pkg/apis/duck/v1alpha1",
     "pkg/apis/duck/v1beta1",
     "pkg/channel",
     "pkg/configmap",
@@ -1132,14 +1133,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b14d4482f563109ddfcbce12fbf3f50aab7af7a0f62d36e89f49c5cefdb4cda8"
+  digest = "1:5e95de15c13e9883900709b996db868a1e8a42ad85c3dc19f0c8f3be80a0eea5"
   name = "knative.dev/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1",
-    "apis/duck/v1alpha1",
-    "apis/duck/v1beta1",
     "changeset",
     "configmap",
     "controller",
@@ -1155,17 +1154,6 @@
   ]
   pruneopts = "UT"
   revision = "1cc3c3e8523ca2c579eeabbc04280a85bc77e6d7"
-
-[[projects]]
-  digest = "1:68cd93696d4de06936c94bf0c510802140c2d3c956b557f3d001430d58cf676c"
-  name = "sigs.k8s.io/controller-runtime"
-  packages = [
-    "pkg/runtime/scheme",
-    "pkg/scheme",
-  ]
-  pruneopts = "UT"
-  revision = "198197fe0fd7553cadd8afcd3338f8ee4b8a7e3f"
-  version = "v0.4.0"
 
 [[projects]]
   digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"

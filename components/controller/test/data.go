@@ -142,7 +142,6 @@ func GetNewChannel(includeFinalizer bool, includeSpecProperties bool, includeSub
 
 	// Include Channel Spec Properties If Specified
 	if includeSpecProperties {
-		channel.Spec.TenantId = TenantId
 		channel.Spec.NumPartitions = NumPartitions
 		channel.Spec.ReplicationFactor = ReplicationFactor
 		channel.Spec.RetentionMillis = RetentionMillis

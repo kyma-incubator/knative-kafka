@@ -387,7 +387,7 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  branch = "master"
+  branch = "controller-update"
   digest = "1:f865ad6b9b03a0a2511745dba8667b049de44b5cb9e0a34a8b3b339334654b3f"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
@@ -400,7 +400,8 @@
     "components/common/pkg/log",
   ]
   pruneopts = "NUT"
-  revision = "0cf553b4589a13abffe41e29e8885c057a24de70"
+  revision = "b2c19d88e3b8ee1268f58662ee7e090f0342b296"
+  source = "github.com/davyodom/knative-kafka"
 
 [[projects]]
   digest = "1:5985ef4caf91ece5d54817c11ea25f182697534f8ae6521eadcd628c142ac4b6"

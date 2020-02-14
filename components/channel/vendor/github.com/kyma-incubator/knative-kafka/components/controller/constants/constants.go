@@ -40,4 +40,7 @@ const (
 	LoggingConfigVolumeName = "logging-config"
 	LoggingConfigMountPath  = "/etc/knative-kafka"
 	LoggingConfigMapName    = "knative-kafka-logging"
+
+	// ReconcilerName is the name of the reconciler
+	ReconcilerName = "KafkaChannels"
 )

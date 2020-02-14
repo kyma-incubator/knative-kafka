@@ -10,6 +10,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	"knative.dev/pkg/apis"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -109,9 +110,10 @@ func TestDispatcher(t *testing.T) {
 		testChannelKey)
 
 	// Start 1 Consumer
+	url1, _ := apis.ParseURL(testSubscriberUri1)
 	subscriptionResults := testDispatcher.UpdateSubscriptions([]Subscription{
 		{
-			URI:     testSubscriberUri1,
+			URI:     url1,
 			GroupId: testGroupId,
 		},
 	})
@@ -126,18 +128,20 @@ func TestDispatcher(t *testing.T) {
 	assert.Len(t, subscriptionResults, 0)
 	verifyConsumersCount(t, testDispatcher.consumers, 0)
 
+	url2, _ := apis.ParseURL(testSubscriberUri2)
+	url3, _ := apis.ParseURL(testSubscriberUri3)
 	// Start 3 Consumers
 	subscriptionResults = testDispatcher.UpdateSubscriptions([]Subscription{
 		{
-			URI:     testSubscriberUri1,
+			URI:     url1,
 			GroupId: testGroupId,
 		},
 		{
-			URI:     testSubscriberUri2,
+			URI:     url2,
 			GroupId: testGroupId2,
 		},
 		{
-			URI:     testSubscriberUri3,
+			URI:     url3,
 			GroupId: testGroupId3,
 		},
 	})
@@ -160,7 +164,7 @@ func TestDispatcher(t *testing.T) {
 	// Remove 2 Consumers
 	subscriptionResults = testDispatcher.UpdateSubscriptions([]Subscription{
 		{
-			URI:     testSubscriberUri1,
+			URI:     url1,
 			GroupId: testGroupId,
 		},
 	})

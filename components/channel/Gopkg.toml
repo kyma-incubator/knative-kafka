@@ -35,7 +35,10 @@
 
 [[constraint]]
    name = "github.com/kyma-incubator/knative-kafka"
-   branch = "master"
+# TODO temp dev support on this branch/fork
+#   branch = "master"
+   branch = "controller-update"
+   source = "github.com/davyodom/knative-kafka"
 
 # Match Azure version in common component
 [[override]]
