@@ -53,7 +53,7 @@ func NewRetriableCloudEventClient(exponentialBackoff bool, initialRetryInterval 
 	}
 	transport.Client = httpClient
 
-	ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(transport)
+	ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(transport, nil)
 	if err != nil {
 		panic("Unable To Create KnativeCloudEvent Client: " + err.Error())
 	}
