@@ -77,7 +77,7 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	return &controller.Impl{}
+	return impl
 }
 
 // Graceful Shutdown Hook
