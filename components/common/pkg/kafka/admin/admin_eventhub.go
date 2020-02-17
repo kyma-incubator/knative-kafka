@@ -99,18 +99,19 @@ func (c *EventHubAdminClient) createTopic(ctx context.Context, topicSpecificatio
 	// Convert Kafka Retention Millis To Azure EventHub Retention Days
 	topicRetentionDays := convertMillisToDays(topicRetentionMillis)
 
-	// Get The Azure EventHub Namespace Associated With This Topic
-	//   Or Attempt To Get One With Available Capacity (Limit 10 EventHubs Per Namespace)
+	// Attempt To Get EventHub Namespace Associated With EventHub
 	eventHubNamespace := c.cache.GetNamespace(topicName)
 	if eventHubNamespace == nil {
-		eventHubNamespace = c.cache.GetNamespaceWithMaxCapacity()
-	}
 
-	// If The EventHub Is New And No Namespaces Exist With Capacity Then Return Error
-	if eventHubNamespace == nil {
-		c.logger.Warn("Failed To Find EventHub Namespace With Available Capacity - Skipping Topic Creation", zap.String("Topic", topicName))
-		err = errors.New(fmt.Sprintf("azure namespace capacity has been exhausted - unable to create EventHub '%s'", topicName))
-		return getTopicResult(topicName, kafka.ErrInvalidConfig), err
+		// EventHub Not In Cache - Get The Least Populated Azure EventHub Namespace From The Cache
+		eventHubNamespace = c.cache.GetLeastPopulatedNamespace()
+		if eventHubNamespace == nil {
+
+			// No EventHub Namespaces Found In Cache - Return Error
+			c.logger.Warn("Found No EventHub Namespace In Cache - Skipping Topic Creation", zap.String("Topic", topicName))
+			err = errors.New(fmt.Sprintf("no azure eventhub namespaces in cache - unable to create EventHub '%s'", topicName))
+			return getTopicResult(topicName, kafka.ErrInvalidConfig), err
+		}
 	}
 
 	// If The HubManager Is Not Valid Then Return Error
@@ -130,6 +131,9 @@ func (c *EventHubAdminClient) createTopic(ctx context.Context, topicSpecificatio
 		errorCode := getEventHubErrorCode(err)
 		if errorCode == constants.EventHubErrorCodeConflict {
 			return getTopicResult(topicName, kafka.ErrTopicAlreadyExists), nil
+		} else if errorCode == constants.EventHubErrorCodeCapacityLimit {
+			c.logger.Warn("Failed To Create EventHub - Reached Capacity Limit", zap.Error(err))
+			return getTopicResult(topicName, kafka.ErrTopicException), err
 		} else if errorCode == constants.EventHubErrorCodeUnknown {
 			c.logger.Error("Failed To Create EventHub - Missing Error Code", zap.Error(err))
 			return getTopicResult(topicName, kafka.ErrUnknown), err
