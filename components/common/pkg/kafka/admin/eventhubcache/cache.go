@@ -23,7 +23,7 @@ type CacheInterface interface {
 	AddEventHub(ctx context.Context, eventhub string, namespace *Namespace)
 	RemoveEventHub(ctx context.Context, eventhub string)
 	GetNamespace(eventhub string) *Namespace
-	GetNamespaceWithMaxCapacity() *Namespace
+	GetLeastPopulatedNamespace() *Namespace
 }
 
 // Verify The Cache Struct Implements The Interface
@@ -133,11 +133,11 @@ func (c *Cache) GetNamespace(eventhub string) *Namespace {
 	return c.eventhubMap[eventhub]
 }
 
-// Get A Namespace With The Maximum Available Capacity (Load Balanced Across Namespaces ;)
-func (c *Cache) GetNamespaceWithMaxCapacity() *Namespace {
+// Get The Namespace With The Least Number Of EventHubs
+func (c *Cache) GetLeastPopulatedNamespace() *Namespace {
 
-	// Track The Namespace With The Most Capacity
-	var maxCapacityNamespace *Namespace
+	// Track The Least Populated Namespace
+	var leastPopulatedNamespace *Namespace
 
 	// Loop Over The Namespaces In The Map
 	for _, namespace := range c.namespaceMap {
@@ -147,39 +147,35 @@ func (c *Cache) GetNamespaceWithMaxCapacity() *Namespace {
 			continue
 		}
 
-		// Initialize The Max Capacity Namespace If Not Set
-		if maxCapacityNamespace == nil && namespace.Count < constants.MaxEventHubsPerNamespace {
-			maxCapacityNamespace = namespace
+		// Initialize The Least Populated Namespace If Not Set
+		if leastPopulatedNamespace == nil {
+			leastPopulatedNamespace = namespace
 			continue
 		}
 
-		// If The MaxCapacityNamespace Has Been Set
-		if maxCapacityNamespace != nil {
+		// Stop Looking If We Have An Empty Namespace (Can't get any less populated than that ; )
+		if leastPopulatedNamespace.Count == 0 {
+			break
+		}
 
-			// Stop Looking If We Have An Empty Namespace (Can't get any more capacity than that ; )
-			if maxCapacityNamespace.Count == 0 {
-				break
-			}
-
-			// Update The Max Capacity Namespace If Current Has More Capacity
-			if namespace.Count < maxCapacityNamespace.Count {
-				maxCapacityNamespace = namespace
-			}
+		// Update The Least Populated Namespace If Current Namespace Has Fewer EventHubs
+		if namespace.Count < leastPopulatedNamespace.Count {
+			leastPopulatedNamespace = namespace
 		}
 	}
 
-	// Log The Max Capacity Namespace
-	if maxCapacityNamespace != nil {
-		c.logger.Info("Max Capacity Namespace Lookup",
-			zap.String("Namespace", maxCapacityNamespace.Name),
-			zap.Int("Capacity", constants.MaxEventHubsPerNamespace-maxCapacityNamespace.Count),
+	// Log The Least Populated Namespace
+	if leastPopulatedNamespace != nil {
+		c.logger.Info("Least Populated Namespace Lookup",
+			zap.String("Namespace", leastPopulatedNamespace.Name),
+			zap.Int("Count", leastPopulatedNamespace.Count),
 		)
 	} else {
-		c.logger.Warn("Found No Azure Namespace With Available Capacity!")
+		c.logger.Warn("No Azure EventHub Namespaces In Cache!")
 	}
 
-	// Return The Max Capacity Namespace
-	return maxCapacityNamespace
+	// Return The Least Populated Namespace
+	return leastPopulatedNamespace
 }
 
 // Utility Function For Validating Kafka Secret

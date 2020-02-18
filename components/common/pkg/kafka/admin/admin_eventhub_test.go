@@ -5,11 +5,11 @@ import (
 	"fmt"
 	eventhub "github.com/Azure/azure-event-hubs-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin/eventhubcache"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 	"strconv"
 	"testing"
@@ -93,7 +93,7 @@ func TestEventHubAdminClientCreateTopicsSuccess(t *testing.T) {
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
 	mockCache.On("GetNamespace", topicName).Return(nil)
-	mockCache.On("GetNamespaceWithMaxCapacity").Return(namespace)
+	mockCache.On("GetLeastPopulatedNamespace").Return(namespace)
 	mockCache.On("AddEventHub", ctx, topicName, namespace).Return()
 
 	// Create The Kafka TopicSpecification For The Topic/EventHub To Be Created
@@ -167,7 +167,7 @@ func TestEventHubAdminClientCreateTopicsNoNamespace(t *testing.T) {
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
 	mockCache.On("GetNamespace", topicName).Return(nil)
-	mockCache.On("GetNamespaceWithMaxCapacity").Return(nil)
+	mockCache.On("GetLeastPopulatedNamespace").Return(nil)
 
 	// Create The Kafka TopicSpecification For The Topic/EventHub To Be Created
 	topicSpecifications := []kafka.TopicSpecification{{
@@ -210,7 +210,7 @@ func TestEventHubAdminClientCreateTopicsNoHubManager(t *testing.T) {
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
 	mockCache.On("GetNamespace", topicName).Return(nil)
-	mockCache.On("GetNamespaceWithMaxCapacity").Return(namespace)
+	mockCache.On("GetLeastPopulatedNamespace").Return(namespace)
 
 	// Create The Kafka TopicSpecification For The Topic/EventHub To Be Created
 	topicSpecifications := []kafka.TopicSpecification{{
@@ -258,7 +258,7 @@ func TestEventHubAdminClientCreateTopicsAlreadyExists(t *testing.T) {
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
 	mockCache.On("GetNamespace", topicName).Return(nil)
-	mockCache.On("GetNamespaceWithMaxCapacity").Return(namespace)
+	mockCache.On("GetLeastPopulatedNamespace").Return(namespace)
 
 	// Create The Kafka TopicSpecification For The Topic/EventHub To Be Created
 	topicSpecifications := []kafka.TopicSpecification{{
@@ -286,8 +286,57 @@ func TestEventHubAdminClientCreateTopicsAlreadyExists(t *testing.T) {
 	mockCache.AssertExpectations(t)
 }
 
+// Test The EventHub AdminClient CreateTopics() Functionality - Capacity Limit Path
+func TestEventHubAdminClientCreateTopicsCapacityLimit(t *testing.T) {
+
+	// Test Data
+	ctx := context.TODO()
+	topicName := "TestTopicName"
+	topicNumPartitions := 4
+	topicRetentionDays := int32(3)
+	topicRetentionMillis := int64(topicRetentionDays * constants.MillisPerDay)
+
+	// Create A Mock HubManager
+	mockHubManager := &MockHubManager{}
+	mockHubManager.On("Put", ctx, topicName, mock.Anything).
+		Return(nil, fmt.Errorf("error code: %d, expected test error", constants.EventHubErrorCodeCapacityLimit))
+
+	// Create A Namespace With The Mock HubManager
+	namespace := &eventhubcache.Namespace{HubManager: mockHubManager}
+
+	// Create A Mock EventHub Cache
+	mockCache := &MockCache{}
+	mockCache.On("GetNamespace", topicName).Return(nil)
+	mockCache.On("GetLeastPopulatedNamespace").Return(namespace)
+
+	// Create The Kafka TopicSpecification For The Topic/EventHub To Be Created
+	topicSpecifications := []kafka.TopicSpecification{{
+		Topic:         topicName,
+		NumPartitions: topicNumPartitions,
+		Config:        map[string]string{constants.TopicSpecificationConfigRetentionMs: strconv.FormatInt(topicRetentionMillis, 10)},
+	}}
+
+	// Test Logger
+	logger := log.TestLogger()
+
+	// Create A New EventHub AdminClient With Mock Cache To Test
+	adminClient := &EventHubAdminClient{logger: logger, cache: mockCache}
+
+	// Perform The Test
+	kafkaTopicResults, err := adminClient.CreateTopics(ctx, topicSpecifications)
+
+	// Verify The Results
+	assert.NotNil(t, err)
+	assert.NotNil(t, kafkaTopicResults)
+	assert.Len(t, kafkaTopicResults, 1)
+	assert.Equal(t, topicName, kafkaTopicResults[0].Topic)
+	assert.Equal(t, kafka.ErrTopicException, kafkaTopicResults[0].Error.Code())
+	mockHubManager.AssertExpectations(t)
+	mockCache.AssertExpectations(t)
+}
+
 // Test The EventHub AdminClient CreateTopics() Functionality - Error Path
-func TestEventHubAdminClientCreateTopicsAlreadyError(t *testing.T) {
+func TestEventHubAdminClientCreateTopicsError(t *testing.T) {
 
 	// Test Data
 	ctx := context.TODO()
@@ -307,7 +356,7 @@ func TestEventHubAdminClientCreateTopicsAlreadyError(t *testing.T) {
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
 	mockCache.On("GetNamespace", topicName).Return(nil)
-	mockCache.On("GetNamespaceWithMaxCapacity").Return(namespace)
+	mockCache.On("GetLeastPopulatedNamespace").Return(namespace)
 
 	// Create The Kafka TopicSpecification For The Topic/EventHub To Be Created
 	topicSpecifications := []kafka.TopicSpecification{{
@@ -550,7 +599,7 @@ func (m MockCache) GetNamespace(eventhub string) *eventhubcache.Namespace {
 	}
 }
 
-func (m MockCache) GetNamespaceWithMaxCapacity() *eventhubcache.Namespace {
+func (m MockCache) GetLeastPopulatedNamespace() *eventhubcache.Namespace {
 	args := m.Called()
 	response := args.Get(0)
 	if response == nil {
