@@ -5,8 +5,7 @@ const (
 	KnativeEventingNamespace = "knative-eventing"
 
 	// Knative Controller Naming
-	KafkaChannelControllerAgentName      = "kafka-channel-controller"
-	KafkaSubscriptionControllerAgentName = "kafka-subscription-controller"
+	KafkaChannelControllerAgentName = "kafka-channel-controller"
 
 	// CRD Kinds
 	KnativeChannelKind      = "Channel"
@@ -24,10 +23,7 @@ const (
 	// correctly.
 	// Refer to: https://github.com/kyma-incubator/knative-kafka/blob/master/components/channel/cmd/main.go
 	HttpContainerPortNumber = 8080
-
-	// Kafka Secret Label
-	KafkaSecretLabel = "knativekafka.kyma-project.io/kafka-secret"
-
+	
 	// Kafka Secret Data Keys
 	KafkaSecretDataKeyBrokers  = "brokers"
 	KafkaSecretDataKeyUsername = "username"

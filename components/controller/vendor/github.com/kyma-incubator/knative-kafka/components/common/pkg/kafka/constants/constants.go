@@ -15,10 +15,12 @@ const (
 	KafkaSecretKeyPassword  = "password"
 
 	// Common Kafka Configuration Properties
-	ConfigPropertyDebug                 = "debug"
-	ConfigPropertyBootstrapServers      = "bootstrap.servers"
-	ConfigPropertyRequestTimeoutMs      = "request.timeout.ms"
-	ConfigPropertyRequestTimeoutMsValue = 60000
+	ConfigPropertyDebug                   = "debug"
+	ConfigPropertyBootstrapServers        = "bootstrap.servers"
+	ConfigPropertyRequestTimeoutMs        = "request.timeout.ms"
+	ConfigPropertyRequestTimeoutMsValue   = 60000
+	ConfigPropertyStatisticsInterval      = "statistics.interval.ms"
+	ConfigPropertyStatisticsIntervalValue = 5000
 
 	// Kafka Security/Auth Configuration Properties
 	ConfigPropertySecurityProtocol      = "security.protocol"
@@ -48,9 +50,10 @@ const (
 	TopicSpecificationConfigRetentionMs = "retention.ms"
 
 	// EventHub Error Codes
-	EventHubErrorCodeUnknown      = -2
-	EventHubErrorCodeParseFailure = -1
-	EventHubErrorCodeConflict     = 409
+	EventHubErrorCodeUnknown       = -2
+	EventHubErrorCodeParseFailure  = -1
+	EventHubErrorCodeCapacityLimit = 403
+	EventHubErrorCodeConflict      = 409
 
 	// EventHub Constraints
 	MaxEventHubNamespaces    = 100
