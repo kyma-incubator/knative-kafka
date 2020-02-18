@@ -60,5 +60,6 @@ func getBaseConsumerConfigMap(brokers string, groupId string, offset string) *ka
 		constants.ConfigPropertyEnableAutoOffset:        constants.ConfigPropertyEnableAutoOffsetValue,
 		constants.ConfigPropertyAutoOffsetReset:         offset,
 		constants.ConfigPropertyQueuedMaxMessagesKbytes: constants.ConfigPropertyQueuedMaxMessagesKbytesValue,
+		constants.ConfigPropertyStatisticsInterval:      constants.ConfigPropertyStatisticsIntervalValue,
 	}
 }
