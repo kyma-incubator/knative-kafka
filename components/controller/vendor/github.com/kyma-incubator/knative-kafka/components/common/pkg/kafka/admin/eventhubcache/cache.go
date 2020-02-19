@@ -211,7 +211,7 @@ func (c *Cache) validateKafkaSecret(secret *corev1.Secret) bool {
 				zap.String("Brokers", brokers),
 				zap.String("Username", username),
 				zap.String("Password", pwdString),
-				zap.String("Namespace", namespace), )
+				zap.String("Namespace", namespace))
 		}
 	}
 

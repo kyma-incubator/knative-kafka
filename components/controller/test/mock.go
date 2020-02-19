@@ -1,24 +1,5 @@
 package test
 
-import (
-	"context"
-	"errors"
-	"fmt"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
-	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
-	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
-	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
-	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-)
-
 // Mock Constants
 const (
 	MockGetFnKafkaChannelErrorMessage = "mock Get() KafkaChannel error"
@@ -34,6 +15,7 @@ const (
 	MockStatusUpdateFnChannelErrorMessage = "mock Status().Update() KafkaChannel error"
 )
 
+/*
 //
 // Mock Client
 //
@@ -569,4 +551,4 @@ func (mc *MockConsumer) Subscribe(topic string, rebalanceCb kafka.RebalanceCb) e
 
 func (mc *MockConsumer) sendMessage(message kafka.Event) {
 	mc.events <- message
-}
+}*/

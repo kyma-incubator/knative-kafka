@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	eventingNames "knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
 	"strconv"
@@ -141,7 +141,6 @@ func GetNewChannel(includeFinalizer bool, includeSpecProperties bool, includeSub
 
 	// Include Channel Spec Properties If Specified
 	if includeSpecProperties {
-		channel.Spec.TenantId = TenantId
 		channel.Spec.NumPartitions = NumPartitions
 		channel.Spec.ReplicationFactor = ReplicationFactor
 		channel.Spec.RetentionMillis = RetentionMillis
@@ -149,15 +148,11 @@ func GetNewChannel(includeFinalizer bool, includeSpecProperties bool, includeSub
 
 	// Append Subscribers To Channel Spec If Specified
 	if includeSubscribers {
-		channel.Spec.Subscribable = &eventingduckv1alpha1.Subscribable{
-			Subscribers: []eventingduckv1alpha1.SubscriberSpec{
-				{
-					UID: SubscriberName,
-					SubscriberURI: &apis.URL{
-						Scheme: "http",
-						Host:   SubscriberURI,
-					},
-				},
+		url, _ := apis.ParseURL(SubscriberURI)
+		channel.Spec.Subscribers = []eventingduckv1beta1.SubscriberSpec{
+			{
+				UID:           SubscriberName,
+				SubscriberURI: url,
 			},
 		}
 	}
@@ -458,7 +453,6 @@ func GetNewK8SDispatcherService(resourceVersion int) *corev1.Service {
 			OwnerReferences: []metav1.OwnerReference{
 				GetNewChannelOwnerRef(true),
 			},
-			ResourceVersion: strconv.Itoa(resourceVersion),
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{

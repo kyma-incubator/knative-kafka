@@ -1,25 +1,5 @@
 package test
 
-import (
-	"context"
-	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
-	"knative.dev/pkg/apis"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
-)
-
 //
 // Utilities For Table Based Testing Of The DataFlow Controller
 //
@@ -28,7 +8,7 @@ import (
 // The fake K8S client is used to track RuntimeObject state.
 // The fake K8S client does NOT perform deletion of Owned RuntimeObjects.
 //
-
+/*
 // TestCase Defines A Single Test Case (Initial/Final States)
 type TestCase struct {
 	// Descriptive Name For TestCase - Will Be Passed To t.Run()
@@ -48,7 +28,7 @@ type TestCase struct {
 	InitialState []runtime.Object
 
 	// Optional Mock Implementation Of The Fake Client Get, List, Update, Delete
-	Mocks Mocks
+	//Mocks Mocks
 
 	// The Expected Result (If Any) Returned From The Reconcile() Function
 	ExpectedResult reconcile.Result
@@ -214,4 +194,4 @@ func (tc *TestCase) verifyExpectedAbsent(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.True(t, apierrors.IsNotFound(err))
 	}
-}
+}*/
