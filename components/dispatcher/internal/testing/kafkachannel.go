@@ -3,12 +3,11 @@ package testing
 import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/apis"
+	"time"
 )
 
 // KafkaChannelOption enables further configuration of a KafkaChannel.
@@ -57,11 +56,11 @@ func WithKafkaChannelAddress(a string) KafkaChannelOption {
 
 func WithSubscriber(uid types.UID, uri string) KafkaChannelOption {
 	return func(nc *v1alpha1.KafkaChannel) {
-		if nc.Spec.Subscribable == nil {
-			nc.Spec.Subscribable = &duckv1alpha1.Subscribable{}
+		if nc.Spec.Subscribers == nil {
+			nc.Spec.Subscribers = []v1beta1.SubscriberSpec{}
 		}
 
-		nc.Spec.Subscribable.Subscribers = append(nc.Spec.Subscribable.Subscribers, duckv1alpha1.SubscriberSpec{
+		nc.Spec.Subscribers = append(nc.Spec.Subscribers, v1beta1.SubscriberSpec{
 			UID: uid,
 			SubscriberURI: &apis.URL{
 				Scheme: "http",
@@ -73,11 +72,11 @@ func WithSubscriber(uid types.UID, uri string) KafkaChannelOption {
 
 func WithSubscriberReady(uid types.UID) KafkaChannelOption {
 	return func(nc *v1alpha1.KafkaChannel) {
-		if nc.Status.SubscribableStatus == nil {
-			nc.Status.SubscribableStatus = &duckv1alpha1.SubscribableStatus{}
+		if nc.Status.Subscribers == nil {
+			nc.Status.Subscribers = []v1beta1.SubscriberStatus{}
 		}
 
-		nc.Status.SubscribableStatus.Subscribers = append(nc.Status.SubscribableStatus.Subscribers, duckv1alpha1.SubscriberStatus{
+		nc.Status.SubscribableStatus.Subscribers = append(nc.Status.SubscribableStatus.Subscribers, v1beta1.SubscriberStatus{
 			Ready: v1.ConditionTrue,
 			UID:   uid,
 		})

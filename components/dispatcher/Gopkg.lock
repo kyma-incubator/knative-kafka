@@ -303,8 +303,8 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:f80e4397ffc8f9e8c70753d312e4b761db039b461666c3cd0a2587ae24c8192b"
+  branch = "knative-eventing-controller-refactor"
+  digest = "1:3bc857306b7540020460a8b384502fc357346ba5a3caba9b29351ccffbc57a01"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -312,6 +312,7 @@
     "components/common/pkg/kafka/util",
     "components/common/pkg/log",
     "components/common/pkg/prometheus",
+    "components/controller/pkg/apis/knativekafka",
     "components/controller/pkg/apis/knativekafka/v1alpha1",
     "components/controller/pkg/client/clientset/versioned",
     "components/controller/pkg/client/clientset/versioned/fake",
@@ -325,15 +326,8 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "f2989a9b7e85c8327bdb13fb3b527875e332d9a5"
-
-[[projects]]
-  branch = "master"
-  digest = "1:fc2b04b0069d6b10bdef96d278fe20c345794009685ed3c8c7f1a6dc023eefec"
-  name = "github.com/mattbaird/jsonpatch"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "81af80346b1a01caae0cbc27fd3c1ba5b11e189f"
+  revision = "cc6f6fb54f54568772765965119a0cd490bef9d7"
+  source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -641,6 +635,14 @@
   ]
   pruneopts = "UT"
   revision = "ac4f524c1612b88bd3505cc9c0d02f3d266cd9af"
+
+[[projects]]
+  digest = "1:7d4fd782f2a710d08834b2c01742b3bba7fb0248383f9cc6c3dc95b3025689d7"
+  name = "gomodules.xyz/jsonpatch"
+  packages = ["v2"]
+  pruneopts = "UT"
+  revision = "e8422f09d27ee2c8cfb2c7f8089eb9eeb0764849"
+  version = "v2.0.1"
 
 [[projects]]
   branch = "master"
@@ -1145,23 +1147,21 @@
   revision = "94aeca20bf0991bf33922a5938174b9147ab8ca7"
 
 [[projects]]
-  digest = "1:f6769a41d13d71bb32f3f82a6facbe5fd5532babbf5d8f81fae23f4c77bccb38"
+  branch = "master"
+  digest = "1:82b1c05da000025f15ae1b6285dbeef40c19c863f3d7575441e49c0806380185"
   name = "knative.dev/eventing"
-  packages = ["pkg/apis/duck/v1alpha1"]
+  packages = ["pkg/apis/duck/v1beta1"]
   pruneopts = "UT"
-  revision = "8a92a8c91447a6ff71e4be97a42c548790d52a22"
-  version = "v0.12.0"
+  revision = "d23a1ad4418e9b34f242b4012d32e9eddc57c4d8"
 
 [[projects]]
-  branch = "release-0.12"
-  digest = "1:d96b0ebf558aa72609cc1e0844653907d11545f22a2bfb5d267922ddec1c3b8a"
+  branch = "master"
+  digest = "1:d952cb0e1a8f8bf16269c64ccb6e8509f67c49774958797cc240e88ecfbca8c7"
   name = "knative.dev/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1",
-    "apis/duck/v1alpha1",
-    "apis/duck/v1beta1",
     "changeset",
     "configmap",
     "controller",
@@ -1173,6 +1173,7 @@
     "logging/testing",
     "metrics",
     "metrics/metricskey",
+    "reconciler",
     "reconciler/testing",
     "signals",
     "system",
@@ -1180,18 +1181,7 @@
     "tracker",
   ]
   pruneopts = "UT"
-  revision = "b8dc5fbc6d2f4717a69d15382921a51f93ab4cbb"
-
-[[projects]]
-  digest = "1:68cd93696d4de06936c94bf0c510802140c2d3c956b557f3d001430d58cf676c"
-  name = "sigs.k8s.io/controller-runtime"
-  packages = [
-    "pkg/runtime/scheme",
-    "pkg/scheme",
-  ]
-  pruneopts = "UT"
-  revision = "198197fe0fd7553cadd8afcd3338f8ee4b8a7e3f"
-  version = "v0.4.0"
+  revision = "5d8a01d12cc825688b14117af294139fee2270eb"
 
 [[projects]]
   digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
@@ -1241,7 +1231,7 @@
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
-    "knative.dev/eventing/pkg/apis/duck/v1alpha1",
+    "knative.dev/eventing/pkg/apis/duck/v1beta1",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/controller",
     "knative.dev/pkg/logging",
