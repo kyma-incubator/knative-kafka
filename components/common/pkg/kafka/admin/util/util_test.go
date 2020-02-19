@@ -1,9 +1,9 @@
 package util
 
 import (
-	"github.com/stretchr/testify/assert"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
