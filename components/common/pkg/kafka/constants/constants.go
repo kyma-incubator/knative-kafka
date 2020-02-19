@@ -54,9 +54,10 @@ const (
 	TopicSpecificationConfigRetentionMs = "retention.ms"
 
 	// EventHub Error Codes
-	EventHubErrorCodeUnknown      = -2
-	EventHubErrorCodeParseFailure = -1
-	EventHubErrorCodeConflict     = 409
+	EventHubErrorCodeUnknown       = -2
+	EventHubErrorCodeParseFailure  = -1
+	EventHubErrorCodeCapacityLimit = 403
+	EventHubErrorCodeConflict      = 409
 
 	// EventHub Constraints
 	MaxEventHubNamespaces    = 100

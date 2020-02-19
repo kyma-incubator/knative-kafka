@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	eventhub "github.com/Azure/azure-event-hubs-go"
-	"github.com/stretchr/testify/assert"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -249,8 +249,8 @@ func TestGetNamespace(t *testing.T) {
 	assert.Equal(t, namespaceSecret2, namespace.Secret)
 }
 
-// Test The Cache's GetNamespaceWithMaxCapacity() Functionality
-func TestGetNamespaceWithMaxCapacity(t *testing.T) {
+// Test The Cache's GetLeastPopulatedNamespace() Functionality
+func TestGetLeastPopulatedNamespace(t *testing.T) {
 
 	// Test Data
 	namespaceName1 := "TestNamespaceName1"
@@ -289,7 +289,7 @@ func TestGetNamespaceWithMaxCapacity(t *testing.T) {
 	}
 
 	// Perform The Test
-	namespace := cache.GetNamespaceWithMaxCapacity()
+	namespace := cache.GetLeastPopulatedNamespace()
 
 	// Verify Results
 	assert.NotNil(t, namespace)
