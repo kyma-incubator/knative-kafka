@@ -6,6 +6,7 @@ import (
 	"github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/env"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/producer"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
@@ -37,6 +38,10 @@ func main() {
 		logger.Fatal("Invalid / Missing Environment Variables - Terminating")
 		return // Quiet The Compiler ; )
 	}
+
+	// Start The Liveness And Readiness Servers
+	health := health.NewHealthServer("8082")
+	health.Start()
 
 	// Start The Prometheus Metrics Server (Prometheus)
 	metricsServer := prometheus.NewMetricsServer(environment.MetricsPort, "/metrics")
@@ -77,6 +82,9 @@ func main() {
 	if err != nil {
 		logger.Error("Failed To Start Event Receiver", zap.Error(err))
 	}
+
+	// Stop The Liveness And Readiness Servers
+	health.Stop()
 
 	// Close The K8S KafkaChannel Lister & The Kafka Producer
 	channel.Close()
