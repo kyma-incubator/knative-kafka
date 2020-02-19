@@ -48,10 +48,13 @@ func createKafkaProducerConfigMap(t *testing.T, brokers string, username string,
 
 	// Create The Expected Kafka Base ConfigMap
 	configMap := &kafka.ConfigMap{
-		constants.ConfigPropertyBootstrapServers:   brokers,
-		constants.ConfigPropertyPartitioner:        constants.ConfigPropertyPartitionerValue,
-		constants.ConfigPropertyIdempotence:        constants.ConfigPropertyIdempotenceValue,
-		constants.ConfigPropertyStatisticsInterval: constants.ConfigPropertyStatisticsIntervalValue,
+		constants.ConfigPropertyBootstrapServers:      brokers,
+		constants.ConfigPropertyPartitioner:           constants.ConfigPropertyPartitionerValue,
+		constants.ConfigPropertyIdempotence:           constants.ConfigPropertyIdempotenceValue,
+		constants.ConfigPropertyStatisticsInterval:    constants.ConfigPropertyStatisticsIntervalValue,
+		constants.ConfigPropertyRequestTimeoutMs:      constants.ConfigPropertyRequestTimeoutMsValue,
+		constants.ConfigPropertyMetadataMaxAgeMs:      constants.ConfigPropertyMetadataMaxAgeMsValue,
+		constants.ConfigPropertySocketKeepAliveEnable: constants.ConfigPropertySocketKeepAliveEnableValue,
 	}
 
 	// Optionally Add The SASL ConfigMap Entries
