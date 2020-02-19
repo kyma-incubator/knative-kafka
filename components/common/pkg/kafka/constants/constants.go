@@ -15,12 +15,16 @@ const (
 	KafkaSecretKeyPassword  = "password"
 
 	// Common Kafka Configuration Properties
-	ConfigPropertyDebug                   = "debug"
-	ConfigPropertyBootstrapServers        = "bootstrap.servers"
-	ConfigPropertyRequestTimeoutMs        = "request.timeout.ms"
-	ConfigPropertyRequestTimeoutMsValue   = 60000
-	ConfigPropertyStatisticsInterval      = "statistics.interval.ms"
-	ConfigPropertyStatisticsIntervalValue = 5000
+	ConfigPropertyDebug                      = "debug"
+	ConfigPropertyBootstrapServers           = "bootstrap.servers"
+	ConfigPropertyRequestTimeoutMs           = "request.timeout.ms"
+	ConfigPropertyRequestTimeoutMsValue      = 30000
+	ConfigPropertyStatisticsInterval         = "statistics.interval.ms"
+	ConfigPropertyStatisticsIntervalValue    = 5000
+	ConfigPropertySocketKeepAliveEnable      = "socket.keepalive.enable"
+	ConfigPropertySocketKeepAliveEnableValue = true
+	ConfigPropertyMetadataMaxAgeMs           = "metadata.max.age.ms"
+	ConfigPropertyMetadataMaxAgeMsValue      = 180000
 
 	// Kafka Security/Auth Configuration Properties
 	ConfigPropertySecurityProtocol      = "security.protocol"
