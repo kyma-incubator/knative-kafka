@@ -23,7 +23,7 @@ const (
 	// correctly.
 	// Refer to: https://github.com/kyma-incubator/knative-kafka/blob/master/components/channel/cmd/main.go
 	HttpContainerPortNumber = 8080
-	
+
 	// Kafka Secret Data Keys
 	KafkaSecretDataKeyBrokers  = "brokers"
 	KafkaSecretDataKeyUsername = "username"
@@ -36,4 +36,8 @@ const (
 	LoggingConfigVolumeName = "logging-config"
 	LoggingConfigMountPath  = "/etc/knative-kafka"
 	LoggingConfigMapName    = "knative-kafka-logging"
+
+	// TODO - see if davy was using this anywhere ????  (he added it)
+	// ReconcilerName is the name of the reconciler
+	ReconcilerName = "KafkaChannels"
 )

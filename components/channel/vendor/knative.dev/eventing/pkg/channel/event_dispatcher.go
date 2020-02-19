@@ -30,16 +30,13 @@ import (
 	pkgtracing "knative.dev/pkg/tracing"
 
 	"knative.dev/eventing/pkg/kncloudevents"
-	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/eventing/pkg/utils"
 )
 
 const (
 	correlationIDHeaderName = "Knative-Correlation-Id"
 
-	// TODO make these constants configurable (either as env variables, config map).
-	//  Issue: https://github.com/knative/eventing/issues/1777
-	// Constants for the underlying HTTP Client transport. These would enable better connection reuse.
+	// Defaults for the underlying HTTP Client transport. These would enable better connection reuse.
 	// Set them on a 10:1 ratio, but this would actually depend on the Subscriptions' subscribers and the workload itself.
 	// These are magic numbers, partly set based on empirical evidence running performance workloads, and partly
 	// based on what serving is doing. See https://github.com/knative/serving/blob/master/pkg/network/transports.go.
@@ -81,6 +78,11 @@ type EventDispatcher struct {
 // NewEventDispatcher creates a new event dispatcher that can dispatch
 // events to HTTP destinations.
 func NewEventDispatcher(logger *zap.Logger) *EventDispatcher {
+	return NewEventDispatcherFromConfig(logger, defaultEventDispatcherConfig)
+}
+
+// NewEventDispatcherFromConfig creates a new event dispatcher based on config.
+func NewEventDispatcherFromConfig(logger *zap.Logger, config EventDispatcherConfig) *EventDispatcher {
 	httpTransport, err := cloudevents.NewHTTPTransport(
 		cloudevents.WithBinaryEncoding(),
 		cloudevents.WithMiddleware(pkgtracing.HTTPSpanMiddleware))
@@ -88,8 +90,8 @@ func NewEventDispatcher(logger *zap.Logger) *EventDispatcher {
 		logger.Fatal("Unable to create CE transport", zap.Error(err))
 	}
 	cArgs := kncloudevents.ConnectionArgs{
-		MaxIdleConns:        defaultMaxIdleConnections,
-		MaxIdleConnsPerHost: defaultMaxIdleConnectionsPerHost,
+		MaxIdleConns:        config.MaxIdleConns,
+		MaxIdleConnsPerHost: config.MaxIdleConnsPerHost,
 	}
 	ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(httpTransport, &cArgs)
 	if err != nil {
@@ -168,7 +170,7 @@ func (d *EventDispatcher) DispatchEventWithDelivery(ctx context.Context, event c
 func (d *EventDispatcher) executeRequest(ctx context.Context, url *url.URL, event cloudevents.Event) (context.Context, *cloudevents.Event, error) {
 	d.logger.Debug("Dispatching event", zap.String("event.id", event.ID()), zap.String("url", url.String()))
 	originalTransportCTX := cloudevents.HTTPTransportContextFrom(ctx)
-	sendingCTX := d.generateSendingContext(originalTransportCTX, url, event)
+	sendingCTX := utils.SendingContextFrom(ctx, originalTransportCTX, url)
 
 	replyCTX, reply, err := d.ceClient.Send(sendingCTX, event)
 	if err != nil {
@@ -181,15 +183,6 @@ func (d *EventDispatcher) executeRequest(ctx context.Context, url *url.URL, even
 	return replyCTX, reply, nil
 }
 
-func (d *EventDispatcher) generateSendingContext(originalTransportCTX cehttp.TransportContext, url *url.URL, event cloudevents.Event) context.Context {
-	sctx := utils.ContextFrom(originalTransportCTX, url)
-	sctx, err := tracing.AddSpanFromTraceparentAttribute(sctx, url.Path, event)
-	if err != nil {
-		d.logger.Info("Unable to connect outgoing span", zap.Error(err))
-	}
-	return sctx
-}
-
 func generateReplyContext(rctx context.Context, originalTransportCTX cehttp.TransportContext) (context.Context, error) {
 	// rtctx = Reply transport context
 	rtctx := cloudevents.HTTPTransportContextFrom(rctx)
@@ -197,12 +190,12 @@ func generateReplyContext(rctx context.Context, originalTransportCTX cehttp.Tran
 		// Reject non-successful responses.
 		return rctx, fmt.Errorf("unexpected HTTP response, expected 2xx, got %d", rtctx.StatusCode)
 	}
-	headers := utils.PassThroughHeaders(rtctx.Header)
+	rctx = utils.SendingContextFrom(rctx, rtctx, nil)
 	if correlationID, ok := originalTransportCTX.Header[correlationIDHeaderName]; ok {
-		headers[correlationIDHeaderName] = correlationID
+		for _, v := range correlationID {
+			rctx = cloudevents.ContextWithHeader(rctx, correlationIDHeaderName, v)
+		}
 	}
-	rtctx.Header = http.Header(headers)
-	rctx = cehttp.WithTransportContext(rctx, rtctx)
 	return rctx, nil
 }
 

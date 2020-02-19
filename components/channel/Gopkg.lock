@@ -123,7 +123,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:ebe7ae214ffe3d2a4160849d733703557e10761c54b94d5ee2501ce4077bc59e"
+  digest = "1:c0c494a7854a012b8fbcb931aa1258ad27478d29bbaa9a013112dd59861eaf5e"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -140,8 +140,7 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "UT"
-  revision = "d289f68c35e89dd9b6a32b1d41faf60a0d9d090a"
-  version = "v0.11.0"
+  revision = "427e8cf75237fdc7d4bb6c496398d7288efb8921"
 
 [[projects]]
   digest = "1:160ab0a25b5cc8c8741882b75db882e18806bb1dba87680ef87604aca763bdae"
@@ -310,8 +309,8 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:fc9cf7d687ef70f0a6ed0b611db72f8a24b67fe79d3bc0d8e2363ff17d6a59ab"
+  branch = "knative-eventing-controller-refactor"
+  digest = "1:6e6fec4a9b401e22fdc87b3b1c95e3b7b70fcdbb28c12c1ce2ab10b4159e283b"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -320,6 +319,7 @@
     "components/common/pkg/log",
     "components/common/pkg/prometheus",
     "components/controller/constants",
+    "components/controller/pkg/apis/knativekafka",
     "components/controller/pkg/apis/knativekafka/v1alpha1",
     "components/controller/pkg/client/clientset/versioned",
     "components/controller/pkg/client/clientset/versioned/fake",
@@ -333,15 +333,8 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "f2989a9b7e85c8327bdb13fb3b527875e332d9a5"
-
-[[projects]]
-  branch = "master"
-  digest = "1:fc2b04b0069d6b10bdef96d278fe20c345794009685ed3c8c7f1a6dc023eefec"
-  name = "github.com/mattbaird/jsonpatch"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "81af80346b1a01caae0cbc27fd3c1ba5b11e189f"
+  revision = "b051806d133dfffb78c93b0af49c7b0f13a93c40"
+  source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -650,6 +643,14 @@
   ]
   pruneopts = "UT"
   revision = "2b6af5f9ace725aefaab9e4e3abbcdd9f07ef5bc"
+
+[[projects]]
+  digest = "1:7d4fd782f2a710d08834b2c01742b3bba7fb0248383f9cc6c3dc95b3025689d7"
+  name = "gomodules.xyz/jsonpatch"
+  packages = ["v2"]
+  pruneopts = "UT"
+  revision = "e8422f09d27ee2c8cfb2c7f8089eb9eeb0764849"
+  version = "v2.0.1"
 
 [[projects]]
   branch = "master"
@@ -1115,10 +1116,11 @@
   revision = "94aeca20bf0991bf33922a5938174b9147ab8ca7"
 
 [[projects]]
-  digest = "1:ae1c597f5f3b3258ff674bfbb825ae29fb80ca77231e96ce2e49b189e437d8b5"
+  branch = "master"
+  digest = "1:8faecd5fd655889992f805fba7d040ea03ee231c059397f5ab1e72e365b7136e"
   name = "knative.dev/eventing"
   packages = [
-    "pkg/apis/duck/v1alpha1",
+    "pkg/apis/duck/v1beta1",
     "pkg/channel",
     "pkg/configmap",
     "pkg/kncloudevents",
@@ -1126,19 +1128,16 @@
     "pkg/utils",
   ]
   pruneopts = "UT"
-  revision = "8a92a8c91447a6ff71e4be97a42c548790d52a22"
-  version = "v0.12.0"
+  revision = "c9e40a074cd5323975f823dc6695ebc8e6a16458"
 
 [[projects]]
-  branch = "release-0.12"
-  digest = "1:3d2e3bdb3851feb7bcc361912ac15c752e730b711fcf8dba1de2825c9b1c4699"
+  branch = "master"
+  digest = "1:dd1fe02f9ca8b812b92f6dded3d2a8e5e7dbfd0d574bee34e41d13b0f5d69b25"
   name = "knative.dev/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1",
-    "apis/duck/v1alpha1",
-    "apis/duck/v1beta1",
     "changeset",
     "configmap",
     "controller",
@@ -1148,23 +1147,13 @@
     "logging/logkey",
     "metrics",
     "metrics/metricskey",
+    "reconciler",
     "tracing",
     "tracing/config",
     "tracker",
   ]
   pruneopts = "UT"
-  revision = "b8dc5fbc6d2f4717a69d15382921a51f93ab4cbb"
-
-[[projects]]
-  digest = "1:68cd93696d4de06936c94bf0c510802140c2d3c956b557f3d001430d58cf676c"
-  name = "sigs.k8s.io/controller-runtime"
-  packages = [
-    "pkg/runtime/scheme",
-    "pkg/scheme",
-  ]
-  pruneopts = "UT"
-  revision = "198197fe0fd7553cadd8afcd3338f8ee4b8a7e3f"
-  version = "v0.4.0"
+  revision = "5d8a01d12cc825688b14117af294139fee2270eb"
 
 [[projects]]
   digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
@@ -1199,6 +1188,7 @@
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/client-go/tools/clientcmd",
+    "knative.dev/eventing/pkg/apis/duck/v1beta1",
     "knative.dev/eventing/pkg/channel",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/pkg/apis",

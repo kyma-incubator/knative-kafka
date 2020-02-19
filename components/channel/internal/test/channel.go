@@ -5,6 +5,7 @@ import (
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/eventing/pkg/apis/duck/v1beta1"
 	eventingChannel "knative.dev/eventing/pkg/channel"
 	knativeapis "knative.dev/pkg/apis"
 	apiduckv1 "knative.dev/pkg/apis/duck/v1"
@@ -30,16 +31,17 @@ func CreateKafkaChannel(name string, namespace string, ready corev1.ConditionSta
 			Namespace: namespace,
 		},
 		Spec: knativekafkav1alpha1.KafkaChannelSpec{
-			TenantId:          "",
 			NumPartitions:     0,
 			ReplicationFactor: 0,
 			RetentionMillis:   0,
-			Subscribable:      nil,
+			ChannelableSpec:   v1beta1.ChannelableSpec{},
 		},
 		Status: knativekafkav1alpha1.KafkaChannelStatus{
-			Status: apiduckv1.Status{
-				Conditions: []knativeapis.Condition{
-					{Type: knativeapis.ConditionReady, Status: ready},
+			ChannelableStatus: v1beta1.ChannelableStatus{
+				Status: apiduckv1.Status{
+					Conditions: []knativeapis.Condition{
+						{Type: knativeapis.ConditionReady, Status: ready},
+					},
 				},
 			},
 		},
