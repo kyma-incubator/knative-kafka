@@ -113,7 +113,7 @@ func (c *Cache) Update(ctx context.Context) error {
 
 // Add The Specified EventHub / Namespace To The Cache
 func (c *Cache) AddEventHub(ctx context.Context, eventhub string, namespace *Namespace) {
-	if namespace != nil && namespace.Count < constants.MaxEventHubsPerNamespace {
+	if namespace != nil {
 		namespace.Count = namespace.Count + 1
 		c.eventhubMap[eventhub] = namespace
 	}

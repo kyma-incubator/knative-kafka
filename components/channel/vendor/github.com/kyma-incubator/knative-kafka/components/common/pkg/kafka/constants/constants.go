@@ -60,8 +60,7 @@ const (
 	EventHubErrorCodeConflict      = 409
 
 	// EventHub Constraints
-	MaxEventHubNamespaces    = 100
-	MaxEventHubsPerNamespace = 10
+	MaxEventHubNamespaces = 100
 
 	// KafkaChannel Constants
 	KafkaChannelServiceNameSuffix = "kafkachannel"

@@ -304,7 +304,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f238e10e2510d976b9dade6c95954cd9ae4621487ae0613791ea17247e7dfce9"
+  digest = "1:2eaaac5688cd464d2416b92eba4039a78f810a63e34d7cb0c9951f777d9ba3c7"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -325,7 +325,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "103b25a690c0b81cb2cd26a2d28cc3dcb6c6bb6e"
+  revision = "42d9ded2c89fcf08f0ebde5d22df4937b2378a81"
 
 [[projects]]
   branch = "master"
