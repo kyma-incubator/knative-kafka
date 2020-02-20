@@ -1,7 +1,6 @@
 package kafkachannel
 
 import (
-	"context"
 	"fmt"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
@@ -20,7 +19,7 @@ import (
 //
 // Reconcile The Dispatcher (Kafka Consumer) For The Specified KafkaChannel
 //
-func (r *Reconciler) reconcileDispatcher(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Get Channel Specific Logger
 	logger := util.ChannelLogger(r.Logger.Desugar(), channel)
@@ -32,7 +31,7 @@ func (r *Reconciler) reconcileDispatcher(ctx context.Context, channel *knativeka
 	}
 
 	// Reconcile The Dispatcher's Service (For Prometheus Only)
-	_, serviceErr := r.createK8sDispatcherService(ctx, channel)
+	_, serviceErr := r.createK8sDispatcherService(channel)
 	if serviceErr != nil {
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherServiceReconciliationFailed.String(), "Failed To Reconcile K8S Service For Dispatcher: %v", serviceErr)
 		logger.Error("Failed To Reconcile Dispatcher Service", zap.Error(serviceErr))
@@ -41,7 +40,7 @@ func (r *Reconciler) reconcileDispatcher(ctx context.Context, channel *knativeka
 	}
 
 	// Reconcile The Dispatcher's Deployment
-	_, deploymentErr := r.createK8sDispatcherDeployment(ctx, channel)
+	_, deploymentErr := r.createK8sDispatcherDeployment(channel)
 	if deploymentErr != nil {
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Reconcile K8S Deployment For Dispatcher: %v", deploymentErr)
 		logger.Error("Failed To Reconcile Dispatcher Deployment", zap.Error(deploymentErr))
@@ -64,10 +63,10 @@ func (r *Reconciler) reconcileDispatcher(ctx context.Context, channel *knativeka
 //
 
 // Create The K8S Dispatcher Service If Not Already Existing
-func (r *Reconciler) createK8sDispatcherService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+func (r *Reconciler) createK8sDispatcherService(channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Attempt To Get The K8S Service Associated With The Specified Channel
-	service, err := r.getK8sDispatcherService(ctx, channel)
+	service, err := r.getK8sDispatcherService(channel)
 
 	// If The K8S Service Was Not Found - Then Create A New One For The Dispatcher
 	if errors.IsNotFound(err) {
@@ -86,7 +85,7 @@ func (r *Reconciler) createK8sDispatcherService(ctx context.Context, channel *kn
 }
 
 // Get The K8S Dispatcher Service Associated With The Specified Channel
-func (r *Reconciler) getK8sDispatcherService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+func (r *Reconciler) getK8sDispatcherService(channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Get The Service By Namespace / Name
 	service := &corev1.Service{}
@@ -136,10 +135,10 @@ func (r *Reconciler) newK8sDispatcherService(channel *knativekafkav1alpha1.Kafka
 //
 
 // Create The K8S Dispatcher Deployment If Not Already Existing
-func (r *Reconciler) createK8sDispatcherDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+func (r *Reconciler) createK8sDispatcherDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Attempt To Get The K8S Dispatcher Deployment Associated With The Specified Channel
-	deployment, err := r.getK8sDispatcherDeployment(ctx, channel)
+	deployment, err := r.getK8sDispatcherDeployment(channel)
 
 	// If The K8S Dispatcher Deployment Was Not Found - Then Create A New One For The Channel
 	if errors.IsNotFound(err) {
@@ -160,7 +159,7 @@ func (r *Reconciler) createK8sDispatcherDeployment(ctx context.Context, channel 
 }
 
 // Get The K8S Dispatcher Deployment Associated With The Specified Channel
-func (r *Reconciler) getK8sDispatcherDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+func (r *Reconciler) getK8sDispatcherDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Get The Dispatcher Deployment Name For The Channel
 	deploymentName := util.DispatcherDnsSafeName(channel)

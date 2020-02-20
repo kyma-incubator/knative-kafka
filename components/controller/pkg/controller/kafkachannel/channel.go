@@ -1,7 +1,6 @@
 package kafkachannel
 
 import (
-	"context"
 	"fmt"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
@@ -22,7 +21,7 @@ import (
 )
 
 // Reconcile The "Channel" Inbound For The Specified Channel (K8S Service, Deployment)
-func (r *Reconciler) reconcileChannel(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Get Channel Specific Logger
 	logger := util.ChannelLogger(r.Logger.Desugar(), channel)
@@ -34,7 +33,7 @@ func (r *Reconciler) reconcileChannel(ctx context.Context, channel *knativekafka
 	}
 
 	// Reconcile The KafkaChannel's Service
-	channelServiceErr := r.reconcileKafkaChannelService(ctx, channel)
+	channelServiceErr := r.reconcileKafkaChannelService(channel)
 	if channelServiceErr != nil {
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service For Channel: %v", channelServiceErr)
 		logger.Error("Failed To Reconcile KafkaChannel Service", zap.Error(channelServiceErr))
@@ -43,7 +42,7 @@ func (r *Reconciler) reconcileChannel(ctx context.Context, channel *knativekafka
 	}
 
 	// Reconcile The Channel Deployment's Service
-	deploymentServiceErr := r.reconcileChannelDeploymentService(ctx, channel)
+	deploymentServiceErr := r.reconcileChannelDeploymentService(channel)
 	if deploymentServiceErr != nil {
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile Channel Deployment Service For Channel: %v", deploymentServiceErr)
 		logger.Error("Failed To Reconcile Channel Deployment Service", zap.Error(deploymentServiceErr))
@@ -52,7 +51,7 @@ func (r *Reconciler) reconcileChannel(ctx context.Context, channel *knativekafka
 	}
 
 	// Reconcile The Channel's Deployment
-	deploymentErr := r.reconcileChannelDeployment(ctx, channel)
+	deploymentErr := r.reconcileChannelDeployment(channel)
 	if deploymentErr != nil {
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelDeploymentReconciliationFailed.String(), "Failed To Reconcile Channel Deployment For Channel: %v", deploymentErr)
 		logger.Error("Failed To Reconcile Channel Deployment", zap.Error(deploymentErr))
@@ -77,10 +76,10 @@ func (r *Reconciler) reconcileChannel(ctx context.Context, channel *knativekafka
 //
 
 // Reconcile The KafkaChannel Service
-func (r *Reconciler) reconcileKafkaChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileKafkaChannelService(channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Attempt To Get The Service Associated With The Specified Channel
-	service, err := r.getKafkaChannelService(ctx, channel)
+	service, err := r.getKafkaChannelService(channel)
 	if err != nil {
 
 		// If The Service Was Not Found - Then Create A New One For The Channel
@@ -118,7 +117,7 @@ func (r *Reconciler) reconcileKafkaChannelService(ctx context.Context, channel *
 }
 
 // Get The KafkaChannel Service Associated With The Specified Channel
-func (r *Reconciler) getKafkaChannelService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+func (r *Reconciler) getKafkaChannelService(channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Get The KafkaChannel Service Name
 	serviceName := kafkautil.AppendKafkaChannelServiceNameSuffix(channel.Name)
@@ -168,10 +167,10 @@ func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 //
 
 // Reconcile The Kafka Deployment Service
-func (r *Reconciler) reconcileChannelDeploymentService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileChannelDeploymentService(channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Attempt To Get The Deployment Service Associated With The Specified Channel
-	service, err := r.getChannelDeploymentService(ctx, channel)
+	service, err := r.getChannelDeploymentService(channel)
 	if err != nil {
 
 		// If The Service Was Not Found - Then Create A New One For The Channel
@@ -210,7 +209,7 @@ func (r *Reconciler) reconcileChannelDeploymentService(ctx context.Context, chan
 }
 
 // Get The Kafka Deployment Service Associated With The Specified Channel
-func (r *Reconciler) getChannelDeploymentService(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+func (r *Reconciler) getChannelDeploymentService(channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Get The Dispatcher Deployment Name For The Channel - Use Same For Service
 	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))
@@ -265,10 +264,10 @@ func (r *Reconciler) newChannelDeploymentService(channel *knativekafkav1alpha1.K
 //
 
 // Reconcile The KafkaChannel Deployment
-func (r *Reconciler) reconcileChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileChannelDeployment(channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Attempt To Get The KafkaChannel Deployment Associated With The Specified Channel
-	deployment, err := r.getChannelDeployment(ctx, channel)
+	deployment, err := r.getChannelDeployment(channel)
 	if err != nil {
 
 		// If The KafkaChannel Deployment Was Not Found - Then Create A New Deployment For The Channel
@@ -313,7 +312,7 @@ func (r *Reconciler) reconcileChannelDeployment(ctx context.Context, channel *kn
 }
 
 // Get The KafkaChannel Deployment Associated With The Specified Channel
-func (r *Reconciler) getChannelDeployment(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+func (r *Reconciler) getChannelDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Get The Channel Deployment Name (One Channel Deployment Per Kafka Auth Secret)
 	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))

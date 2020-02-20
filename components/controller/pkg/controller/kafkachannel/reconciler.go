@@ -42,8 +42,8 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.Kafka
 	}
 
 	// Reconcile The KafkaChannel's Channel & Dispatcher Deployment/Service
-	channelError := r.reconcileChannel(ctx, channel)
-	dispatcherError := r.reconcileDispatcher(ctx, channel)
+	channelError := r.reconcileChannel(channel)
+	dispatcherError := r.reconcileDispatcher(channel)
 	if channelError != nil || dispatcherError != nil {
 		return fmt.Errorf("reconciliation failed")
 	}
