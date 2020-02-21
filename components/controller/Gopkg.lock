@@ -388,7 +388,7 @@
 
 [[projects]]
   branch = "knative-eventing-controller-refactor"
-  digest = "1:896e873b49b3d384552ecd669dfca2943b212dbbce1c20fd077a400cea644f68"
+  digest = "1:ba874649531f66abee0a3206c3946c2c3499bd8b3457499dd17ce47b4a9db7b6"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/k8s",
@@ -400,7 +400,7 @@
     "components/common/pkg/log",
   ]
   pruneopts = "NUT"
-  revision = "48e194ac7a3e525c79671fc3d9e0439e5fdddeac"
+  revision = "3539bae8d0d81630566ff6c972d64c36de717e57"
   source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
@@ -1448,15 +1448,15 @@
     "k8s.io/code-generator/cmd/defaulter-gen",
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
-    "knative.dev/eventing/pkg/apis/duck/v1beta1",
+    "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/eventing/pkg/apis/messaging/v1alpha1",
-    "knative.dev/eventing/pkg/apis/messaging/v1beta1",
     "knative.dev/eventing/pkg/logging",
     "knative.dev/eventing/pkg/reconciler",
     "knative.dev/eventing/pkg/reconciler/names",
     "knative.dev/eventing/pkg/utils",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/apis/duck/v1",
+    "knative.dev/pkg/apis/duck/v1alpha1",
     "knative.dev/pkg/client/injection/kube/client",
     "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/service",

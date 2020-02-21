@@ -304,7 +304,7 @@
 
 [[projects]]
   branch = "knative-eventing-controller-refactor"
-  digest = "1:90c84233b1415ed60dcf9f8658fbd4d5cf26af93864bb9b9961d6f0f1cfb9ba7"
+  digest = "1:ccb5df657e09e2c90e1c8ed247f32d4a86419f1b093fba819878d05e16f2bd25"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -326,7 +326,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "57865030012289d59ed73d879153f8c469b8ace4"
+  revision = "3539bae8d0d81630566ff6c972d64c36de717e57"
   source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
@@ -1237,7 +1237,6 @@
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
-    "knative.dev/eventing/pkg/apis/duck/v1beta1",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/controller",
     "knative.dev/pkg/logging",

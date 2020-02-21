@@ -310,7 +310,7 @@
 
 [[projects]]
   branch = "knative-eventing-controller-refactor"
-  digest = "1:bfdcae83b8bf9d69b2509f4da5ef0f3260998a632b60982f8f6d343a326a9656"
+  digest = "1:567f7e8b4458f3d795f353dc323de7b4be9955690bf33edce190dd4d5f0cb48e"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -333,7 +333,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "57865030012289d59ed73d879153f8c469b8ace4"
+  revision = "3539bae8d0d81630566ff6c972d64c36de717e57"
   source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
@@ -1191,7 +1191,6 @@
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/client-go/tools/clientcmd",
-    "knative.dev/eventing/pkg/apis/duck/v1beta1",
     "knative.dev/eventing/pkg/channel",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/pkg/apis",
