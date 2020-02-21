@@ -4,9 +4,11 @@ package kafkachannel
 const (
 
 	// Labels
-	DispatcherLabel = "dispatcher" // Dispatcher Label - Used To Mark Deployment As Dispatcher
-	ChannelLabel    = "channel"    // Channel Label - Used To Mark Deployment As Related To Channel
-
+	AppLabel                    = "app"
+	KafkaChannelLabel           = "kafkachannel"
+	KafkaChannelDispatcherLabel = "kafkachannel-dispatcher" // Dispatcher Label - Used To Mark Deployment As Dispatcher
+	KafkaChannelChannelLabel    = "kafkachannel-channel"    // Channel Label - Used To Mark Deployment As Related To Channel
+	
 	// Prometheus MetricsPort
 	MetricsPortName = "metrics"
 
