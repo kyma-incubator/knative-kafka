@@ -399,8 +399,8 @@ func (r *Reconciler) newChannelDeployment(channel *knativekafkav1alpha1.KafkaCha
 										Path: "/healthz",
 									},
 								},
-								InitialDelaySeconds: 10,
-								PeriodSeconds: 5,
+								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
+								PeriodSeconds: constants.HealthConfigLivenessPeriod,
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
@@ -409,8 +409,8 @@ func (r *Reconciler) newChannelDeployment(channel *knativekafkav1alpha1.KafkaCha
 										Path: "/healthy",
 									},
 								},
-								InitialDelaySeconds: 10,
-								PeriodSeconds: 5,
+								InitialDelaySeconds: constants.HealthConfigReadinessDelay,
+								PeriodSeconds: constants.HealthConfigReadinessPeriod,
 							},
 							Image: r.environment.ChannelImage,
 							Ports: []corev1.ContainerPort{

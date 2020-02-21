@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/controller"
 	dispatch "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
+	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/health"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -90,6 +91,10 @@ func main() {
 		logger.Fatal("Invalid / Missing Environment Variables - Terminating")
 	}
 
+	// Start The Liveness And Readiness Servers
+	healthServer := health.NewHealthServer("8082")
+	healthServer.Start()
+
 	// Start The Prometheus Metrics Server (Prometheus)
 	metricsServer := prometheus.NewMetricsServer(metricsPort, "/metrics")
 	metricsServer.Start()
@@ -154,10 +159,22 @@ func main() {
 	logger.Info("Starting controllers.")
 	kncontroller.StartAll(stopCh, controllers[:]...)
 
+	// Set The Liveness And Readiness Flags
+	// TODO: Set the readiness flags based on the individual components
+	healthServer.Alive = true
+	healthServer.DispatcherReady = true
+
 	<-stopCh
+
+	// Reset The Liveness and Readiness Flags In Preparation For Shutdown
+	healthServer.ShuttingDown()
+
 	// Close Consumer Connections
 	dispatcher.StopConsumers()
 
 	// Shutdown The Prometheus Metrics Server
 	metricsServer.Stop()
+
+	// Stop The Liveness And Readiness Servers
+	healthServer.Stop()
 }

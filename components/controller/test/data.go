@@ -370,8 +370,8 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 										Path: "/healthz",
 									},
 								},
-								InitialDelaySeconds: 10,
-								PeriodSeconds: 5,
+								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
+								PeriodSeconds: constants.HealthConfigLivenessPeriod,
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
@@ -380,8 +380,8 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 										Path: "/healthy",
 									},
 								},
-								InitialDelaySeconds: 10,
-								PeriodSeconds: 5,
+								InitialDelaySeconds: constants.HealthConfigReadinessDelay,
+								PeriodSeconds: constants.HealthConfigReadinessPeriod,
 							},
 							Image: ChannelImage,
 							Ports: []corev1.ContainerPort{
@@ -535,6 +535,26 @@ func GetNewK8SDispatcherDeployment(topicName string, resourceVersion int) *appsv
 						{
 							Name:  DispatcherDeploymentName,
 							Image: DispatcherImage,
+							LivenessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(8082),
+										Path: "/healthz",
+									},
+								},
+								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
+								PeriodSeconds: constants.HealthConfigLivenessPeriod,
+							},
+							ReadinessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(8082),
+										Path: "/healthy",
+									},
+								},
+								InitialDelaySeconds: constants.HealthConfigReadinessDelay,
+								PeriodSeconds: constants.HealthConfigReadinessPeriod,
+							},
 							Env: []corev1.EnvVar{
 								{
 									Name:  env.MetricsPortEnvVarKey,

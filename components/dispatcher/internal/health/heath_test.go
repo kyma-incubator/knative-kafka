@@ -33,8 +33,7 @@ func TestNewEventProxy(t *testing.T) {
 	assert.NotNil(t, health.server)
 	assert.Equal(t, ":"+testHttpPort, health.server.Addr)
 	assert.Equal(t, false, health.Alive)
-	assert.Equal(t, false, health.ChannelReady)
-	assert.Equal(t, false, health.ProducerReady)
+	assert.Equal(t, false, health.DispatcherReady)
 }
 
 // Test Unsupported Events Requests
@@ -76,16 +75,11 @@ func TestHealthHandler(t *testing.T) {
 	getEventToHandler(t, health.handleLiveness, livenessPath, http.StatusOK)
 
 	// Verify that the readiness status required setting all of the readiness flags
-	health.ChannelReady = true
-	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
-	health.ProducerReady = true
+	health.DispatcherReady = true
 	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusOK)
-	health.ChannelReady = false
-	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
 
 	// Verify that the shutdown process sets all statuses to not live / not ready
-	health.ProducerReady = true
-	health.ChannelReady = true
+	health.DispatcherReady = true
 	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusOK)
 
 	health.ShuttingDown()
@@ -109,8 +103,7 @@ func TestHealthServer(t *testing.T) {
 	getEventToServer(t, readinessUri, http.StatusInternalServerError)
 	health.Alive = true
 	getEventToServer(t, livenessUri, http.StatusOK)
-	health.ChannelReady = true
-	health.ProducerReady = true
+	health.DispatcherReady = true
 	getEventToServer(t, readinessUri, http.StatusOK)
 
 	health.Stop()
