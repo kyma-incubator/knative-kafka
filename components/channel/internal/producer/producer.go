@@ -4,6 +4,7 @@ import (
 	"errors"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/message"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/util"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
@@ -27,7 +28,9 @@ var createProducerFunctionWrapper = func(brokers string, username string, passwo
 }
 
 // Initialize The Producer
-func InitializeProducer(brokers string, username string, password string, metricsServer *prometheus.MetricsServer) error {
+func InitializeProducer(brokers string, username string, password string, metricsServer *prometheus.MetricsServer, healthServer *health.HealthServer) error {
+
+	healthServer.ProducerReady = false
 
 	// Create The Producer Using The Specified Kafka Authentication
 	producer, err := createProducerFunctionWrapper(brokers, username, password)
@@ -49,10 +52,11 @@ func InitializeProducer(brokers string, username string, password string, metric
 
 	// Fork A Go Routine To Process Kafka Events Asynchronously
 	log.Logger().Info("Starting Kafka Producer Event Processing")
-	go processProducerEvents()
+	go processProducerEvents(healthServer)
 
 	// Return Success
 	log.Logger().Info("Successfully Initialized Kafka Producer")
+	healthServer.ProducerReady = true
 	return nil
 }
 
@@ -127,7 +131,7 @@ func Close() {
 }
 
 // Infinite Loop For Processing Kafka Producer Events
-func processProducerEvents() {
+func processProducerEvents(healthServer *health.HealthServer) {
 	for {
 		select {
 		case msg := <-kafkaProducer.Events():
@@ -145,6 +149,7 @@ func processProducerEvents() {
 
 		case <-stopChannel:
 			log.Logger().Info("Terminating Producer Event Processing")
+			healthServer.ProducerReady = false
 			close(stoppedChannel) // Inform On Stop Completion & Return
 			return
 		}

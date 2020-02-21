@@ -2,6 +2,7 @@ package channel
 
 import (
 	"errors"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	knativekafkainformers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions"
@@ -34,7 +35,7 @@ var getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knati
 }
 
 // Initialize The KafkaChannel Lister Singleton
-func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string) error {
+func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string, healthServer *health.HealthServer) error {
 
 	// Create The K8S KnativeKafka Client For KafkaChannels
 	client, err := getKnativeKafkaClient(masterUrl, kubeconfigPath)
@@ -60,6 +61,7 @@ func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string) error
 
 	// Return Success
 	log.Logger().Info("Successfully Initialized KafkaChannel Lister")
+	healthServer.ChannelReady = true
 	return nil
 }
 

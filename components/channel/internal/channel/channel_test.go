@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
@@ -20,13 +21,15 @@ func TestInitializeKafkaChannelLister(t *testing.T) {
 	getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
 		return fakeclientset.NewSimpleClientset(), nil
 	}
-	
+
 	// Perform The Test
-	err := InitializeKafkaChannelLister("", "")
+	healthServer := health.NewHealthServer("8082")
+	err := InitializeKafkaChannelLister("", "", healthServer)
 
 	// Verify The Results
 	assert.Nil(t, err)
 	assert.NotNil(t, kafkaChannelLister)
+	assert.Equal(t, true, healthServer.ChannelReady)
 }
 
 // Test All The ValidateKafkaChannel() Functionality

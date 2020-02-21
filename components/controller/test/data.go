@@ -363,6 +363,26 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 					Containers: []corev1.Container{
 						{
 							Name:  ChannelDeploymentName,
+							LivenessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(8082),
+										Path: "/healthz",
+									},
+								},
+								InitialDelaySeconds: 10,
+								PeriodSeconds: 5,
+							},
+							ReadinessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(8082),
+										Path: "/healthy",
+									},
+								},
+								InitialDelaySeconds: 10,
+								PeriodSeconds: 5,
+							},
 							Image: ChannelImage,
 							Ports: []corev1.ContainerPort{
 								{

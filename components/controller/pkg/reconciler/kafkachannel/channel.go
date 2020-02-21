@@ -392,6 +392,26 @@ func (r *Reconciler) newChannelDeployment(channel *knativekafkav1alpha1.KafkaCha
 					Containers: []corev1.Container{
 						{
 							Name:  deploymentName,
+							LivenessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(8082),
+										Path: "/healthz",
+									},
+								},
+								InitialDelaySeconds: 10,
+								PeriodSeconds: 5,
+							},
+							ReadinessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(8082),
+										Path: "/healthy",
+									},
+								},
+								InitialDelaySeconds: 10,
+								PeriodSeconds: 5,
+							},
 							Image: r.environment.ChannelImage,
 							Ports: []corev1.ContainerPort{
 								{

@@ -1,25 +1,22 @@
 package health
 
 import (
+	"fmt"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
 // Test Constants
 const (
-	testHost        = "localhost"
 	testHttpPort    = "8088"
-	testUrl         = testHost + ":" + testHttpPort
+	testHttpHost    = "localhost"
 	livenessPath    = "/healthz"
 	readinessPath   = "/healthy"
-	testContentType = "application/json"
-	testUsername    = "TestUsername"
-	testPassword    = "TestPassword"
-	testMessage     = "TestMessage"
 )
 
 // Set Up Test Logger
@@ -35,6 +32,9 @@ func TestNewEventProxy(t *testing.T) {
 	assert.NotNil(t, health)
 	assert.NotNil(t, health.server)
 	assert.Equal(t, ":"+testHttpPort, health.server.Addr)
+	assert.Equal(t, false, health.Alive)
+	assert.Equal(t, false, health.ChannelReady)
+	assert.Equal(t, false, health.ProducerReady)
 }
 
 // Test Unsupported Events Requests
@@ -62,22 +62,86 @@ func TestUnsupportedEventsRequests(t *testing.T) {
 }
 
 // Test The Health Server Via The HTTP Handlers
-func TestHealthGets(t *testing.T) {
+func TestHealthHandler(t *testing.T) {
 
-	// Create A New Health Server
+	// Create A New HealthServer Server
 	health := NewHealthServer(testHttpPort)
 
+	// Verify that initially the statuses are not live / not ready
+	getEventToHandler(t, health.handleLiveness, livenessPath, http.StatusInternalServerError)
+	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
+
+	// Verify that the liveness status follows the health.Alive flag
+	health.Alive = true
 	getEventToHandler(t, health.handleLiveness, livenessPath, http.StatusOK)
+
+	// Verify that the readiness status required setting all of the readiness flags
+	health.ChannelReady = true
+	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
+	health.ProducerReady = true
 	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusOK)
+	health.ChannelReady = false
+	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
+
+	// Verify that the shutdown process sets all statuses to not live / not ready
+	health.ProducerReady = true
+	health.ChannelReady = true
+	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusOK)
+
+	health.ShuttingDown()
+	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
+	getEventToHandler(t, health.handleLiveness, livenessPath, http.StatusInternalServerError)
+
 }
 
+// Test The Health Server Via Live HTTP Calls
+func TestHealthServer(t *testing.T) {
+	health := NewHealthServer(testHttpPort)
+	health.Start()
+
+	livenessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, livenessPath))
+	assert.Nil(t, err)
+	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
+	assert.Nil(t, err)
+
+	// Test basic functionality - advanced logical tests are in TestHealthGets
+	getEventToServer(t, livenessUri, http.StatusInternalServerError)
+	getEventToServer(t, readinessUri, http.StatusInternalServerError)
+	health.Alive = true
+	getEventToServer(t, livenessUri, http.StatusOK)
+	health.ChannelReady = true
+	health.ProducerReady = true
+	getEventToServer(t, readinessUri, http.StatusOK)
+
+	health.Stop()
+}
+
+
+//
+// Private Utility Functions
+//
+
+// Sends A Simple GET Event To A URL Expecting A Specific Response Code
+func getEventToServer(t *testing.T, uri *url.URL, expectedStatus int) {
+
+	// Create An HTTP Client And Send The Request
+	client := http.DefaultClient
+	resp, err := client.Get(uri.String())
+
+	// Verify The Client Response Is As Expected
+	assert.NotNil(t, resp)
+	assert.Nil(t, err)
+	assert.Equal(t, expectedStatus, resp.StatusCode)
+}
+
+// Sends A Request To An HTTP Response Recorder Directly Expecting A Specific Response Code
 func getEventToHandler(t *testing.T, handlerFunc http.HandlerFunc, path string, expectedStatus int) {
 	// Create A Test HTTP GET Request For requested path
 	request := createNewRequest(t, "GET", path, nil)
 
 	// Create An HTTP ResponseRecorder & Handler For Request
 	responseRecorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(handlerFunc)
+	handler := handlerFunc
 
 	// Call The HTTP Request Handler Function For Path
 	handler.ServeHTTP(responseRecorder, request)
@@ -87,10 +151,6 @@ func getEventToHandler(t *testing.T, handlerFunc http.HandlerFunc, path string, 
 	assert.Equal(t, expectedStatus, statusCode)
 
 }
-
-//
-// Private Utility Functions
-//
 
 // Create A Test HTTP Request For The Specified Method / Path
 func createNewRequest(t *testing.T, method string, path string, body io.Reader) *http.Request {
@@ -107,7 +167,7 @@ func performUnsupportedMethodRequestTest(t *testing.T, method string, path strin
 
 	// Create An HTTP ResponseRecorder & Handler For Request
 	responseRecorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(handlerFunc)
+	handler := handlerFunc
 
 	// Call The HTTP Request Handler Function For Path
 	handler.ServeHTTP(responseRecorder, request)
