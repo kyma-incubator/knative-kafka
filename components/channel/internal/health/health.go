@@ -8,15 +8,17 @@ import (
 	"sync"
 )
 
+// Interface For Providing Overrides For Liveness And Readiness Information
 type Status interface {
 	IsAlive() bool
 	IsReady() bool
 }
 
+// Structure Containing Basic Liveness Information For Health Server
 type Server struct {
 	server   *http.Server // The Golang HTTP Server Instance
 	status   Status
-	httpPort string       // The HTTP Port The Health Server Listens On
+	httpPort string       // The HTTP Port The Dispatcher Server Listens On
 
 	// Synchronization Mutexes
 	liveMutex      sync.Mutex	// Synchronizes access to the liveness flag
@@ -65,6 +67,7 @@ func (hs *Server) initializeServer(httpPort string) {
 	hs.server = server
 }
 
+// Start The HTTP Server (Blocking Call)
 func (hs *Server) Start() {
 	log.Logger().Info("Starting Server HTTP Server on port " + hs.httpPort)
 	go func() {
@@ -84,6 +87,7 @@ func (hs *Server) Stop() {
 	}
 }
 
+// Access Function For "alive" Flag
 func (hs *Server) IsAlive() bool {
 	return hs.alive
 }

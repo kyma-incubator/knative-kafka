@@ -12,7 +12,7 @@ import (
 // var logger = log.TestLogger()
 
 // Test The NewDispatcherHealthServer() Functionality
-func TestNewChannelHealthServer(t *testing.T) {
+func TestNewDispatcherHealthServer(t *testing.T) {
 
 	// Create A Health Server
 	health := NewDispatcherHealthServer(testHttpPort)
@@ -37,7 +37,7 @@ func TestReadinessFlagWrites(t *testing.T) {
 }
 
 // Test The Health Server Via The HTTP Handlers
-func TestChannelHealthHandler(t *testing.T) {
+func TestDispatcherHealthHandler(t *testing.T) {
 
 	// Create A New Dispatcher Server
 	chs := NewDispatcherHealthServer(testHttpPort)
@@ -58,14 +58,14 @@ func TestChannelHealthHandler(t *testing.T) {
 }
 
 // Test The Health Server Via Live HTTP Calls
-func TestChannelHealthServer(t *testing.T) {
+func TestDispatcherHealthServer(t *testing.T) {
 	chs := NewDispatcherHealthServer(testHttpPort)
 	chs.Start()
 
 	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
 	assert.Nil(t, err)
 
-	// Test basic functionality - advanced logical tests are in TestChannelHealthHandler
+	// Test basic functionality - advanced logical tests are in TestDispatcherHealthHandler
 	getEventToServer(t, readinessUri, http.StatusInternalServerError)
 	chs.SetDispatcherReady(true)
 	getEventToServer(t, readinessUri, http.StatusOK)
