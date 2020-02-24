@@ -23,13 +23,13 @@ func TestInitializeKafkaChannelLister(t *testing.T) {
 	}
 
 	// Perform The Test
-	healthServer := health.NewHealthServer("8082")
+	healthServer := health.NewChannelHealthServer("8082")
 	err := InitializeKafkaChannelLister("", "", healthServer)
 
 	// Verify The Results
 	assert.Nil(t, err)
 	assert.NotNil(t, kafkaChannelLister)
-	assert.Equal(t, true, healthServer.ChannelReady)
+	assert.Equal(t, true, healthServer.IsChannelReady())
 }
 
 // Test All The ValidateKafkaChannel() Functionality

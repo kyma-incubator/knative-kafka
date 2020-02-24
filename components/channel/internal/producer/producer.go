@@ -28,9 +28,9 @@ var createProducerFunctionWrapper = func(brokers string, username string, passwo
 }
 
 // Initialize The Producer
-func InitializeProducer(brokers string, username string, password string, metricsServer *prometheus.MetricsServer, healthServer *health.HealthServer) error {
+func InitializeProducer(brokers string, username string, password string, metricsServer *prometheus.MetricsServer, healthServer *health.ChannelHealthServer) error {
 
-	healthServer.ProducerReady = false
+	healthServer.SetProducerReady(false)
 
 	// Create The Producer Using The Specified Kafka Authentication
 	producer, err := createProducerFunctionWrapper(brokers, username, password)
@@ -56,7 +56,7 @@ func InitializeProducer(brokers string, username string, password string, metric
 
 	// Return Success
 	log.Logger().Info("Successfully Initialized Kafka Producer")
-	healthServer.ProducerReady = true
+	healthServer.SetProducerReady(true)
 	return nil
 }
 
@@ -131,7 +131,7 @@ func Close() {
 }
 
 // Infinite Loop For Processing Kafka Producer Events
-func processProducerEvents(healthServer *health.HealthServer) {
+func processProducerEvents(healthServer *health.ChannelHealthServer) {
 	for {
 		select {
 		case msg := <-kafkaProducer.Events():
@@ -149,7 +149,7 @@ func processProducerEvents(healthServer *health.HealthServer) {
 
 		case <-stopChannel:
 			log.Logger().Info("Terminating Producer Event Processing")
-			healthServer.ProducerReady = false
+			healthServer.SetProducerReady(false)
 			close(stoppedChannel) // Inform On Stop Completion & Return
 			return
 		}

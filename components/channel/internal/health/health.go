@@ -5,81 +5,96 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"go.uber.org/zap"
 	"net/http"
+	"sync"
 )
 
-// Start The HTTP Server Listening For Requests
-
-type HealthServer struct {
-	server         *http.Server // The Golang HTTP Server Instance
-	httpPort       string       // The HTTP Port The HealthServer Server Listens On
-	Alive          bool         // A flag that controls the response to liveness requests
-	ProducerReady  bool         // A flag that the producer sets when it is ready
-	ChannelReady   bool         // A flag that the channel sets when it is ready
+type Status interface {
+	IsAlive() bool
+	IsReady() bool
 }
 
-// Creates A New EventProxy With Specified Configuration
-func NewHealthServer(httpPort string) *HealthServer {
-	health := &HealthServer{
-		httpPort:        httpPort,
-		Alive:           false,
-		ProducerReady:   false,
-		ChannelReady:    false,
+type Server struct {
+	server   *http.Server // The Golang HTTP Server Instance
+	status   Status
+	httpPort string       // The HTTP Port The Health Server Listens On
+
+	// Synchronization Mutexes
+	liveMutex      sync.Mutex	// Synchronizes access to the liveness flag
+
+	// Internal Flags
+	alive          bool         // A flag that controls the response to liveness requests
+}
+
+// Creates A New Server With Specified Configuration
+func NewHealthServer(httpPort string, healthStatus Status) *Server {
+	health := &Server{
+		httpPort:   httpPort,
+		status:     healthStatus,
 	}
 
 	// Initialize The HTTP Server
 	health.initializeServer(httpPort)
 
-	// Return The HealthServer Server
+	// Return The Health Server
 	return health
 }
 
+// Synchronized Function To Set Liveness Flag
+func (hs *Server) SetAlive(isAlive bool) {
+	hs.liveMutex.Lock()
+	hs.alive = isAlive
+	hs.liveMutex.Unlock()
+}
+
 // Set All Liveness And Readiness Flags To False
-func (ep *HealthServer) ShuttingDown() {
-	ep.Alive = false
-	ep.ProducerReady = false
-	ep.ChannelReady = false
+func (hs *Server) ShuttingDown() {
+	hs.SetAlive(false)
 }
 
 // Initialize The HTTP Server
-func (ep *HealthServer) initializeServer(httpPort string) {
+func (hs *Server) initializeServer(httpPort string) {
 
 	serveMux := http.NewServeMux()
-	serveMux.HandleFunc("/healthz", ep.handleLiveness)
-	serveMux.HandleFunc("/healthy", ep.handleReadiness)
+	serveMux.HandleFunc("/healthz", hs.handleLiveness)
+	serveMux.HandleFunc("/healthy", hs.handleReadiness)
 
 	// Create The Server For Configured HTTP Port
 	server := &http.Server{Addr: ":" + httpPort, Handler: serveMux}
 
 	// Set The Initialized HTTP Server
-	ep.server = server
+	hs.server = server
 }
 
-func (ep *HealthServer) Start() {
-	log.Logger().Info("Starting HealthServer HTTP Server on port " + ep.httpPort)
+func (hs *Server) Start() {
+	log.Logger().Info("Starting Server HTTP Server on port " + hs.httpPort)
 	go func() {
-		err := ep.server.ListenAndServe()
+		err := hs.server.ListenAndServe()
 		if err != nil {
-			log.Logger().Info("HealthServer HTTP ListenAndServe Returned Error", zap.Error(err)) // Info log since it could just be normal shutdown
+			log.Logger().Info("Server HTTP ListenAndServe Returned Error", zap.Error(err)) // Info log since it could just be normal shutdown
 		}
 	}()
 }
 
 // Stop The HTTP Server Listening For Requests
-func (ep *HealthServer) Stop() {
-	log.Logger().Info("Stopping HealthServer HTTP Server")
-	err := ep.server.Shutdown(context.TODO())
+func (hs *Server) Stop() {
+	log.Logger().Info("Stopping Server HTTP Server")
+	err := hs.server.Shutdown(context.TODO())
 	if err != nil {
-		log.Logger().Error("HealthServer Failed To Shutdown HTTP Server", zap.Error(err))
+		log.Logger().Error("Server Failed To Shutdown HTTP Server", zap.Error(err))
 	}
 }
 
+func (hs *Server) IsAlive() bool {
+	return hs.alive
+}
+
 // HTTP Request Handler For Liveness Requests (/healthz)
-func (ep *HealthServer) handleLiveness(responseWriter http.ResponseWriter, request *http.Request) {
+func (hs *Server) handleLiveness(responseWriter http.ResponseWriter, request *http.Request) {
 	if request.Method != "GET" {
 		responseWriter.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if ep.Alive {
+	if hs.status.IsAlive() {
 		responseWriter.WriteHeader(http.StatusOK)
 	} else {
 		responseWriter.WriteHeader(http.StatusInternalServerError)
@@ -87,12 +102,12 @@ func (ep *HealthServer) handleLiveness(responseWriter http.ResponseWriter, reque
 }
 
 // HTTP Request Handler For Readiness Requests (/healthy)
-func (ep *HealthServer) handleReadiness(responseWriter http.ResponseWriter, request *http.Request) {
+func (hs *Server) handleReadiness(responseWriter http.ResponseWriter, request *http.Request) {
 	if request.Method != "GET" {
 		responseWriter.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if ep.ProducerReady && ep.ChannelReady {
+	if hs.status.IsReady() {
 		responseWriter.WriteHeader(http.StatusOK)
 	} else {
 		responseWriter.WriteHeader(http.StatusInternalServerError)

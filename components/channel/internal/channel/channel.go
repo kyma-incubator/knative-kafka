@@ -35,7 +35,7 @@ var getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knati
 }
 
 // Initialize The KafkaChannel Lister Singleton
-func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string, healthServer *health.HealthServer) error {
+func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string, healthServer *health.ChannelHealthServer) error {
 
 	// Create The K8S KnativeKafka Client For KafkaChannels
 	client, err := getKnativeKafkaClient(masterUrl, kubeconfigPath)
@@ -61,7 +61,7 @@ func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string, healt
 
 	// Return Success
 	log.Logger().Info("Successfully Initialized KafkaChannel Lister")
-	healthServer.ChannelReady = true
+	healthServer.SetChannelReady(true)
 	return nil
 }
 

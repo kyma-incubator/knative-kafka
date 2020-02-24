@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// Start The Liveness And Readiness Servers
-	healthServer := health.NewHealthServer("8082")
+	healthServer := health.NewChannelHealthServer("8082")
 	healthServer.Start()
 
 	// Start The Prometheus Metrics Server (Prometheus)
@@ -78,7 +78,7 @@ func main() {
 	}
 
 	// Set The Liveness Flag - Readiness Is Set By Individual Components
-	healthServer.Alive = true
+	healthServer.SetAlive(true)
 
 	// Start Receiving Events (Blocking Call :)
 	err = knCloudEventClient.StartReceiver(context.Background(), eventReceiver.ServeHTTP)

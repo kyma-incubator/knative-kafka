@@ -92,7 +92,7 @@ func main() {
 	}
 
 	// Start The Liveness And Readiness Servers
-	healthServer := health.NewHealthServer("8082")
+	healthServer := health.NewDispatcherHealthServer("8082")
 	healthServer.Start()
 
 	// Start The Prometheus Metrics Server (Prometheus)
@@ -161,8 +161,8 @@ func main() {
 
 	// Set The Liveness And Readiness Flags
 	// TODO: Set the readiness flags based on the individual components
-	healthServer.Alive = true
-	healthServer.DispatcherReady = true
+	healthServer.SetAlive(true)
+	healthServer.SetDispatcherReady(true)
 
 	<-stopCh
 

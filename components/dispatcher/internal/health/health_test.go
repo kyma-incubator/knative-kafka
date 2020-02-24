@@ -22,26 +22,61 @@ const (
 // Set Up Test Logger
 var logger = log.TestLogger()
 
-// Test The NewEventProxy() Functionality
-func TestNewEventProxy(t *testing.T) {
+// Test struct that implements the HealthInterface functions
+type testStatus struct {
+	server *Server
+}
 
-	// Create An EventProxy
-	health := NewHealthServer(testHttpPort)
+func (ts *testStatus) IsAlive() bool {
+	return ts.server.IsAlive()
+}
+
+func (ts *testStatus) IsReady() bool {
+	return true
+}
+
+var mockStatus testStatus
+
+func getTestHealthServer() *Server {
+	health := NewHealthServer(testHttpPort, &mockStatus)
+	mockStatus.server = health
+	return health
+}
+
+// Test The NewHealthServer() Functionality
+func TestNewHealthServer(t *testing.T) {
+
+	// Create A Health Server
+	health := getTestHealthServer()
 
 	// Validate The EventProxy
 	assert.NotNil(t, health)
 	assert.NotNil(t, health.server)
 	assert.Equal(t, ":"+testHttpPort, health.server.Addr)
-	assert.Equal(t, false, health.Alive)
-	assert.Equal(t, false, health.ChannelReady)
-	assert.Equal(t, false, health.ProducerReady)
+	assert.Equal(t, false, health.alive)
+}
+
+// Test Flag Set And Reset Functions
+func TestFlagWrites(t *testing.T) {
+
+	// Create A New Health Server
+	health := getTestHealthServer()
+
+	// Test Liveness Flag
+	health.SetAlive(false)
+	assert.Equal(t, false, health.IsAlive())
+	health.SetAlive(true)
+	assert.Equal(t, true, health.IsAlive())
+
+	// Verify that Readiness is true by default
+	assert.Equal(t, true, health.status.IsReady())
 }
 
 // Test Unsupported Events Requests
 func TestUnsupportedEventsRequests(t *testing.T) {
 
-	// Create A New EventProxy & Get The Events Handler Function
-	health := NewHealthServer(testHttpPort)
+	// Create A New Health Server
+	health := getTestHealthServer()
 
 	// Test All Unsupported Events Requests
 	performUnsupportedMethodRequestTest(t, http.MethodConnect, livenessPath, health.handleLiveness)
@@ -64,39 +99,25 @@ func TestUnsupportedEventsRequests(t *testing.T) {
 // Test The Health Server Via The HTTP Handlers
 func TestHealthHandler(t *testing.T) {
 
-	// Create A New HealthServer Server
-	health := NewHealthServer(testHttpPort)
+	// Create A New Health Server
+	health := getTestHealthServer()
 
-	// Verify that initially the statuses are not live / not ready
+	// Verify that initially the statuses are not live / ready
 	getEventToHandler(t, health.handleLiveness, livenessPath, http.StatusInternalServerError)
-	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
+	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusOK)
 
 	// Verify that the liveness status follows the health.Alive flag
-	health.Alive = true
+	health.SetAlive(true)
 	getEventToHandler(t, health.handleLiveness, livenessPath, http.StatusOK)
 
-	// Verify that the readiness status required setting all of the readiness flags
-	health.ChannelReady = true
-	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
-	health.ProducerReady = true
-	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusOK)
-	health.ChannelReady = false
-	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
-
-	// Verify that the shutdown process sets all statuses to not live / not ready
-	health.ProducerReady = true
-	health.ChannelReady = true
-	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusOK)
-
+	// Verify that the shutdown process sets liveness to false
 	health.ShuttingDown()
-	getEventToHandler(t, health.handleReadiness, readinessPath, http.StatusInternalServerError)
 	getEventToHandler(t, health.handleLiveness, livenessPath, http.StatusInternalServerError)
-
 }
 
 // Test The Health Server Via Live HTTP Calls
 func TestHealthServer(t *testing.T) {
-	health := NewHealthServer(testHttpPort)
+	health := getTestHealthServer()
 	health.Start()
 
 	livenessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, livenessPath))
@@ -104,18 +125,14 @@ func TestHealthServer(t *testing.T) {
 	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
 	assert.Nil(t, err)
 
-	// Test basic functionality - advanced logical tests are in TestHealthGets
+	// Test basic functionality - advanced logical tests are in TestHealthHandler
 	getEventToServer(t, livenessUri, http.StatusInternalServerError)
-	getEventToServer(t, readinessUri, http.StatusInternalServerError)
-	health.Alive = true
-	getEventToServer(t, livenessUri, http.StatusOK)
-	health.ChannelReady = true
-	health.ProducerReady = true
 	getEventToServer(t, readinessUri, http.StatusOK)
+	health.SetAlive(true)
+	getEventToServer(t, livenessUri, http.StatusOK)
 
 	health.Stop()
 }
-
 
 //
 // Private Utility Functions

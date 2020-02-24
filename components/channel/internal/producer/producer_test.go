@@ -34,13 +34,13 @@ func TestInitializeProducer(t *testing.T) {
 	}
 
 	// Perform The Test
-	healthServer := health.NewHealthServer("8082")
+	healthServer := health.NewChannelHealthServer("8082")
 	err := InitializeProducer(brokers, username, password, prometheus.NewMetricsServer("8888", "/metrics"), healthServer)
 
 	// Verify The Results
 	assert.Nil(t, err)
 	assert.Equal(t, mockProducer, kafkaProducer)
-	assert.Equal(t, true, healthServer.ProducerReady)
+	assert.Equal(t, true, healthServer.IsProducerReady())
 
 	// Close The Producer (Or Subsequent Tests Will Fail Because processProducerEvents() GO Routine Is Still Running)
 	Close()
