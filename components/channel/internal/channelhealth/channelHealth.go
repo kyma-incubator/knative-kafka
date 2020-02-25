@@ -67,7 +67,7 @@ func (chs *Server) IsReady() bool {
 	return chs.producerReady && chs.channelReady
 }
 
-// HTTP Request Handler For Readiness Requests (/healthy)
+// HTTP Request Handler For Liveness Requests (/healthz)
 func (chs *Server) IsAlive() bool {
 	return chs.Server.IsAlive()
 }

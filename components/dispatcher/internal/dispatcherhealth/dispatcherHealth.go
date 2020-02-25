@@ -52,7 +52,7 @@ func (chs *DispatcherHealthServer) IsReady() bool {
 	return chs.dispatcherReady
 }
 
-// HTTP Request Handler For Readiness Requests (/healthy)
+// HTTP Request Handler For Liveness Requests (/healthz)
 func (chs *DispatcherHealthServer) IsAlive() bool {
 	return chs.Server.IsAlive()
 }
