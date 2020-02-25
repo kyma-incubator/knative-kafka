@@ -160,6 +160,14 @@
   version = "v1.1.1"
 
 [[projects]]
+  branch = "add-liveness-and-readiness"
+  digest = "1:921286d69ead926557e2c1e37deb7bf087368d9e1174d6cceb6eada8604723b5"
+  name = "github.com/eric-sap/knative-kafka"
+  packages = ["components/common/pkg/kafka/health"]
+  pruneopts = "UT"
+  revision = "07cdc390ed34c9fe314873e5a039f550e05378b5"
+
+[[projects]]
   digest = "1:2b5f431fa18891a2ac0e02353c83fb3bf458fced6ccecd664b429054e0c4ce3b"
   name = "github.com/evanphx/json-patch"
   packages = ["."]
@@ -1182,6 +1190,7 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/types",
     "github.com/confluentinc/confluent-kafka-go/kafka",
+    "github.com/eric-sap/knative-kafka/components/common/pkg/kafka/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",

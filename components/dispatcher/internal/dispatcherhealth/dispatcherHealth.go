@@ -1,13 +1,14 @@
-package health
+package dispatcherhealth
 
 import (
+	"github.com/eric-sap/knative-kafka/components/common/pkg/kafka/health"
 	"sync"
 )
 
 // Start The HTTP Server Listening For Requests
 
 type DispatcherHealthServer struct {
-	Server
+	health.Server
 
 	// Additional Synchronization Mutexes
 	dispatcherMutex sync.Mutex // Synchronizes access to the dispatcherReady flag
@@ -19,7 +20,7 @@ type DispatcherHealthServer struct {
 // Creates A New DispatcherHealthServer With Specified Configuration
 func NewDispatcherHealthServer(httpPort string) *DispatcherHealthServer {
 	channelHealth := &DispatcherHealthServer{}
-	health := NewHealthServer(httpPort, channelHealth)
+	health := health.NewHealthServer(httpPort, channelHealth)
 	channelHealth.Server = *health
 
 	// Return The DispatcherHealthServer

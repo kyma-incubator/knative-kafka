@@ -123,7 +123,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:9b33df68643da136000e03a390b09f9412acda3eb7031c1187f3975b04ca6e9f"
+  digest = "1:ebe7ae214ffe3d2a4160849d733703557e10761c54b94d5ee2501ce4077bc59e"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -140,8 +140,8 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "UT"
-  revision = "423680168ea46409121b5ef13ad563d4f0539fcb"
-  version = "v0.10.2"
+  revision = "d289f68c35e89dd9b6a32b1d41faf60a0d9d090a"
+  version = "v0.11.0"
 
 [[projects]]
   digest = "1:160ab0a25b5cc8c8741882b75db882e18806bb1dba87680ef87604aca763bdae"
@@ -158,6 +158,14 @@
   pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
+
+[[projects]]
+  branch = "add-liveness-and-readiness"
+  digest = "1:921286d69ead926557e2c1e37deb7bf087368d9e1174d6cceb6eada8604723b5"
+  name = "github.com/eric-sap/knative-kafka"
+  packages = ["components/common/pkg/kafka/health"]
+  pruneopts = "UT"
+  revision = "07cdc390ed34c9fe314873e5a039f550e05378b5"
 
 [[projects]]
   digest = "1:2b5f431fa18891a2ac0e02353c83fb3bf458fced6ccecd664b429054e0c4ce3b"
@@ -1238,6 +1246,7 @@
     "github.com/cloudevents/sdk-go",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/confluentinc/confluent-kafka-go/kafka",
+    "github.com/eric-sap/knative-kafka/components/common/pkg/kafka/health",
     "github.com/google/go-cmp/cmp",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",

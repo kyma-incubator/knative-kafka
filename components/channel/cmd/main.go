@@ -5,8 +5,8 @@ import (
 	"flag"
 	"github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channelhealth"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/env"
-	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/producer"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// Start The Liveness And Readiness Servers
-	healthServer := health.NewChannelHealthServer("8082")
+	healthServer := channelhealth.NewChannelHealthServer("8082")
 	healthServer.Start()
 
 	// Start The Prometheus Metrics Server (Prometheus)

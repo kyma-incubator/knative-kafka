@@ -37,6 +37,10 @@
    name = "github.com/kyma-incubator/knative-kafka"
    branch = "master"
 
+[[constraint]]
+   name = "github.com/eric-sap/knative-kafka"
+   branch = "add-liveness-and-readiness"
+
 # Match Azure version in common component
 [[override]]
   name = "github.com/Azure/azure-event-hubs-go"

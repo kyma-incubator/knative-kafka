@@ -4,7 +4,7 @@ import (
 	"errors"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channelhealth"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/message"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/util"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
@@ -28,7 +28,7 @@ var createProducerFunctionWrapper = func(brokers string, username string, passwo
 }
 
 // Initialize The Producer
-func InitializeProducer(brokers string, username string, password string, metricsServer *prometheus.MetricsServer, healthServer *health.ChannelHealthServer) error {
+func InitializeProducer(brokers string, username string, password string, metricsServer *prometheus.MetricsServer, healthServer *channelhealth.Server) error {
 
 	healthServer.SetProducerReady(false)
 
@@ -131,7 +131,7 @@ func Close() {
 }
 
 // Infinite Loop For Processing Kafka Producer Events
-func processProducerEvents(healthServer *health.ChannelHealthServer) {
+func processProducerEvents(healthServer *channelhealth.Server) {
 	for {
 		select {
 		case msg := <-kafkaProducer.Events():
