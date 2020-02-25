@@ -42,6 +42,14 @@
   revision = "59d068f8d8ff5b653916aa30cdc4e13c7f15d56e"
 
 [[projects]]
+  digest = "1:371a9396c2c1a6cb1d7d1de3373d06c005c313e1f4c7a58a691e8d1d4e40e483"
+  name = "contrib.go.opencensus.io/exporter/zipkin"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "30f9fad5db2c8944c21d223496e2543aeb445d4c"
+  version = "v0.1.1"
+
+[[projects]]
   digest = "1:9f3b30d9f8e0d7040f729b82dcbc8f0dead820a133b3147ce355fc451f32d761"
   name = "github.com/BurntSushi/toml"
   packages = ["."]
@@ -304,7 +312,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f80e4397ffc8f9e8c70753d312e4b761db039b461666c3cd0a2587ae24c8192b"
+  digest = "1:2eaaac5688cd464d2416b92eba4039a78f810a63e34d7cb0c9951f777d9ba3c7"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -325,7 +333,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "f2989a9b7e85c8327bdb13fb3b527875e332d9a5"
+  revision = "42d9ded2c89fcf08f0ebde5d22df4937b2378a81"
 
 [[projects]]
   branch = "master"
@@ -358,6 +366,21 @@
   pruneopts = "UT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
+
+[[projects]]
+  digest = "1:5e77097fe469a5197f48f4625b0de00024529ce29af6b93a6e5635f42a54599a"
+  name = "github.com/openzipkin/zipkin-go"
+  packages = [
+    ".",
+    "idgenerator",
+    "model",
+    "propagation",
+    "reporter",
+    "reporter/http",
+  ]
+  pruneopts = "UT"
+  revision = "c29478e51bfb2e9c93e0e9f5e015e5993a490399"
+  version = "v0.2.2"
 
 [[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
@@ -1145,16 +1168,21 @@
   revision = "94aeca20bf0991bf33922a5938174b9147ab8ca7"
 
 [[projects]]
-  digest = "1:f6769a41d13d71bb32f3f82a6facbe5fd5532babbf5d8f81fae23f4c77bccb38"
+  digest = "1:286f5357f7e9dbda0fa92e95d992576313973c4ffc00c062b203fcb511c8153f"
   name = "knative.dev/eventing"
-  packages = ["pkg/apis/duck/v1alpha1"]
+  packages = [
+    "pkg/apis/duck/v1alpha1",
+    "pkg/configmap",
+    "pkg/kncloudevents",
+    "pkg/tracing",
+  ]
   pruneopts = "UT"
   revision = "8a92a8c91447a6ff71e4be97a42c548790d52a22"
   version = "v0.12.0"
 
 [[projects]]
   branch = "release-0.12"
-  digest = "1:d96b0ebf558aa72609cc1e0844653907d11545f22a2bfb5d267922ddec1c3b8a"
+  digest = "1:a27eee0ee352cd206247f68dbf8972af619f3f91b02d4ddd4f897feb3ca11399"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1177,6 +1205,8 @@
     "signals",
     "system",
     "system/testing",
+    "tracing",
+    "tracing/config",
     "tracker",
   ]
   pruneopts = "UT"
@@ -1206,7 +1236,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/cloudevents/sdk-go",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/context",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/confluentinc/confluent-kafka-go/kafka",
     "github.com/google/go-cmp/cmp",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
@@ -1242,11 +1272,14 @@
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
+    "knative.dev/eventing/pkg/kncloudevents",
+    "knative.dev/eventing/pkg/tracing",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/controller",
     "knative.dev/pkg/logging",
     "knative.dev/pkg/reconciler/testing",
     "knative.dev/pkg/signals",
+    "knative.dev/pkg/tracing",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
