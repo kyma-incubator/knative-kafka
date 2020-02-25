@@ -310,7 +310,7 @@
 
 [[projects]]
   branch = "knative-eventing-controller-refactor"
-  digest = "1:de2e8d0bbee8cef39665c78a1de6ef9afc8c26d90e946697b55be76847043237"
+  digest = "1:41fa9da2c01d2390a926a828fb32582ccb122bc2b58ae872bef1b1ea117edc2d"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -333,7 +333,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "8e50d1499637461f84fb23056a36cf3fbd98a657"
+  revision = "b9023a3fe79c2d8a8c54b5e677e06eead306cf5a"
   source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
@@ -1117,9 +1117,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8faecd5fd655889992f805fba7d040ea03ee231c059397f5ab1e72e365b7136e"
+  digest = "1:ddbecea73ed9fd295b1f57c460aba27ff3589cdda3d45d4b81ec47ea84b494d6"
   name = "knative.dev/eventing"
   packages = [
+    "pkg/apis/duck/v1alpha1",
     "pkg/apis/duck/v1beta1",
     "pkg/channel",
     "pkg/configmap",
@@ -1132,12 +1133,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dd1fe02f9ca8b812b92f6dded3d2a8e5e7dbfd0d574bee34e41d13b0f5d69b25"
+  digest = "1:5980a72669e6a2ecb232458ebb0298006f1ff4349b87c6be0ad45b531c5e7ddc"
   name = "knative.dev/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1",
+    "apis/duck/v1alpha1",
+    "apis/duck/v1beta1",
     "changeset",
     "configmap",
     "controller",
@@ -1188,6 +1191,7 @@
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/client-go/tools/clientcmd",
+    "knative.dev/eventing/pkg/apis/duck/v1beta1",
     "knative.dev/eventing/pkg/channel",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/pkg/apis",

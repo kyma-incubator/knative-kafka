@@ -17,7 +17,7 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	eventingduck "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"reflect"
@@ -141,13 +141,13 @@ func (r Reconciler) Reconcile(ctx context.Context, key string) error {
 // Reconcile The Specified KafkaChannel
 func (r Reconciler) reconcile(channel *kafkav1alpha1.KafkaChannel) error {
 
-	if channel.Spec.Subscribers == nil {
+	if channel.Spec.Subscribable.Subscribers == nil {
 		r.Logger.Info("KafkaChannel Has No Subscribers - Nothing To Reconcile")
 		return nil
 	}
 
 	subscriptions := make([]dispatcher.Subscription, 0)
-	for _, subscriber := range channel.Spec.Subscribers {
+	for _, subscriber := range channel.Spec.Subscribable.Subscribers {
 		groupId := fmt.Sprintf("kafka.%s", subscriber.UID)
 		subscriptions = append(subscriptions, dispatcher.Subscription{URI: subscriber.SubscriberURI.String(), GroupId: groupId})
 		r.Logger.Debug("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.Any("URI", subscriber.SubscriberURI))
@@ -155,7 +155,7 @@ func (r Reconciler) reconcile(channel *kafkav1alpha1.KafkaChannel) error {
 
 	failedSubscriptions := r.dispatcher.UpdateSubscriptions(subscriptions)
 
-	channel.Status.SubscribableStatus = r.createSubscribableStatus(channel.Spec.SubscribableSpec, failedSubscriptions)
+	channel.Status.SubscribableStatus = r.createSubscribableStatus(channel.Spec.Subscribable, failedSubscriptions)
 
 	if len(failedSubscriptions) > 0 {
 		r.Logger.Error("Failed To Subscribe Kafka Subscriptions", zap.Int("Count", len(failedSubscriptions)))
@@ -166,7 +166,7 @@ func (r Reconciler) reconcile(channel *kafkav1alpha1.KafkaChannel) error {
 }
 
 // Create The SubscribableStatus Block Based On The Updated Subscriptions
-func (r *Reconciler) createSubscribableStatus(subscribable eventingduck.SubscribableSpec, failedSubscriptions map[dispatcher.Subscription]error) eventingduck.SubscribableStatus {
+func (r *Reconciler) createSubscribableStatus(subscribable *eventingduck.Subscribable, failedSubscriptions map[dispatcher.Subscription]error) *eventingduck.SubscribableStatus {
 
 	subscriberStatus := make([]eventingduck.SubscriberStatus, 0)
 	for _, sub := range subscribable.Subscribers {
@@ -183,7 +183,7 @@ func (r *Reconciler) createSubscribableStatus(subscribable eventingduck.Subscrib
 		}
 		subscriberStatus = append(subscriberStatus, status)
 	}
-	return eventingduck.SubscribableStatus{
+	return &eventingduck.SubscribableStatus{
 		Subscribers: subscriberStatus,
 	}
 }

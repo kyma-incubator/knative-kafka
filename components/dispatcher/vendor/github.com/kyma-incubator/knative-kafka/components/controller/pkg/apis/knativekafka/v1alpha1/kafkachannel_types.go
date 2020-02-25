@@ -6,7 +6,9 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingduck "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -23,14 +25,35 @@ type KafkaChannelSpec struct {
 
 	RetentionMillis int64 `json:"retentionMillis,omitempty"`
 
+	// Channel conforms to Duck type Subscribable.
+	Subscribable *eventingduck.Subscribable `json:"subscribable,omitempty"`
+
+	// TODO - Convert To Channelable Duck Type When Knative-Eventing Moves To v1beta1 (eventingduck & Subscription Reconciler Specifically)
 	// Channel conforms to Duck type Channelable
-	eventingduck.ChannelableSpec `json:",inline"`
+	//eventingduck.ChannelableSpec `json:",inline"`
 }
 
 // KafkaChannelStatus defines the observed state of KafkaChannel - Lifted From Knative Samples
 type KafkaChannelStatus struct {
+
+	// inherits duck/v1beta1 Status, which currently provides:
+	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
+	// * Conditions - the latest available observations of a resource's current state.
+	duckv1.Status `json:",inline"`
+
+	// KafkaChannel is Addressable. It currently exposes the endpoint as a
+	// fully-qualified DNS name which will distribute traffic over the
+	// provided targets from inside the cluster.
+	//
+	// It generally has the form {channel}.{namespace}.svc.{cluster domain name}
+	duckv1alpha1.AddressStatus `json:",inline"`
+
+	// Subscribers is populated with the statuses of each of the Channelable's subscribers.
+	eventingduck.SubscribableTypeStatus `json:",inline"`
+
+	// TODO - Convert To Channelable Duck Type When Knative-Eventing Moves To v1beta1 (eventingduck & Subscription Reconciler Specifically)
 	// Channel conforms to Duck type Channelable.
-	eventingduck.ChannelableStatus `json:",inline"`
+	//eventingduck.ChannelableStatus `json:",inline"`
 }
 
 // +genclient
