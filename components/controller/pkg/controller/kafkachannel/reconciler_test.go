@@ -1,5 +1,79 @@
 package kafkachannel
 
+import (
+	"context"
+	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
+	fakeknativekafkaclient "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client/fake"
+	kafkachannelreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkachannel"
+	"github.com/kyma-incubator/knative-kafka/components/controller/test"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	clientgotesting "k8s.io/client-go/testing"
+	"knative.dev/eventing/pkg/reconciler"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	logtesting "knative.dev/pkg/logging/testing"
+
+	"k8s.io/client-go/kubernetes/scheme"
+	"testing"
+
+	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
+
+	//eventingreconcilertesting "knative.dev/eventing/pkg/reconciler/testing"
+	// TODO - from the eventing in-memory test
+	. "knative.dev/pkg/reconciler/testing"
+	//. "knative.dev/pkg/reconciler/testing"
+
+	// TODO - from the eventing-contrib kafkachannel test
+	//	reconcilekafkatesting "knative.dev/eventing-contrib/kafka/channel/pkg/reconciler/testing"
+	//	reconcilertesting "knative.dev/eventing-contrib/kafka/channel/pkg/reconciler/testing"
+
+)
+
+/* TODO - inmemory test imports
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"knative.dev/eventing/pkg/client/injection/reconciler/messaging/v1alpha1/inmemorychannel"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+	clientgotesting "k8s.io/client-go/testing"
+	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	"knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	"knative.dev/eventing/pkg/reconciler"
+	"knative.dev/eventing/pkg/reconciler/inmemorychannel/controller/resources"
+	. "knative.dev/eventing/pkg/reconciler/testing"
+	reconciletesting "knative.dev/eventing/pkg/reconciler/testing"
+	"knative.dev/eventing/pkg/utils"
+	"knative.dev/pkg/apis"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
+	logtesting "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
+)
+
+*/
+
+// TODO - eventing-contrib implementations (kafkachannel, natss, etc have their own copy of makefactory
+
+func init() {
+	// Add types to scheme
+	_ = knativekafkav1alpha1.AddToScheme(scheme.Scheme)
+	//_ = v1alpha1.AddToScheme(scheme.Scheme) // tODO - do we need this ?    "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	_ = duckv1alpha1.AddToScheme(scheme.Scheme)
+}
+
 /* TODO
 // Test Initialization
 func init() {
@@ -45,7 +119,171 @@ func TestNewReconciler(t *testing.T) {
 	assert.Equal(t, client, reconciler.adminClient)
 	assert.Equal(t, environment, reconciler.environment)
 }
+*/
 
+// TODO - NEW !!!
+// Test The Reconcile Functionality
+func TestReconcile(t *testing.T) {
+
+	// Clear Logs After Testing
+	defer logtesting.ClearAll()
+
+	// Define The KafkaChannel Reconciler Test Cases
+	tableTest := TableTest{
+		//{
+		//	Name:    "Bad KafkaChannel Key",
+		//	Key:     "too/many/parts",
+		//	WantErr: false,
+		//},
+		//{
+		//	Name:    "KafkaChannel Key Not Found",
+		//	Key:     "foo/not-found",
+		//	WantErr: false,
+		//},
+		//{
+		//	Name: "Delete KafkaChannel",
+		//	Key:  test.KafkaChannelKey,
+		//	Objects: []runtime.Object{
+		//		test.NewKnativeKafkaChannel(test.WithInitKafkaChannelConditions, test.WithKafkaChannelDeleted),
+		//	},
+		//	WantErr: false,
+		//	WantEvents: []string{
+		//		// TODO - see notes in FinalizeKind() about this mess (at a minimum add event constants)
+		//		Eventf(corev1.EventTypeNormal, "KafkaChannel Finalized", "Topic %s.%s deleted during finalization", test.KafkaChannelNamespace, test.KafkaChannelName),
+		//	},
+		//},
+		{
+			Name:                    "Complete Reconciliation Success",
+			SkipNamespaceValidation: true, // TODO - Knative Testing Framework Assumes ALL Actions Will Be In The Same Namespace As The Key !!!
+			Key:                     test.KafkaChannelKey,
+			Objects: []runtime.Object{
+				test.NewKnativeKafkaChannel(test.WithInitKafkaChannelConditions),
+			},
+			WantErr: false,
+			WantCreates: []runtime.Object{
+				test.NewKafkaChannelChannelService(),
+				test.NewKafkaChannelDeploymentService(),
+				test.NewKafkaChannelDeployment(),
+				test.NewKafkaChannelDispatcherService(),
+				test.NewKafkaChannelDispatcherDeployment(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+				{
+					Object: test.NewKnativeKafkaChannel(
+						test.WithKafkaChannelAddress,
+						test.WithInitKafkaChannelConditions,
+						test.WithKafkaChannelChannelServiceReady,
+						test.WithKafkaChannelDeploymentServiceReady,
+						test.WithKafkaChannelChannelDeploymentReady,
+						test.WithKafkaChannelDispatcherDeploymentReady,
+						test.WithKafkaChannelTopicReady,
+					),
+				},
+			},
+			// TODO - Why doesn't the in-memory test have/need this?  this comes from adding the finalizer!
+			// TODO - In memory doesn't have this because they don't implement FinalizeKind() and thus don't need to add a finalizer !!!!!
+			WantPatches: []clientgotesting.PatchActionImpl{
+				{
+					ActionImpl: clientgotesting.ActionImpl{
+						Namespace:   test.KafkaChannelNamespace,
+						Verb:        "patch",
+						Resource:    schema.GroupVersionResource{Group: knativekafkav1alpha1.SchemeGroupVersion.Group, Version: knativekafkav1alpha1.SchemeGroupVersion.Version, Resource: "kafkachannels"},
+						Subresource: "",
+					},
+					Name:      test.KafkaChannelName,
+					PatchType: "application/merge-patch+json",
+					Patch:     []byte(`{"metadata":{"finalizers":["kafkachannels.knativekafka.kyma-project.io"],"resourceVersion":""}}`),
+				},
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "%s" finalizers`, test.KafkaChannelName),
+				Eventf(corev1.EventTypeNormal, "KafkaChannelReconciled", `KafkaChannel reconciled: "%s/%s"`, test.KafkaChannelNamespace, test.KafkaChannelName),
+			},
+		},
+	}
+
+	// Run The TableTest Using The KafkaChannel Reconciler Provided By The Factory
+	logger := logtesting.TestLogger(t)
+	tableTest.Test(t, test.MakeFactory(func(ctx context.Context, listers *test.Listers, cmw configmap.Watcher) controller.Reconciler {
+		r := &Reconciler{
+			Base:                  reconciler.NewBase(ctx, constants.KafkaChannelControllerAgentName, cmw),
+			adminClient:           &test.MockAdminClient{},
+			environment:           test.NewEnvironment(),
+			kafkachannelLister:    listers.GetKafkaChannelLister(),
+			kafkachannelInformer:  nil, // TODO - Fix ???
+			deploymentLister:      listers.GetDeploymentLister(),
+			serviceLister:         listers.GetServiceLister(),
+			knativekafkaClientSet: fakeknativekafkaclient.Get(ctx),
+		}
+		return kafkachannelreconciler.NewReconciler(ctx, r.Logger, r.knativekafkaClientSet, listers.GetKafkaChannelLister(), r.Recorder, r)
+	}, logger.Desugar()))
+}
+
+/* TODO - Compiler Error above...
+
+ Cannot use 'r.EventingClientSet' (type "github.com/kyma-incubator/knative-kafka/components/controller/vendor/knative.dev/eventing/pkg/client/clientset/versioned".Interface) as type
+                                        "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned".Interface
+ Type does not implement 'versioned.Interface' as some methods are missing: KnativekafkaV1alpha1() knativekafkav1alpha1.KnativekafkaV1alpha1Interface
+
+... it wants to add this function to the knative.dev/eventing/pkg/client/clientset/versioned/clientset.go  file !!!
+
+func (i Interface) KnativekafkaV1alpha1() v1alpha1.KnativekafkaV1alpha1Interface {
+	panic("implement me")
+}
+
+... so why is NewBase() creating the vendor/knative.dev/eventing clientset instead of ours ?   I
+
+
+sooo... the in-memory implementation does it this way above (calling NewReconciler) BUT the kafka/natss eventing-contrib tests don't
+        they just create the inline Reconciler.  The difference is that those structs have their own Reconcile() function whereas ours and
+        the in-memory implementation get their Reconcile function from the injection package which has a reconcilerImpl{} struct
+        the natss/kafka don't even HAVE an injection/reconciler package - only injection/client and injection/informers
+
+i think we need our own copy of NewBase that sets the right clientset ???  natss has it's own NewBase() implementation which sets a NatssClientSet instead of an EventingClientSet
+but kafka doesnt have one?
+
+natss has also defined it's own Base{} struct containing the NatssClientSet
+
+both natss and kafka have their own stats_reporter.go implementations - for now i just copied in the kafkachannel one
+
+OR... instead of creating our own Base/NewBase() we could use the one we're using and add a new smaller struct with the knativekafka clientset? and/or not call the injected NewReconciler() - we don't call from from the controller.go???
+		(basically add the clientset directly to our reconciler?)
+
+The kafka implementation adds their clientset directly in their reconciler definition and uses NewBase (but not the generated/injection code - has it's own Reconcile())
+
+*!!! the reason the in-memory one works is that it is a part of the Messaging clientset and treated like channels/subscriptions (which is odd/bad - not what we're doing for eventing-contrib inclusion)
+
+so we're kind of in this weird trifecta of implementations and unsure which one to pattern after...
+
+	- do we want to NOT generate the injected reconciler and write our own Reconcile() ?
+	- do we want to write our own Base/NewBase()
+*/
+
+/* eventing-contrib kafka example
+tableTest.Test(t, test.MakeFactory(func(ctx context.Context, listers *test.Listers, cmw configmap.Watcher) controller.Reconciler {
+
+	return &Reconciler{
+		Base: reconciler.NewBase(ctx, constants.KafkaChannelControllerAgentName, cmw),
+		//dispatcherNamespace:      testNS,
+		//dispatcherDeploymentName: testDispatcherDeploymentName,
+		//dispatcherServiceName:    testDispatcherServiceName,
+		//dispatcherImage:          testDispatcherImage,
+		//kafkaConfig: &KafkaConfig{
+		//	Brokers: []string{brokerName},
+		//},
+		//kafkachannelLister: listers.GetKafkaChannelLister(),
+		//// TODO fix
+		//kafkachannelInformer: nil,
+		deploymentLister: listers.GetDeploymentLister(),
+		serviceLister:    listers.GetServiceLister(),
+		//endpointsLister:      listers.GetEndpointsLister(), // TODO - don't have one of these yet
+		//kafkaClusterAdmin:    &mockClusterAdmin{},
+		//kafkaClientSet:       fakekafkaclient.Get(ctx),
+	}
+}, zap.L()))
+*/
+
+/*
 // Test The Reconcile Functionality
 func TestReconcile(t *testing.T) {
 

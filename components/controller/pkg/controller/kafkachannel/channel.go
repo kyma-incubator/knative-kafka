@@ -142,6 +142,10 @@ func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 
 	// Create & Return The Service Model
 	return &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: corev1.SchemeGroupVersion.String(),
+			Kind:       constants.ServiceKind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceName,       // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 			Namespace: channel.Namespace, // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
@@ -232,6 +236,10 @@ func (r *Reconciler) newChannelDeploymentService(channel *knativekafkav1alpha1.K
 
 	// Create & Return The Service Model
 	return &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: corev1.SchemeGroupVersion.String(),
+			Kind:       constants.ServiceKind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,
@@ -346,6 +354,10 @@ func (r *Reconciler) newChannelDeployment(channel *knativekafkav1alpha1.KafkaCha
 
 	// Create & Return The Channel's Deployment
 	deployment := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: appsv1.SchemeGroupVersion.String(),
+			Kind:       constants.DeploymentKind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,

@@ -103,6 +103,10 @@ func (r *Reconciler) newDispatcherService(channel *knativekafkav1alpha1.KafkaCha
 
 	// Create & Return The Service Model
 	return &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: corev1.SchemeGroupVersion.String(),
+			Kind:       constants.ServiceKind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceName,
 			Namespace: constants.KnativeEventingNamespace,
@@ -190,6 +194,10 @@ func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.Ka
 
 	// Create The Dispatcher's Deployment
 	deployment := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: appsv1.SchemeGroupVersion.String(),
+			Kind:       constants.DeploymentKind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,

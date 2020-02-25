@@ -27,17 +27,8 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *kafkav1alpha1.
 	replicationFactor := util.ReplicationFactor(channel, r.environment, r.Logger.Desugar())
 	retentionMillis := util.RetentionMillis(channel, r.environment, r.Logger.Desugar())
 
-	// Error Reference
-	var err error
-
-	{
-		// TODO - Similar to the above concerns we'll need requirements around handling changes to a Channel.Spec.Arguments where the partitions or replication is changed?
-		// TODO - Will we support that at all?  How? etc...
-		// TODO - The kafka command line tool for topics exposes the "alter" option which can be used to change partitions and such - need to check Confluent client.
-
-		// Otherwise Create The Topic (Handles Case Where Already Exists)
-		err = r.createTopic(ctx, topicName, numPartitions, replicationFactor, retentionMillis)
-	}
+	// Create The Topic (Handles Case Where Already Exists)
+	err := r.createTopic(ctx, topicName, numPartitions, replicationFactor, retentionMillis)
 
 	// Log Results & Return Status
 	if err != nil {

@@ -388,7 +388,7 @@
 
 [[projects]]
   branch = "knative-eventing-controller-refactor"
-  digest = "1:ba874649531f66abee0a3206c3946c2c3499bd8b3457499dd17ce47b4a9db7b6"
+  digest = "1:bcc315bbfe03e6254535fa24379af6613e07dcfa3ae10c591d02fc1ccf4214f9"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/k8s",
@@ -396,6 +396,7 @@
     "components/common/pkg/kafka/admin/eventhubcache",
     "components/common/pkg/kafka/admin/util",
     "components/common/pkg/kafka/constants",
+    "components/common/pkg/kafka/consumer",
     "components/common/pkg/kafka/util",
     "components/common/pkg/log",
   ]
@@ -572,7 +573,7 @@
   revision = "2cfd321de3ee5d5f8a5fda2521d1703478334d98"
 
 [[projects]]
-  digest = "1:85674ac609b704fd4e9f463553b6ffc3a3527a993ae0ba550eb56beaabdfe094"
+  digest = "1:5ab79d2a36037de1ab2908733a2cab0c08b12f6956e3e1eab07cd1b2abf7b903"
   name = "go.uber.org/zap"
   packages = [
     ".",
@@ -580,7 +581,9 @@
     "internal/bufferpool",
     "internal/color",
     "internal/exit",
+    "internal/ztest",
     "zapcore",
+    "zaptest",
   ]
   pruneopts = "NUT"
   revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
@@ -1017,12 +1020,13 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:9cac846b916ca657bea8edd7dfd90b73ae98c1534eecc5f8ad631eabaa425d49"
+  digest = "1:b03297e45cd203dee7e9449141555d3973d04d5323ece6b4e20562b80185767e"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
     "discovery/fake",
     "dynamic",
+    "dynamic/fake",
     "informers",
     "informers/admissionregistration",
     "informers/admissionregistration/v1",
@@ -1302,7 +1306,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:77a5486226615ce95a9561c6503ea08968a41e7f794778d56e52caa9d7217797"
+  digest = "1:8e0bf84bac0417f2af34fa9a31ea99533a0f657172517cd46673d7f428a0890a"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/configs",
@@ -1324,20 +1328,33 @@
     "pkg/apis/sources",
     "pkg/apis/sources/v1alpha1",
     "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/fake",
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/configs/v1alpha1",
+    "pkg/client/clientset/versioned/typed/configs/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
+    "pkg/client/clientset/versioned/typed/eventing/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/eventing/v1beta1",
+    "pkg/client/clientset/versioned/typed/eventing/v1beta1/fake",
     "pkg/client/clientset/versioned/typed/flows/v1alpha1",
+    "pkg/client/clientset/versioned/typed/flows/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/flows/v1beta1",
+    "pkg/client/clientset/versioned/typed/flows/v1beta1/fake",
     "pkg/client/clientset/versioned/typed/messaging/v1alpha1",
+    "pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/messaging/v1beta1",
+    "pkg/client/clientset/versioned/typed/messaging/v1beta1/fake",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
+    "pkg/client/clientset/versioned/typed/sources/v1alpha1/fake",
     "pkg/client/injection/client",
+    "pkg/client/injection/client/fake",
     "pkg/legacyclient/clientset/versioned",
+    "pkg/legacyclient/clientset/versioned/fake",
     "pkg/legacyclient/clientset/versioned/scheme",
     "pkg/legacyclient/clientset/versioned/typed/legacysources/v1alpha1",
+    "pkg/legacyclient/clientset/versioned/typed/legacysources/v1alpha1/fake",
     "pkg/legacyclient/injection/client",
+    "pkg/legacyclient/injection/client/fake",
     "pkg/logging",
     "pkg/reconciler",
     "pkg/reconciler/names",
@@ -1358,6 +1375,7 @@
     "apis/duck/v1beta1",
     "changeset",
     "client/injection/kube/client",
+    "client/injection/kube/client/fake",
     "client/injection/kube/informers/apps/v1/deployment",
     "client/injection/kube/informers/core/v1/service",
     "client/injection/kube/informers/factory",
@@ -1368,17 +1386,21 @@
     "controller",
     "injection",
     "injection/clients/dynamicclient",
+    "injection/clients/dynamicclient/fake",
     "injection/sharedmain",
     "kmeta",
     "kmp",
     "logging",
     "logging/logkey",
+    "logging/testing",
     "metrics",
     "metrics/metricskey",
     "profiling",
     "reconciler",
+    "reconciler/testing",
     "signals",
     "system",
+    "system/testing",
     "tracker",
     "version",
     "webhook",
@@ -1412,6 +1434,7 @@
   input-imports = [
     "github.com/confluentinc/confluent-kafka-go/kafka",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/stretchr/testify/assert",
@@ -1434,6 +1457,7 @@
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
+    "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/listers/apps/v1",
@@ -1448,8 +1472,12 @@
     "k8s.io/code-generator/cmd/defaulter-gen",
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
-    "knative.dev/eventing/pkg/apis/duck/v1alpha1",
+    "knative.dev/eventing/pkg/apis/duck/v1beta1",
     "knative.dev/eventing/pkg/apis/messaging/v1alpha1",
+    "knative.dev/eventing/pkg/client/clientset/versioned/fake",
+    "knative.dev/eventing/pkg/client/injection/client/fake",
+    "knative.dev/eventing/pkg/legacyclient/clientset/versioned/fake",
+    "knative.dev/eventing/pkg/legacyclient/injection/client/fake",
     "knative.dev/eventing/pkg/logging",
     "knative.dev/eventing/pkg/reconciler",
     "knative.dev/eventing/pkg/reconciler/names",
@@ -1458,15 +1486,19 @@
     "knative.dev/pkg/apis/duck/v1",
     "knative.dev/pkg/apis/duck/v1alpha1",
     "knative.dev/pkg/client/injection/kube/client",
+    "knative.dev/pkg/client/injection/kube/client/fake",
     "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/service",
     "knative.dev/pkg/codegen/cmd/injection-gen",
     "knative.dev/pkg/configmap",
     "knative.dev/pkg/controller",
     "knative.dev/pkg/injection",
+    "knative.dev/pkg/injection/clients/dynamicclient/fake",
     "knative.dev/pkg/injection/sharedmain",
     "knative.dev/pkg/logging",
+    "knative.dev/pkg/logging/testing",
     "knative.dev/pkg/reconciler",
+    "knative.dev/pkg/reconciler/testing",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

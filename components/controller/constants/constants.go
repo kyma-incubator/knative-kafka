@@ -8,9 +8,11 @@ const (
 	KafkaChannelControllerAgentName = "kafka-channel-controller"
 
 	// CRD Kinds
+	ServiceKind             = "Service"
+	DeploymentKind          = "Deployment"
 	KnativeChannelKind      = "Channel"
-	KafkaChannelKind        = "KafkaChannel"
 	KnativeSubscriptionKind = "Subscription"
+	KafkaChannelKind        = "KafkaChannel"
 
 	// HTTP Port
 	HttpPortName = "http"

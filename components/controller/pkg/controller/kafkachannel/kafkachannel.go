@@ -23,7 +23,7 @@ var _ kafkachannel.Interface = (*Reconciler)(nil)
 // Optionally check that our Reconciler implements Finalizer
 var _ kafkachannel.Finalizer = (*Reconciler)(nil)
 
-// ReconcileKind implements Interface.ReconcileKind.
+// ReconcileKind Implements The Reconciler Interface & Is Responsible For Performing The Reconciliation (Creation)
 func (r *Reconciler) ReconcileKind(ctx context.Context, kafkachannel *v1alpha1.KafkaChannel) reconciler.Event {
 
 	r.Logger.Debug("<==========  START CHANNEL RECONCILIATION  ==========>")
@@ -35,22 +35,33 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, kafkachannel *v1alpha1.K
 	r.Logger.Info("Channel Owned By Controller - Reconciling", zap.Any("Channel.Spec", kafkachannel.Spec))
 	err := r.reconcile(ctx, kafkachannel)
 	if err != nil {
-		r.Logger.Error("Failed To Reconcile Channel", zap.Error(err))
-		// Note: Do NOT Return Error Here In Order To Ensure Status Update
+		r.Logger.Error("Failed To Reconcile KafkaChannel", zap.Any("Channel", kafkachannel), zap.Error(err))
+		// TODO - should we return errors? or log an event or something ??? - look at the eventing-contrib implementations to see???
 	} else {
-		r.Logger.Info("Successfully Reconciled Channel", zap.Any("Channel", kafkachannel))
+		r.Logger.Info("Successfully Reconciled KafkaChannel", zap.Any("Channel", kafkachannel))
 	}
 
 	kafkachannel.Status.ObservedGeneration = kafkachannel.Generation
 	return newReconciledNormal(kafkachannel.Namespace, kafkachannel.Name)
 }
 
+// ReconcileKind Implements The Finalizer Interface & Is Responsible For Performing The Finalization (Deletion)
 func (r *Reconciler) FinalizeKind(ctx context.Context, kafkachannel *v1alpha1.KafkaChannel) reconciler.Event {
-	// Get The TopicName For Specified Channel
+
+	// Get The Kafka Topic Name For Specified Channel
 	topicName := util.TopicName(kafkachannel)
+
+	// Delete The Kafka Topic
 	err := r.deleteTopic(ctx, topicName)
 	if err != nil {
+		// TODO - create event here??? same as above - what's the standard
+		r.Logger.Error("Failed To Finalize KafkaChannel", zap.Any("Channel", kafkachannel), zap.Error(err))
 		return err
+	} else {
+		r.Logger.Info("Successfully Finalized KafkaChannel", zap.Any("Channel", kafkachannel))
+		// TODO - convert this event creation to our pattern and maybe create event functions to simplify?  and/or look at the type of events we should be creating now ?
+		// TODO - they have their own reconciler event struct for returning here - our other stuff logs/creates all in one (using the client-go stuff, etc...   sigh
+		return reconciler.NewEvent(v1.EventTypeNormal, "KafkaChannel Finalized", "Topic %s deleted during finalization", topicName)
+		// TODO - r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service For Channel: %v", channelServiceErr)
 	}
-	return reconciler.NewEvent(v1.EventTypeNormal, "KafkaChannel Finalized", "Topic %s deleted during finalization", topicName)
 }

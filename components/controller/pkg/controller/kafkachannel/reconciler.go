@@ -5,6 +5,7 @@ import (
 	"fmt"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
+	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	kafkachannelreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkachannel"
 	listers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
@@ -17,13 +18,13 @@ import (
 // Reconciler implements controller.Reconciler for KafkaChannel resources.
 type Reconciler struct {
 	*eventingreconciler.Base
-
-	adminClient          kafkaadmin.AdminClientInterface
-	environment          *env.Environment
-	kafkachannelLister   listers.KafkaChannelLister
-	kafkachannelInformer cache.SharedIndexInformer
-	deploymentLister     appsv1listers.DeploymentLister
-	serviceLister        corev1listers.ServiceLister
+	knativekafkaClientSet knativekafkaclientset.Interface
+	adminClient           kafkaadmin.AdminClientInterface
+	environment           *env.Environment
+	kafkachannelLister    listers.KafkaChannelLister
+	kafkachannelInformer  cache.SharedIndexInformer
+	deploymentLister      appsv1listers.DeploymentLister
+	serviceLister         corev1listers.ServiceLister
 }
 
 // Check that our Reconciler implements Interface

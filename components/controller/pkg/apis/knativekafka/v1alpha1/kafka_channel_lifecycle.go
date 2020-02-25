@@ -2,7 +2,7 @@ package v1alpha1
 
 import (
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/apis/duck/v1"
 )
 
 // The Set Of KafkaChannel Status Conditions Required To Be Happy/Ready
@@ -51,27 +51,12 @@ func (in *KafkaChannelStatus) InitializeConditions() {
 
 // SetAddress sets the address (as part of Addressable contract) and marks the correct condition.
 func (in *KafkaChannelStatus) SetAddress(url *apis.URL) {
-	if in.Address == nil {
-		in.Address = &v1alpha1.Addressable{}
-	}
-	if url != nil {
-		in.Address.Hostname = url.Host
-		in.Address.URL = url
-		kafkaCondSet.Manage(in).MarkTrue(ConditionAddressable)
-	} else {
-		in.Address.Hostname = ""
-		in.Address.URL = nil
-		kafkaCondSet.Manage(in).MarkFalse(ConditionAddressable, "emptyHostname", "hostname is the empty string")
-	}
-
-	/* TODO - Convert To Channelable Duck Type When Knative-Eventing Moves To v1beta1 (eventingduck & Subscription Reconciler Specifically)
 	in.Address = &v1.Addressable{URL: url}
 	if url != nil {
 		kafkaCondSet.Manage(in).MarkTrue(ConditionAddressable)
 	} else {
 		kafkaCondSet.Manage(in).MarkFalse(ConditionAddressable, "emptyHostname", "hostname is the empty string")
 	}
-	*/
 }
 
 func (in *KafkaChannelStatus) MarkTopicTrue() {
