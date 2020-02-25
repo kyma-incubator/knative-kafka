@@ -121,7 +121,7 @@ func TestHealthHandler(t *testing.T) {
 // Test The Health Server Via Live HTTP Calls
 func TestHealthServer(t *testing.T) {
 	health := getTestHealthServer()
-	health.Start()
+	health.Start(logger)
 
 	livenessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, livenessPath))
 	assert.Nil(t, err)
@@ -134,7 +134,7 @@ func TestHealthServer(t *testing.T) {
 	health.SetAlive(true)
 	getEventToServer(t, livenessUri, http.StatusOK)
 
-	health.Stop()
+	health.Stop(logger)
 }
 
 //
