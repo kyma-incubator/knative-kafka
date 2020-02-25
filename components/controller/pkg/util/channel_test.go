@@ -6,7 +6,6 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
-	"github.com/kyma-incubator/knative-kafka/components/controller/test"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
@@ -15,6 +14,7 @@ import (
 
 // Test Data
 const (
+	kafkaSecret              = "testkafkasecret"
 	channelName              = "testname"
 	channelNamespace         = "testnamespace"
 	numPartitions            = 123
@@ -80,10 +80,10 @@ func TestNewChannelOwnerReference(t *testing.T) {
 func TestChannelDeploymentDnsSafeName(t *testing.T) {
 
 	// Perform The Test
-	actualResult := ChannelDeploymentDnsSafeName(test.KafkaSecret)
+	actualResult := ChannelDeploymentDnsSafeName(kafkaSecret)
 
 	// Verify The Results
-	expectedResult := fmt.Sprintf("%s-channel", strings.ToLower(test.KafkaSecret))
+	expectedResult := fmt.Sprintf("%s-channel", strings.ToLower(kafkaSecret))
 	assert.Equal(t, expectedResult, actualResult)
 }
 
