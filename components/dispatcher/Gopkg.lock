@@ -160,14 +160,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  branch = "add-liveness-and-readiness"
-  digest = "1:921286d69ead926557e2c1e37deb7bf087368d9e1174d6cceb6eada8604723b5"
-  name = "github.com/eric-sap/knative-kafka"
-  packages = ["components/common/pkg/kafka/health"]
-  pruneopts = "UT"
-  revision = "07cdc390ed34c9fe314873e5a039f550e05378b5"
-
-[[projects]]
   digest = "1:2b5f431fa18891a2ac0e02353c83fb3bf458fced6ccecd664b429054e0c4ce3b"
   name = "github.com/evanphx/json-patch"
   packages = ["."]
@@ -319,12 +311,13 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:2eaaac5688cd464d2416b92eba4039a78f810a63e34d7cb0c9951f777d9ba3c7"
+  branch = "add-liveness-and-readiness"
+  digest = "1:b26a098e3aeeb57ec7d9c028ec2eabfb28c03228aabbdc994345a6a0828d67b1"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
     "components/common/pkg/kafka/consumer",
+    "components/common/pkg/kafka/health",
     "components/common/pkg/kafka/util",
     "components/common/pkg/log",
     "components/common/pkg/prometheus",
@@ -341,7 +334,8 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "42d9ded2c89fcf08f0ebde5d22df4937b2378a81"
+  revision = "48a5f1e30d5febc765b9fd6d5839f604e7cb3a3e"
+  source = "github.com/eric-sap/knative-kafka"
 
 [[projects]]
   branch = "master"
@@ -1246,9 +1240,9 @@
     "github.com/cloudevents/sdk-go",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/confluentinc/confluent-kafka-go/kafka",
-    "github.com/eric-sap/knative-kafka/components/common/pkg/kafka/health",
     "github.com/google/go-cmp/cmp",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1",

@@ -46,7 +46,7 @@ func TestReadinessFlagWrites(t *testing.T) {
 // Test The Dispatcher Health Server Via Live HTTP Calls
 func TestDispatcherHealthServer(t *testing.T) {
 	chs := NewDispatcherHealthServer(testHttpPort)
-	chs.Start()
+	chs.Start(logger)
 
 	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
 	assert.Nil(t, err)
@@ -65,7 +65,7 @@ func TestDispatcherHealthServer(t *testing.T) {
 	chs.ShuttingDown()
 	getEventToServer(t, readinessUri, http.StatusInternalServerError)
 
-	chs.Stop()
+	chs.Stop(logger)
 }
 
 //

@@ -2,7 +2,6 @@ package health
 
 import (
 	"context"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"go.uber.org/zap"
 	"net/http"
 	"sync"
@@ -68,22 +67,22 @@ func (hs *Server) initializeServer(httpPort string) {
 }
 
 // Start The HTTP Server (Blocking Call)
-func (hs *Server) Start() {
-	log.Logger().Info("Starting Server HTTP Server on port " + hs.httpPort)
+func (hs *Server) Start(logger *zap.Logger) {
+	logger.Info("Starting Server HTTP Server on port " + hs.httpPort)
 	go func() {
 		err := hs.server.ListenAndServe()
 		if err != nil {
-			log.Logger().Info("Server HTTP ListenAndServe Returned Error", zap.Error(err)) // Info log since it could just be normal shutdown
+			logger.Info("Server HTTP ListenAndServe Returned Error", zap.Error(err)) // Info log since it could just be normal shutdown
 		}
 	}()
 }
 
 // Stop The HTTP Server Listening For Requests
-func (hs *Server) Stop() {
-	log.Logger().Info("Stopping Server HTTP Server")
+func (hs *Server) Stop(logger *zap.Logger) {
+	logger.Info("Stopping Server HTTP Server")
 	err := hs.server.Shutdown(context.TODO())
 	if err != nil {
-		log.Logger().Error("Server Failed To Shutdown HTTP Server", zap.Error(err))
+		logger.Error("Server Failed To Shutdown HTTP Server", zap.Error(err))
 	}
 }
 

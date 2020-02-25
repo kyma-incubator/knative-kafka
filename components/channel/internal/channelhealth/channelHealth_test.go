@@ -52,7 +52,7 @@ func TestReadinessFlagWrites(t *testing.T) {
 // Test The Channel Health Server Via Live HTTP Calls
 func TestChannelHealthServer(t *testing.T) {
 	chs := NewChannelHealthServer(testHttpPort)
-	chs.Start()
+	chs.Start(logger)
 
 	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
 	assert.Nil(t, err)
@@ -82,7 +82,7 @@ func TestChannelHealthServer(t *testing.T) {
 	chs.SetProducerReady(true)
 	getEventToServer(t, readinessUri, http.StatusOK)
 
-	chs.Stop()
+	chs.Stop(logger)
 }
 
 //

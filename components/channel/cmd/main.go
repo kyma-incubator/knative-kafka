@@ -41,7 +41,7 @@ func main() {
 
 	// Start The Liveness And Readiness Servers
 	healthServer := channelhealth.NewChannelHealthServer("8082")
-	healthServer.Start()
+	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)
 	metricsServer := prometheus.NewMetricsServer(environment.MetricsPort, "/metrics")
@@ -97,7 +97,7 @@ func main() {
 	metricsServer.Stop()
 
 	// Stop The Liveness And Readiness Servers
-	healthServer.Stop()
+	healthServer.Stop(logger)
 }
 
 // Handler For Receiving Cloud Events And Sending The Event To Kafka

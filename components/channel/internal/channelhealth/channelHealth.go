@@ -1,7 +1,7 @@
 package channelhealth
 
 import (
-	"github.com/eric-sap/knative-kafka/components/common/pkg/kafka/health"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	"sync"
 )
 
