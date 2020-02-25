@@ -401,7 +401,7 @@
     "components/common/pkg/log",
   ]
   pruneopts = "NUT"
-  revision = "3539bae8d0d81630566ff6c972d64c36de717e57"
+  revision = "1101b3b7efe0c2f62cea84dd60fbc0f204c31205"
   source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]

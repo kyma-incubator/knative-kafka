@@ -40,6 +40,7 @@
   name = "github.com/Azure/azure-event-hubs-go"
   version = "v1.3.1"
 
+# TODO - remove this and rely on the controller import!
 # Align With Knative Eventing
 [[constraint]]
   name = "knative.dev/eventing"

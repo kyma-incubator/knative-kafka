@@ -123,7 +123,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:9b33df68643da136000e03a390b09f9412acda3eb7031c1187f3975b04ca6e9f"
+  digest = "1:8c4d34744f5b95c2ac201052799d2e2ee2c235b44351e1dd49867cd898c58d6f"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -140,8 +140,8 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "UT"
-  revision = "423680168ea46409121b5ef13ad563d4f0539fcb"
-  version = "v0.10.2"
+  revision = "3673e23532dccb38196f600eec7e8b7090ecfb12"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:160ab0a25b5cc8c8741882b75db882e18806bb1dba87680ef87604aca763bdae"
@@ -312,7 +312,7 @@
 
 [[projects]]
   branch = "knative-eventing-controller-refactor"
-  digest = "1:ccb5df657e09e2c90e1c8ed247f32d4a86419f1b093fba819878d05e16f2bd25"
+  digest = "1:ddbc5a7abc38c0a55dea2879bb989866398b8c381259f27cd752e91a61dbd663"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -334,7 +334,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "3539bae8d0d81630566ff6c972d64c36de717e57"
+  revision = "1101b3b7efe0c2f62cea84dd60fbc0f204c31205"
   source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
@@ -1171,28 +1171,25 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f7a210f993a3610d2e005f36c3649723c03aeb282b64803d96ec695b19984341"
+  digest = "1:0b6f5d42e1b6a8ecd158e504d5fe67b9ec3ef0494a608ab98d64f0db5b365c9c"
   name = "knative.dev/eventing"
   packages = [
-    "pkg/apis/duck/v1alpha1",
     "pkg/apis/duck/v1beta1",
     "pkg/configmap",
     "pkg/kncloudevents",
     "pkg/tracing",
   ]
   pruneopts = "UT"
-  revision = "d23a1ad4418e9b34f242b4012d32e9eddc57c4d8"
+  revision = "ede10baa2ba67f8f50b5e4c511d2d7a61b5b1a9a"
 
 [[projects]]
   branch = "master"
-  digest = "1:4f331228dce5503e242fad178d4383cac9268c3be73720cb271335ff7b344276"
+  digest = "1:02c8fbb5927bfefabd7ce044f68c315c025951e903c185c3ba059ea1c39d6c34"
   name = "knative.dev/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1",
-    "apis/duck/v1alpha1",
-    "apis/duck/v1beta1",
     "changeset",
     "configmap",
     "controller",
@@ -1264,7 +1261,7 @@
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
-    "knative.dev/eventing/pkg/apis/duck/v1alpha1",
+    "knative.dev/eventing/pkg/apis/duck/v1beta1",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/tracing",
     "knative.dev/pkg/apis",
