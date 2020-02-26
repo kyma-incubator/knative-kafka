@@ -23,7 +23,7 @@ func TestInitializeKafkaChannelLister(t *testing.T) {
 	}
 
 	// Perform The Test
-	healthServer := channelhealth.NewChannelHealthServer("8082")
+	healthServer := channelhealth.NewChannelHealthServer(test.HealthConfigPort)
 	err := InitializeKafkaChannelLister("", "", healthServer)
 
 	// Verify The Results

@@ -26,6 +26,7 @@ const (
 	DefaultKafkaConsumerOffset                     = "latest"
 	DefaultKafkaConsumerPollTimeoutMillis          = 500 // Timeout Millis When Polling For Events
 	MinimumKafkaConsumerOffsetCommitDurationMillis = 250 // Azure EventHubs Restrict To 250ms Between Offset Commits
+	HealthConfigPort                               = "8082"  // Listen Port For Liveness And Readiness Endpoints
 )
 
 // Variables
@@ -92,7 +93,7 @@ func main() {
 	}
 
 	// Start The Liveness And Readiness Servers
-	healthServer := dispatcherhealth.NewDispatcherHealthServer("8082")
+	healthServer := dispatcherhealth.NewDispatcherHealthServer(HealthConfigPort)
 	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)

@@ -23,6 +23,10 @@ var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
+const (
+	HealthConfigPort = "8082"  // Listen Port For Liveness And Readiness Endpoints
+)
+
 // The Main Function (Go Command)
 func main() {
 
@@ -40,7 +44,7 @@ func main() {
 	}
 
 	// Start The Liveness And Readiness Servers
-	healthServer := channelhealth.NewChannelHealthServer("8082")
+	healthServer := channelhealth.NewChannelHealthServer(HealthConfigPort)
 	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)

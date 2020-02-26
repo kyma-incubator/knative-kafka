@@ -19,4 +19,5 @@ const (
 	EventDataSchema      = "TestEventDataSchema"
 	EventDataKey         = "TestEventDataKey"
 	EventDataValue       = "TestEventDataValue"
+	HealthConfigPort     = "8082"
 )
