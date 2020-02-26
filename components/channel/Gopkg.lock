@@ -310,11 +310,12 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:2a5764849cf4821eb279287f1508fa39ebb63b8389689058e929edb003e6f2c3"
+  branch = "add-liveness-and-readiness"
+  digest = "1:213b25be001222bd2550f347c5770bb91f71483eef52d456fc405c96954b5e63"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
+    "components/common/pkg/kafka/health",
     "components/common/pkg/kafka/producer",
     "components/common/pkg/kafka/util",
     "components/common/pkg/log",
@@ -333,7 +334,8 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "42d9ded2c89fcf08f0ebde5d22df4937b2378a81"
+  revision = "48a5f1e30d5febc765b9fd6d5839f604e7cb3a3e"
+  source = "github.com/eric-sap/knative-kafka"
 
 [[projects]]
   branch = "master"
@@ -1182,6 +1184,7 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/types",
     "github.com/confluentinc/confluent-kafka-go/kafka",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",

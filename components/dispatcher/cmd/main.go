@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/controller"
 	dispatch "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
+	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcherhealth"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -25,6 +26,7 @@ const (
 	DefaultKafkaConsumerOffset                     = "latest"
 	DefaultKafkaConsumerPollTimeoutMillis          = 500 // Timeout Millis When Polling For Events
 	MinimumKafkaConsumerOffsetCommitDurationMillis = 250 // Azure EventHubs Restrict To 250ms Between Offset Commits
+	HealthConfigPort                               = "8082"  // Listen Port For Liveness And Readiness Endpoints
 )
 
 // Variables
@@ -90,6 +92,10 @@ func main() {
 		logger.Fatal("Invalid / Missing Environment Variables - Terminating")
 	}
 
+	// Start The Liveness And Readiness Servers
+	healthServer := dispatcherhealth.NewDispatcherHealthServer(HealthConfigPort)
+	healthServer.Start(logger)
+
 	// Start The Prometheus Metrics Server (Prometheus)
 	metricsServer := prometheus.NewMetricsServer(metricsPort, "/metrics")
 	metricsServer.Start()
@@ -151,13 +157,25 @@ func main() {
 		return
 	}
 
+	// Set The Liveness And Readiness Flags
+	logger.Info("Registering dispatcher as alive and ready")
+	healthServer.SetAlive(true)
+	healthServer.SetDispatcherReady(true)
+
 	logger.Info("Starting controllers.")
 	kncontroller.StartAll(stopCh, controllers[:]...)
 
 	<-stopCh
+
+	// Reset The Liveness and Readiness Flags In Preparation For Shutdown
+	healthServer.ShuttingDown()
+
 	// Close Consumer Connections
 	dispatcher.StopConsumers()
 
 	// Shutdown The Prometheus Metrics Server
 	metricsServer.Stop()
+
+	// Stop The Liveness And Readiness Servers
+	healthServer.Stop(logger)
 }

@@ -3,6 +3,7 @@ package producer
 import (
 	"github.com/cloudevents/sdk-go/pkg/cloudevents"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channelhealth"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
@@ -33,11 +34,13 @@ func TestInitializeProducer(t *testing.T) {
 	}
 
 	// Perform The Test
-	err := InitializeProducer(brokers, username, password, prometheus.NewMetricsServer("8888", "/metrics"))
+	healthServer := channelhealth.NewChannelHealthServer(test.HealthConfigPort)
+	err := InitializeProducer(brokers, username, password, prometheus.NewMetricsServer("8888", "/metrics"), healthServer)
 
 	// Verify The Results
 	assert.Nil(t, err)
 	assert.Equal(t, mockProducer, kafkaProducer)
+	assert.Equal(t, true, healthServer.IsProducerReady())
 
 	// Close The Producer (Or Subsequent Tests Will Fail Because processProducerEvents() GO Routine Is Still Running)
 	Close()

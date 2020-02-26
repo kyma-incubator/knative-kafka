@@ -5,6 +5,7 @@ import (
 	"flag"
 	"github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channelhealth"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/env"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/producer"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
@@ -20,6 +21,10 @@ var (
 	logger     *zap.Logger
 	masterURL  = flag.String("masterurl", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
+)
+
+const (
+	HealthConfigPort = "8082"  // Listen Port For Liveness And Readiness Endpoints
 )
 
 // The Main Function (Go Command)
@@ -38,18 +43,22 @@ func main() {
 		return // Quiet The Compiler ; )
 	}
 
+	// Start The Liveness And Readiness Servers
+	healthServer := channelhealth.NewChannelHealthServer(HealthConfigPort)
+	healthServer.Start(logger)
+
 	// Start The Prometheus Metrics Server (Prometheus)
 	metricsServer := prometheus.NewMetricsServer(environment.MetricsPort, "/metrics")
 	metricsServer.Start()
 
 	// Initialize The KafkaChannel Lister Used To Validate Events
-	err = channel.InitializeKafkaChannelLister(*masterURL, *kubeconfig)
+	err = channel.InitializeKafkaChannelLister(*masterURL, *kubeconfig, healthServer)
 	if err != nil {
 		logger.Fatal("Failed To Initialize KafkaChannel Lister", zap.Error(err))
 	}
 
 	// Initialize The Kafka Producer In Order To Start Processing Status Events
-	err = producer.InitializeProducer(environment.KafkaBrokers, environment.KafkaUsername, environment.KafkaPassword, metricsServer)
+	err = producer.InitializeProducer(environment.KafkaBrokers, environment.KafkaUsername, environment.KafkaPassword, metricsServer, healthServer)
 	if err != nil {
 		logger.Fatal("Failed To Initialize Kafka Producer", zap.Error(err))
 	}
@@ -72,11 +81,17 @@ func main() {
 		logger.Fatal("Failed To Create Knative CloudEvent Client", zap.Error(err))
 	}
 
+	// Set The Liveness Flag - Readiness Is Set By Individual Components
+	healthServer.SetAlive(true)
+
 	// Start Receiving Events (Blocking Call :)
 	err = knCloudEventClient.StartReceiver(context.Background(), eventReceiver.ServeHTTP)
 	if err != nil {
 		logger.Error("Failed To Start Event Receiver", zap.Error(err))
 	}
+
+	// Reset The Liveness and Readiness Flags In Preparation For Shutdown
+	healthServer.ShuttingDown()
 
 	// Close The K8S KafkaChannel Lister & The Kafka Producer
 	channel.Close()
@@ -84,6 +99,9 @@ func main() {
 
 	// Shutdown The Prometheus Metrics Server
 	metricsServer.Stop()
+
+	// Stop The Liveness And Readiness Servers
+	healthServer.Stop(logger)
 }
 
 // Handler For Receiving Cloud Events And Sending The Event To Kafka

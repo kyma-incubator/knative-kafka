@@ -234,6 +234,26 @@ func (r *Reconciler) newDispatcherDeployment(channel *knativekafkav1alpha1.Kafka
 					Containers: []corev1.Container{
 						{
 							Name:            deploymentName,
+							LivenessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(constants.HealthConfigPort),
+										Path: "/healthz",
+									},
+								},
+								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
+								PeriodSeconds: constants.HealthConfigLivenessPeriod,
+							},
+							ReadinessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(constants.HealthConfigPort),
+										Path: "/healthy",
+									},
+								},
+								InitialDelaySeconds: constants.HealthConfigReadinessDelay,
+								PeriodSeconds: constants.HealthConfigReadinessPeriod,
+							},
 							Image:           r.environment.DispatcherImage,
 							Env:             envVars,
 							ImagePullPolicy: corev1.PullAlways,

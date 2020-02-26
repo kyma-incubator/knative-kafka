@@ -36,4 +36,11 @@ const (
 	LoggingConfigVolumeName = "logging-config"
 	LoggingConfigMountPath  = "/etc/knative-kafka"
 	LoggingConfigMapName    = "knative-kafka-logging"
+
+	// Health Configuration
+	HealthConfigPort = 8082
+	HealthConfigLivenessDelay = 10
+	HealthConfigLivenessPeriod = 5
+	HealthConfigReadinessDelay = 10
+	HealthConfigReadinessPeriod = 5
 )
