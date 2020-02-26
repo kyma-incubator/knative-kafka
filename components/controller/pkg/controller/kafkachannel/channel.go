@@ -35,7 +35,7 @@ func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel
 	// Reconcile The KafkaChannel's Service
 	channelServiceErr := r.reconcileKafkaChannelService(channel)
 	if channelServiceErr != nil {
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service For Channel: %v", channelServiceErr)
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile Channel Service (Channel): %v", channelServiceErr)
 		logger.Error("Failed To Reconcile KafkaChannel Service", zap.Error(channelServiceErr))
 	} else {
 		logger.Info("Successfully Reconciled KafkaChannel Service")
@@ -44,7 +44,7 @@ func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel
 	// Reconcile The Channel Deployment's Service
 	deploymentServiceErr := r.reconcileChannelDeploymentService(channel)
 	if deploymentServiceErr != nil {
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile Channel Deployment Service For Channel: %v", deploymentServiceErr)
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile Channel Service (Deployment): %v", deploymentServiceErr)
 		logger.Error("Failed To Reconcile Channel Deployment Service", zap.Error(deploymentServiceErr))
 	} else {
 		logger.Info("Successfully Reconciled Channel Deployment Service")
@@ -53,7 +53,7 @@ func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel
 	// Reconcile The Channel's Deployment
 	deploymentErr := r.reconcileChannelDeployment(channel)
 	if deploymentErr != nil {
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelDeploymentReconciliationFailed.String(), "Failed To Reconcile Channel Deployment For Channel: %v", deploymentErr)
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelDeploymentReconciliationFailed.String(), "Failed To Reconcile Channel Deployment: %v", deploymentErr)
 		logger.Error("Failed To Reconcile Channel Deployment", zap.Error(deploymentErr))
 	} else {
 		logger.Info("Successfully Reconciled Channel Deployment")

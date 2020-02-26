@@ -33,7 +33,7 @@ func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChan
 	// Reconcile The Dispatcher's Service (For Prometheus Only)
 	_, serviceErr := r.createDispatcherService(channel)
 	if serviceErr != nil {
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherServiceReconciliationFailed.String(), "Failed To Reconcile Service For Dispatcher: %v", serviceErr)
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherServiceReconciliationFailed.String(), "Failed To Reconcile Dispatcher Service: %v", serviceErr)
 		logger.Error("Failed To Reconcile Dispatcher Service", zap.Error(serviceErr))
 	} else {
 		logger.Info("Successfully Reconciled Dispatcher Service")
@@ -42,7 +42,7 @@ func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChan
 	// Reconcile The Dispatcher's Deployment
 	_, deploymentErr := r.createDispatcherDeployment(channel)
 	if deploymentErr != nil {
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Reconcile Deployment For Dispatcher: %v", deploymentErr)
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Reconcile Dispatcher Deployment: %v", deploymentErr)
 		logger.Error("Failed To Reconcile Dispatcher Deployment", zap.Error(deploymentErr))
 		channel.Status.MarkDispatcherDeploymentFailed("DispatcherDeploymentFailed", fmt.Sprintf("Dispatcher Deployment Failed: %s", deploymentErr))
 	} else {

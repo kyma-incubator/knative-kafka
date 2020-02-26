@@ -22,6 +22,12 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *kafkav1alpha1.
 	// Get Channel Specific Logger & Add Topic Name
 	logger := util.ChannelLogger(r.Logger.Desugar(), channel).With(zap.String("TopicName", topicName))
 
+	// If The Channel Is Being Deleted Then reconcileTopic() Should Not Have Been Called - Log Warning & Skip Reconciliation
+	if channel.DeletionTimestamp != nil {
+		logger.Warn("Skipping Topic Reconciliation Of Deleted KafkaChannel - Should Never Happen")
+		return nil
+	}
+
 	// Get The Topic Configuration (First From Channel With Failover To Environment)
 	numPartitions := util.NumPartitions(channel, r.environment, r.Logger.Desugar())
 	replicationFactor := util.ReplicationFactor(channel, r.environment, r.Logger.Desugar())

@@ -58,7 +58,7 @@ func MakeFactory(ctor Ctor, logger *zap.Logger) Factory {
 		for _, reactor := range r.WithReactors {
 			kubeClient.PrependReactor("*", "*", reactor)
 			client.PrependReactor("*", "*", reactor)
-			//legacy.PrependReactor("*", "*", reactor)
+			legacy.PrependReactor("*", "*", reactor)
 			dynamicClient.PrependReactor("*", "*", reactor)
 			eventingClient.PrependReactor("*", "*", reactor)
 		}
