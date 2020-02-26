@@ -1,11 +1,11 @@
 package util
 
 import (
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	logtesting "knative.dev/pkg/logging/testing"
 	"testing"
 )
 
@@ -13,7 +13,7 @@ import (
 func TestSubscriptionLogger(t *testing.T) {
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Test Data
 	subscription := &messagingv1alpha1.Subscription{

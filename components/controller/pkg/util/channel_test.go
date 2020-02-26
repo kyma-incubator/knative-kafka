@@ -2,12 +2,12 @@ package util
 
 import (
 	"fmt"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logtesting "knative.dev/pkg/logging/testing"
 	"strings"
 	"testing"
 )
@@ -29,7 +29,7 @@ const (
 func TestChannelLogger(t *testing.T) {
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Test Data
 	channel := &knativekafkav1alpha1.KafkaChannel{
@@ -100,7 +100,7 @@ func TestChannelHostName(t *testing.T) {
 func TestNumPartitions(t *testing.T) {
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Test Data
 	environment := &env.Environment{DefaultNumPartitions: defaultNumPartitions}
@@ -120,7 +120,7 @@ func TestNumPartitions(t *testing.T) {
 func TestReplicationFactor(t *testing.T) {
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Test Data
 	environment := &env.Environment{DefaultReplicationFactor: defaultReplicationFactor}
@@ -140,7 +140,7 @@ func TestReplicationFactor(t *testing.T) {
 func TestRetentionMillis(t *testing.T) {
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Test Data
 	environment := &env.Environment{DefaultRetentionMillis: defaultRetentionMillis}
