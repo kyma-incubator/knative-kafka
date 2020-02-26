@@ -15,9 +15,6 @@ import (
 // Package Variables
 var _ = log.TestLogger() // Force The Use Of The TestLogger!
 
-// TODO - Implement Test for initialize?  probably have to wrap the call to the knative createProducer()
-//      - check code coverage - not great
-
 // Test The InitializeProducer Functionality
 func TestInitializeProducer(t *testing.T) {
 

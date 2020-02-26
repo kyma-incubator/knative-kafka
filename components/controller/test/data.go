@@ -6,6 +6,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -594,6 +595,11 @@ func NewFinalizerPatchActionImpl() clientgotesting.PatchActionImpl {
 }
 
 // Utility Function For Creating A Successful KafkaChannel Reconciled Event
-func NewKafkaChannelReconciledEvent() string {
-	return reconcilertesting.Eventf(corev1.EventTypeNormal, "KafkaChannelReconciled", `KafkaChannel reconciled: "%s/%s"`, KafkaChannelNamespace, KafkaChannelName)
+func NewKafkaChannelSuccessfulReconciliationEvent() string {
+	return reconcilertesting.Eventf(corev1.EventTypeNormal, event.KafkaChannelReconciled.String(), `KafkaChannel Reconciled Successfully: "%s/%s"`, KafkaChannelNamespace, KafkaChannelName)
+}
+
+// Utility Function For Creating A Failed KafkaChannel Reconciled Event
+func NewKafkaChannelFailedReconciliationEvent() string {
+	return reconcilertesting.Eventf(corev1.EventTypeWarning, "InternalError", constants.ReconciliationFailedError)
 }

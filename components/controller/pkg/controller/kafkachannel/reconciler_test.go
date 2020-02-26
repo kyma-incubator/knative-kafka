@@ -63,8 +63,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKnativeKafkaChannel(test.WithInitKafkaChannelConditions, test.WithKafkaChannelDeleted),
 			},
 			WantEvents: []string{
-				// TODO - see notes in FinalizeKind() about this mess (at a minimum add event constants)
-				Eventf(corev1.EventTypeNormal, "KafkaChannel Finalized", "Topic %s.%s deleted during finalization", test.KafkaChannelNamespace, test.KafkaChannelName),
+				Eventf(corev1.EventTypeNormal, event.KafkaChannelFinalized.String(), "KafkaChannel Finalized Successfully: \"%s/%s\"", test.KafkaChannelNamespace, test.KafkaChannelName),
 			},
 		},
 
@@ -102,15 +101,9 @@ func TestReconcile(t *testing.T) {
 			WantPatches: []clientgotesting.PatchActionImpl{test.NewFinalizerPatchActionImpl()},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "%s" finalizers`, test.KafkaChannelName),
-				test.NewKafkaChannelReconciledEvent(),
+				test.NewKafkaChannelSuccessfulReconciliationEvent(),
 			},
 		},
-
-		//
-		// KafkaChannel Topic
-		//
-
-		// TODO - Would like to test the edge cases of Topic Creation/Deletion here but would required expanding the TableRow struct
 
 		//
 		// KafkaChannel Channel Channel Service
@@ -137,7 +130,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherDeployment(),
 			},
 			WantCreates: []runtime.Object{test.NewKafkaChannelChannelService()},
-			WantEvents:  []string{test.NewKafkaChannelReconciledEvent()},
+			WantEvents:  []string{test.NewKafkaChannelSuccessfulReconciliationEvent()},
 		},
 		{
 			Name:                    "Reconcile Missing Channel Channel Service Error(Create)",
@@ -160,6 +153,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherDeployment(),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("create", "Services")},
+			WantErr:      true,
 			WantCreates:  []runtime.Object{test.NewKafkaChannelChannelService()},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{
@@ -177,7 +171,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile Channel Service (Channel): inducing failure for create services"),
-				test.NewKafkaChannelReconciledEvent(),
+				test.NewKafkaChannelFailedReconciliationEvent(),
 			},
 		},
 
@@ -206,7 +200,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherDeployment(),
 			},
 			WantCreates: []runtime.Object{test.NewKafkaChannelDeploymentService()},
-			WantEvents:  []string{test.NewKafkaChannelReconciledEvent()},
+			WantEvents:  []string{test.NewKafkaChannelSuccessfulReconciliationEvent()},
 		},
 		{
 			Name:                    "Reconcile Missing Channel Deployment Service Error(Create)",
@@ -229,6 +223,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherDeployment(),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("create", "services")},
+			WantErr:      true,
 			WantCreates:  []runtime.Object{test.NewKafkaChannelDeploymentService()},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{
@@ -246,7 +241,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile Channel Service (Deployment): inducing failure for create services"),
-				test.NewKafkaChannelReconciledEvent(),
+				test.NewKafkaChannelFailedReconciliationEvent(),
 			},
 		},
 
@@ -275,7 +270,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherDeployment(),
 			},
 			WantCreates: []runtime.Object{test.NewKafkaChannelChannelDeployment()},
-			WantEvents:  []string{test.NewKafkaChannelReconciledEvent()},
+			WantEvents:  []string{test.NewKafkaChannelSuccessfulReconciliationEvent()},
 		},
 		{
 			Name:                    "Reconcile Missing Channel Deployment Error(Create)",
@@ -298,6 +293,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherDeployment(),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("create", "deployments")},
+			WantErr:      true,
 			WantCreates:  []runtime.Object{test.NewKafkaChannelChannelDeployment()},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{
@@ -315,7 +311,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, event.ChannelDeploymentReconciliationFailed.String(), "Failed To Reconcile Channel Deployment: inducing failure for create deployments"),
-				test.NewKafkaChannelReconciledEvent(),
+				test.NewKafkaChannelFailedReconciliationEvent(),
 			},
 		},
 
@@ -344,7 +340,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherDeployment(),
 			},
 			WantCreates: []runtime.Object{test.NewKafkaChannelDispatcherService()},
-			WantEvents:  []string{test.NewKafkaChannelReconciledEvent()},
+			WantEvents:  []string{test.NewKafkaChannelSuccessfulReconciliationEvent()},
 		},
 		{
 			Name:                    "Reconcile Missing Dispatcher Service Error(Create)",
@@ -367,13 +363,14 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherDeployment(),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("create", "services")},
+			WantErr:      true,
 			WantCreates:  []runtime.Object{test.NewKafkaChannelDispatcherService()},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				// Note - Not currently tracking status for the Dispatcher Service since it is only for Prometheus
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, event.DispatcherServiceReconciliationFailed.String(), "Failed To Reconcile Dispatcher Service: inducing failure for create services"),
-				test.NewKafkaChannelReconciledEvent(),
+				test.NewKafkaChannelFailedReconciliationEvent(),
 			},
 		},
 
@@ -402,7 +399,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherService(),
 			},
 			WantCreates: []runtime.Object{test.NewKafkaChannelDispatcherDeployment()},
-			WantEvents:  []string{test.NewKafkaChannelReconciledEvent()},
+			WantEvents:  []string{test.NewKafkaChannelSuccessfulReconciliationEvent()},
 		},
 		{
 			Name:                    "Reconcile Missing Dispatcher Deployment Error(Create)",
@@ -425,6 +422,7 @@ func TestReconcile(t *testing.T) {
 				test.NewKafkaChannelDispatcherService(),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("create", "deployments")},
+			WantErr:      true,
 			WantCreates:  []runtime.Object{test.NewKafkaChannelDispatcherDeployment()},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{
@@ -442,7 +440,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Reconcile Dispatcher Deployment: inducing failure for create deployments"),
-				test.NewKafkaChannelReconciledEvent(),
+				test.NewKafkaChannelFailedReconciliationEvent(),
 			},
 		},
 	}

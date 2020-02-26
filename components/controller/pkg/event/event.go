@@ -5,8 +5,12 @@ type CoreV1EventType int
 
 // CoreV1 EventType "Enum" Values
 const (
+	// KafkaChannel Reconciler/Finalizer
+	KafkaChannelReconciled CoreV1EventType = iota
+	KafkaChannelFinalized
+
 	// ClusterChannelProvisioner Reconciliation
-	ClusterChannelProvisionerReconciliationFailed CoreV1EventType = iota
+	ClusterChannelProvisionerReconciliationFailed
 	ClusterChannelProvisionerUpdateStatusFailed
 
 	// Channel Updates (Finalizers, Status)
@@ -32,6 +36,10 @@ func (et CoreV1EventType) String() string {
 
 	// Map EventTypes To Their String Values
 	switch et {
+	case KafkaChannelReconciled:
+		eventTypeString = "KafkaChannelReconciled"
+	case KafkaChannelFinalized:
+		eventTypeString = "KafkaChannelFinalized"
 	case ClusterChannelProvisionerReconciliationFailed:
 		eventTypeString = "ClusterChannelProvisionerReconciliationFailed"
 	case ClusterChannelProvisionerUpdateStatusFailed:

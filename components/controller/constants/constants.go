@@ -37,4 +37,7 @@ const (
 	LoggingConfigVolumeName = "logging-config"
 	LoggingConfigMountPath  = "/etc/knative-kafka"
 	LoggingConfigMapName    = "knative-kafka-logging"
+
+	// Reconciliation Error Messages
+	ReconciliationFailedError = "reconciliation failed"
 )

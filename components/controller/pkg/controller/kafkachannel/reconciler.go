@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
+	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	kafkachannelreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkachannel"
@@ -39,14 +40,14 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.Kafka
 	// Reconcile The KafkaChannel's Kafka Topic
 	err := r.reconcileTopic(ctx, channel)
 	if err != nil {
-		return fmt.Errorf("reconciliation failed")
+		return fmt.Errorf(constants.ReconciliationFailedError)
 	}
 
 	// Reconcile The KafkaChannel's Channel & Dispatcher Deployment/Service
 	channelError := r.reconcileChannel(channel)
 	dispatcherError := r.reconcileDispatcher(channel)
 	if channelError != nil || dispatcherError != nil {
-		return fmt.Errorf("reconciliation failed")
+		return fmt.Errorf(constants.ReconciliationFailedError)
 	}
 
 	// Return Success
