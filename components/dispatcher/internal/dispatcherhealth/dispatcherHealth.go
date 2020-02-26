@@ -7,7 +7,7 @@ import (
 
 // Start The HTTP Server Listening For Requests
 
-type DispatcherHealthServer struct {
+type Server struct {
 	health.Server
 
 	// Additional Synchronization Mutexes
@@ -17,42 +17,42 @@ type DispatcherHealthServer struct {
 	dispatcherReady bool // A flag that the producer sets when it is ready
 }
 
-// Creates A New DispatcherHealthServer With Specified Configuration
-func NewDispatcherHealthServer(httpPort string) *DispatcherHealthServer {
-	channelHealth := &DispatcherHealthServer{}
-	health := health.NewHealthServer(httpPort, channelHealth)
-	channelHealth.Server = *health
+// Creates A New Server With Specified Configuration
+func NewDispatcherHealthServer(httpPort string) *Server {
+	dispatcherHealth := &Server{}
+	health := health.NewHealthServer(httpPort, dispatcherHealth)
+	dispatcherHealth.Server = *health
 
-	// Return The DispatcherHealthServer
-	return channelHealth
+	// Return The Server
+	return dispatcherHealth
 }
 
 // Synchronized Function To Set Producer Ready Flag
-func (chs *DispatcherHealthServer) SetDispatcherReady(isReady bool) {
+func (chs *Server) SetDispatcherReady(isReady bool) {
 	chs.dispatcherMutex.Lock()
 	chs.dispatcherReady = isReady
 	chs.dispatcherMutex.Unlock()
 }
 
 // Set All Liveness And Readiness Flags To False
-func (chs *DispatcherHealthServer) ShuttingDown() {
+func (chs *Server) ShuttingDown() {
 	chs.Server.ShuttingDown()
 	chs.SetDispatcherReady(false)
 }
 
 // Access Function For DispatcherReady Flag
-func (chs *DispatcherHealthServer) IsDispatcherReady() bool {
+func (chs *Server) IsDispatcherReady() bool {
 	return chs.dispatcherReady
 }
 
 // Functions That Implement The HealthInterface
 
 // HTTP Request Handler For Readiness Requests (/healthy)
-func (chs *DispatcherHealthServer) IsReady() bool {
+func (chs *Server) IsReady() bool {
 	return chs.dispatcherReady
 }
 
 // HTTP Request Handler For Liveness Requests (/healthz)
-func (chs *DispatcherHealthServer) IsAlive() bool {
+func (chs *Server) IsAlive() bool {
 	return chs.Server.IsAlive()
 }
