@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 )
 
 const (
@@ -50,6 +51,7 @@ func TestDispatcherHealthServer(t *testing.T) {
 
 	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
 	assert.Nil(t, err)
+	waitServerReady(readinessUri.String(), 3 * time.Second)
 
 	// Verify that initially the readiness status is false
 	getEventToServer(t, readinessUri, http.StatusInternalServerError)
@@ -71,6 +73,19 @@ func TestDispatcherHealthServer(t *testing.T) {
 //
 // Private Utility Functions
 //
+
+// Waits Until A GET Request Succeeds (Or Times Out)
+func waitServerReady(uri string, timeout time.Duration) {
+	// Create An HTTP Client And Send The Request Until Success Or Timeout
+	client := http.DefaultClient
+	for start := time.Now(); time.Since(start) < timeout; {
+		_, err := client.Get(uri)  // Don't care what the response actually is, only if there was an error getting it
+		if err == nil {
+			return
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+}
 
 // Sends A Simple GET Event To A URL Expecting A Specific Response Code
 func getEventToServer(t *testing.T, uri *url.URL, expectedStatus int) {

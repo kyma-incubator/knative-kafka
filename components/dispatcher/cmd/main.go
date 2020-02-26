@@ -93,7 +93,7 @@ func main() {
 
 	// Start The Liveness And Readiness Servers
 	healthServer := dispatcherhealth.NewDispatcherHealthServer("8082")
-	healthServer.Start()
+	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)
 	metricsServer := prometheus.NewMetricsServer(metricsPort, "/metrics")
@@ -176,5 +176,5 @@ func main() {
 	metricsServer.Stop()
 
 	// Stop The Liveness And Readiness Servers
-	healthServer.Stop()
+	healthServer.Stop(logger)
 }
