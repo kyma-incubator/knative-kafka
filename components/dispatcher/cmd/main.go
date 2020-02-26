@@ -156,13 +156,13 @@ func main() {
 		return
 	}
 
-	logger.Info("Starting controllers.")
-	kncontroller.StartAll(stopCh, controllers[:]...)
-
 	// Set The Liveness And Readiness Flags
-	// TODO: Set the readiness flags based on the individual components
+	logger.Info("Registering dispatcher as alive and ready")
 	healthServer.SetAlive(true)
 	healthServer.SetDispatcherReady(true)
+
+	logger.Info("Starting controllers.")
+	kncontroller.StartAll(stopCh, controllers[:]...)
 
 	<-stopCh
 
