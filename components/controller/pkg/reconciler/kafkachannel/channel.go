@@ -3,6 +3,7 @@ package kafkachannel
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
@@ -395,22 +396,22 @@ func (r *Reconciler) newChannelDeployment(channel *knativekafkav1alpha1.KafkaCha
 							LivenessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: constants.HealthConfigLivenessPath,
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.LivenessPath,
 									},
 								},
-								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
-								PeriodSeconds: constants.HealthConfigLivenessPeriod,
+								InitialDelaySeconds: constants.ChannelLivenessDelay,
+								PeriodSeconds: constants.ChannelLivenessPeriod,
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: constants.HealthConfigReadinessPath,
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.ReadinessPath,
 									},
 								},
-								InitialDelaySeconds: constants.HealthConfigReadinessDelay,
-								PeriodSeconds: constants.HealthConfigReadinessPeriod,
+								InitialDelaySeconds: constants.ChannelReadinessDelay,
+								PeriodSeconds: constants.ChannelReadinessPeriod,
 							},
 							Image: r.environment.ChannelImage,
 							Ports: []corev1.ContainerPort{

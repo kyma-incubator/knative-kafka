@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
@@ -366,22 +367,22 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 							LivenessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: constants.HealthConfigLivenessPath,
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.LivenessPath,
 									},
 								},
-								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
-								PeriodSeconds: constants.HealthConfigLivenessPeriod,
+								InitialDelaySeconds: constants.ChannelLivenessDelay,
+								PeriodSeconds: constants.ChannelLivenessPeriod,
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: constants.HealthConfigReadinessPath,
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.ReadinessPath,
 									},
 								},
-								InitialDelaySeconds: constants.HealthConfigReadinessDelay,
-								PeriodSeconds: constants.HealthConfigReadinessPeriod,
+								InitialDelaySeconds: constants.ChannelReadinessDelay,
+								PeriodSeconds: constants.ChannelReadinessPeriod,
 							},
 							Image: ChannelImage,
 							Ports: []corev1.ContainerPort{
@@ -538,22 +539,22 @@ func GetNewK8SDispatcherDeployment(topicName string, resourceVersion int) *appsv
 							LivenessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: constants.HealthConfigLivenessPath,
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.LivenessPath,
 									},
 								},
-								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
-								PeriodSeconds: constants.HealthConfigLivenessPeriod,
+								InitialDelaySeconds: constants.DispatcherLivenessDelay,
+								PeriodSeconds: constants.DispatcherLivenessPeriod,
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: constants.HealthConfigReadinessPath,
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.ReadinessPath,
 									},
 								},
-								InitialDelaySeconds: constants.HealthConfigReadinessDelay,
-								PeriodSeconds: constants.HealthConfigReadinessPeriod,
+								InitialDelaySeconds: constants.DispatcherReadinessDelay,
+								PeriodSeconds: constants.DispatcherReadinessPeriod,
 							},
 							Env: []corev1.EnvVar{
 								{

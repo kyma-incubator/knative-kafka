@@ -9,7 +9,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/controller"
 	dispatch "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
-	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcherhealth"
+	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/health"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -26,7 +26,6 @@ const (
 	DefaultKafkaConsumerOffset                     = "latest"
 	DefaultKafkaConsumerPollTimeoutMillis          = 500 // Timeout Millis When Polling For Events
 	MinimumKafkaConsumerOffsetCommitDurationMillis = 250 // Azure EventHubs Restrict To 250ms Between Offset Commits
-	HealthConfigPort                               = "8082"  // Listen Port For Liveness And Readiness Endpoints
 )
 
 // Variables

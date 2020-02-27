@@ -2,7 +2,7 @@ package channel
 
 import (
 	"errors"
-	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channelhealth"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	knativekafkainformers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions"

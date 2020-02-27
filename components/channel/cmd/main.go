@@ -5,8 +5,8 @@ import (
 	"flag"
 	"github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
-	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channelhealth"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/env"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/producer"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
@@ -21,10 +21,6 @@ var (
 	logger     *zap.Logger
 	masterURL  = flag.String("masterurl", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-)
-
-const (
-	HealthConfigPort = "8082"  // Listen Port For Liveness And Readiness Endpoints
 )
 
 // The Main Function (Go Command)

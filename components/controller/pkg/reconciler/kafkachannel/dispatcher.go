@@ -3,6 +3,7 @@ package kafkachannel
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
@@ -237,22 +238,22 @@ func (r *Reconciler) newDispatcherDeployment(channel *knativekafkav1alpha1.Kafka
 							LivenessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: constants.HealthConfigLivenessPath,
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.LivenessPath,
 									},
 								},
-								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
-								PeriodSeconds: constants.HealthConfigLivenessPeriod,
+								InitialDelaySeconds: constants.DispatcherLivenessDelay,
+								PeriodSeconds: constants.DispatcherLivenessPeriod,
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: constants.HealthConfigReadinessPath,
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.ReadinessPath,
 									},
 								},
-								InitialDelaySeconds: constants.HealthConfigReadinessDelay,
-								PeriodSeconds: constants.HealthConfigReadinessPeriod,
+								InitialDelaySeconds: constants.DispatcherReadinessDelay,
+								PeriodSeconds: constants.DispatcherReadinessPeriod,
 							},
 							Image:           r.environment.DispatcherImage,
 							Env:             envVars,
