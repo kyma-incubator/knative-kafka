@@ -73,7 +73,8 @@ func TestNewChannelOwnerReference(t *testing.T) {
 	assert.Equal(t, knativekafkav1alpha1.SchemeGroupVersion.String(), controllerRef.APIVersion)
 	assert.Equal(t, constants.KafkaChannelKind, controllerRef.Kind)
 	assert.Equal(t, channel.ObjectMeta.Name, controllerRef.Name)
-	assert.True(t, *controllerRef.Controller)
+	assert.True(t, *controllerRef.BlockOwnerDeletion)
+	assert.False(t, *controllerRef.Controller)
 }
 
 // Test The ChannelDeploymentDnsSafeName() Functionality

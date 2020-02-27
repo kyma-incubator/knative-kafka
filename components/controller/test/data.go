@@ -224,7 +224,7 @@ func NewKafkaChannelChannelService() *corev1.Service {
 				"k8s-app":              "knative-kafka-channels",
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				NewChannelOwnerRef(true),
+				NewChannelOwnerRef(),
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -402,7 +402,7 @@ func NewKafkaChannelDispatcherService() *corev1.Service {
 				"k8s-app":                 "knative-kafka-dispatchers",
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				NewChannelOwnerRef(true),
+				NewChannelOwnerRef(),
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -445,7 +445,7 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 				"kafkachannel":            KafkaChannelName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				NewChannelOwnerRef(true),
+				NewChannelOwnerRef(),
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -566,15 +566,16 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 }
 
 // Utility Function For Creating A New OwnerReference Model For The Test Channel
-func NewChannelOwnerRef(isController bool) metav1.OwnerReference {
+func NewChannelOwnerRef() metav1.OwnerReference {
 	blockOwnerDeletion := true
+	controller := false
 	return metav1.OwnerReference{
 		APIVersion:         "knativekafka.kyma-project.io/v1alpha1",
 		Kind:               constants.KafkaChannelKind,
 		Name:               KafkaChannelName,
 		UID:                "",
 		BlockOwnerDeletion: &blockOwnerDeletion,
-		Controller:         &isController,
+		Controller:         &controller,
 	}
 }
 
