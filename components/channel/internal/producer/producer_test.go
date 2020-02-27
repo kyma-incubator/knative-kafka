@@ -6,12 +6,10 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
 	channelhealth "github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 )
 
@@ -36,7 +34,7 @@ func TestInitializeProducer(t *testing.T) {
 	}
 
 	// Perform The Test
-	healthServer := channelhealth.NewChannelHealthServer(strconv.Itoa(health.HealthPort))
+	healthServer := channelhealth.NewChannelHealthServer("12345")
 	err := InitializeProducer(brokers, username, password, prometheus.NewMetricsServer("8888", "/metrics"), healthServer)
 
 	// Verify The Results
