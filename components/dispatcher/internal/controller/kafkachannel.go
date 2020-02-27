@@ -141,7 +141,7 @@ func (r Reconciler) Reconcile(ctx context.Context, key string) error {
 // Reconcile The Specified KafkaChannel
 func (r Reconciler) reconcile(channel *kafkav1alpha1.KafkaChannel) error {
 
-	if channel.Spec.Subscribable.Subscribers == nil {
+	if channel.Spec.Subscribable == nil || channel.Spec.Subscribable.Subscribers == nil {
 		r.Logger.Info("KafkaChannel Has No Subscribers - Nothing To Reconcile")
 		return nil
 	}
