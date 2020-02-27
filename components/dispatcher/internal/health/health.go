@@ -41,7 +41,7 @@ func (chs *Server) Shutdown() {
 }
 
 // Access Function For DispatcherReady Flag
-func (chs *Server) IsDispatcherReady() bool {
+func (chs *Server) DispatcherReady() bool {
 	return chs.dispatcherReady
 }
 

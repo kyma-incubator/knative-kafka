@@ -40,7 +40,7 @@ func TestInitializeProducer(t *testing.T) {
 	// Verify The Results
 	assert.Nil(t, err)
 	assert.Equal(t, mockProducer, kafkaProducer)
-	assert.Equal(t, true, healthServer.IsProducerReady())
+	assert.Equal(t, true, healthServer.ProducerReady())
 
 	// Close The Producer (Or Subsequent Tests Will Fail Because processProducerEvents() GO Routine Is Still Running)
 	Close()

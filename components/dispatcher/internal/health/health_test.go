@@ -39,9 +39,9 @@ func TestReadinessFlagWrites(t *testing.T) {
 
 	// Test Readiness Flags
 	chs.SetDispatcherReady(false)
-	assert.Equal(t, false, chs.IsDispatcherReady())
+	assert.Equal(t, false, chs.DispatcherReady())
 	chs.SetDispatcherReady(true)
-	assert.Equal(t, true, chs.IsDispatcherReady())
+	assert.Equal(t, true, chs.DispatcherReady())
 }
 
 // Test The Dispatcher Health Server Via Live HTTP Calls

@@ -51,12 +51,12 @@ func (chs *Server) Shutdown() {
 }
 
 // Access Function For ProducerReady Flag
-func (chs *Server) IsProducerReady() bool {
+func (chs *Server) ProducerReady() bool {
 	return chs.producerReady
 }
 
 // Access Function For ChannelReady Flag
-func (chs *Server) IsChannelReady() bool {
+func (chs *Server) ChannelReady() bool {
 	return chs.channelReady
 }
 

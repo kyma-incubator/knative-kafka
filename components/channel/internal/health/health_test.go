@@ -40,13 +40,13 @@ func TestReadinessFlagWrites(t *testing.T) {
 
 	// Test Readiness Flags
 	chs.SetProducerReady(false)
-	assert.Equal(t, false, chs.IsProducerReady())
+	assert.Equal(t, false, chs.ProducerReady())
 	chs.SetProducerReady(true)
-	assert.Equal(t, true, chs.IsProducerReady())
+	assert.Equal(t, true, chs.ProducerReady())
 	chs.SetChannelReady(false)
-	assert.Equal(t, false, chs.IsChannelReady())
+	assert.Equal(t, false, chs.ChannelReady())
 	chs.SetChannelReady(true)
-	assert.Equal(t, true, chs.IsChannelReady())
+	assert.Equal(t, true, chs.ChannelReady())
 
 }
 

@@ -29,7 +29,7 @@ func TestInitializeKafkaChannelLister(t *testing.T) {
 	// Verify The Results
 	assert.Nil(t, err)
 	assert.NotNil(t, kafkaChannelLister)
-	assert.Equal(t, true, healthServer.IsChannelReady())
+	assert.Equal(t, true, healthServer.ChannelReady())
 }
 
 // Test All The ValidateKafkaChannel() Functionality
