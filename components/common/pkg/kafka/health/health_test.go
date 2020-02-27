@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 )
 
 // Test Constants
@@ -127,6 +128,7 @@ func TestHealthServer(t *testing.T) {
 	assert.Nil(t, err)
 	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
 	assert.Nil(t, err)
+	waitServerReady(readinessUri.String(), 3 * time.Second)
 
 	// Test basic functionality - advanced logical tests are in TestHealthHandler
 	getEventToServer(t, livenessUri, http.StatusInternalServerError)
@@ -140,6 +142,19 @@ func TestHealthServer(t *testing.T) {
 //
 // Private Utility Functions
 //
+
+// Waits Until A GET Request Succeeds (Or Times Out)
+func waitServerReady(uri string, timeout time.Duration) {
+	// Create An HTTP Client And Send The Request Until Success Or Timeout
+	client := http.DefaultClient
+	for start := time.Now(); time.Since(start) < timeout; {
+		_, err := client.Get(uri)  // Don't care what the response actually is, only if there was an error getting it
+		if err == nil {
+			return
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+}
 
 // Sends A Simple GET Event To A URL Expecting A Specific Response Code
 func getEventToServer(t *testing.T, uri *url.URL, expectedStatus int) {
