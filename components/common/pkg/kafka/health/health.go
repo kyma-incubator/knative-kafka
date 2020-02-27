@@ -2,7 +2,6 @@ package health
 
 import (
 	"context"
-	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	"go.uber.org/zap"
 	"net/http"
 	"sync"
@@ -57,8 +56,8 @@ func (hs *Server) Shutdown() {
 func (hs *Server) initializeServer(httpPort string) {
 
 	serveMux := http.NewServeMux()
-	serveMux.HandleFunc(constants.HealthConfigLivenessPath, hs.handleLiveness)
-	serveMux.HandleFunc(constants.HealthConfigReadinessPath, hs.handleReadiness)
+	serveMux.HandleFunc(LivenessPath, hs.handleLiveness)
+	serveMux.HandleFunc(ReadinessPath, hs.handleReadiness)
 
 	// Create The Server For Configured HTTP Port
 	server := &http.Server{Addr: ":" + httpPort, Handler: serveMux}
