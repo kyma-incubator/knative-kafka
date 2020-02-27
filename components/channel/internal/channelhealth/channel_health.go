@@ -44,8 +44,8 @@ func (chs *Server) SetChannelReady(isReady bool) {
 }
 
 // Set All Liveness And Readiness Flags To False
-func (chs *Server) ShuttingDown() {
-	chs.Server.ShuttingDown()
+func (chs *Server) Shutdown() {
+	chs.Server.Shutdown()
 	chs.SetProducerReady(false)
 	chs.SetChannelReady(false)
 }
@@ -63,11 +63,11 @@ func (chs *Server) IsChannelReady() bool {
 // Functions That Implement The HealthInterface
 
 // Response Function For Readiness Requests (/healthy)
-func (chs *Server) IsReady() bool {
+func (chs *Server) Ready() bool {
 	return chs.producerReady && chs.channelReady
 }
 
 // Response Function For Liveness Requests (/healthz)
-func (chs *Server) IsAlive() bool {
+func (chs *Server) Alive() bool {
 	return chs.Server.IsAlive()
 }

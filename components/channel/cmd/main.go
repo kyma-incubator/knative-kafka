@@ -91,7 +91,7 @@ func main() {
 	}
 
 	// Reset The Liveness and Readiness Flags In Preparation For Shutdown
-	healthServer.ShuttingDown()
+	healthServer.Shutdown()
 
 	// Close The K8S KafkaChannel Lister & The Kafka Producer
 	channel.Close()

@@ -35,8 +35,8 @@ func (chs *Server) SetDispatcherReady(isReady bool) {
 }
 
 // Set All Liveness And Readiness Flags To False
-func (chs *Server) ShuttingDown() {
-	chs.Server.ShuttingDown()
+func (chs *Server) Shutdown() {
+	chs.Server.Shutdown()
 	chs.SetDispatcherReady(false)
 }
 
@@ -48,11 +48,11 @@ func (chs *Server) IsDispatcherReady() bool {
 // Functions That Implement The HealthInterface
 
 // Response Function For Readiness Requests (/healthy)
-func (chs *Server) IsReady() bool {
+func (chs *Server) Ready() bool {
 	return chs.dispatcherReady
 }
 
 // Response Function For Liveness Requests (/healthz)
-func (chs *Server) IsAlive() bool {
-	return chs.Server.IsAlive()
+func (chs *Server) Alive() bool {
+	return chs.Server.Alive()
 }

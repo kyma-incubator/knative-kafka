@@ -39,7 +39,7 @@ func (in *KafkaChannelStatus) GetCondition(t apis.ConditionType) *apis.Condition
 	return kafkaCondSet.Manage(in).GetCondition(t)
 }
 
-// IsReady returns true if the resource is ready overall.
+// Ready returns true if the resource is ready overall.
 func (in *KafkaChannelStatus) IsReady() bool {
 	return kafkaCondSet.Manage(in).IsHappy()
 }

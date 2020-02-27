@@ -168,7 +168,7 @@ func main() {
 	<-stopCh
 
 	// Reset The Liveness and Readiness Flags In Preparation For Shutdown
-	healthServer.ShuttingDown()
+	healthServer.Shutdown()
 
 	// Close Consumer Connections
 	dispatcher.StopConsumers()

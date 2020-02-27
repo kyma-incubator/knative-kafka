@@ -10,8 +10,8 @@ import (
 
 // Interface For Providing Overrides For Liveness And Readiness Information
 type Status interface {
-	IsAlive() bool
-	IsReady() bool
+	Alive() bool
+	Ready() bool
 }
 
 // Structure Containing Basic Liveness Information For Health Server
@@ -49,7 +49,7 @@ func (hs *Server) SetAlive(isAlive bool) {
 }
 
 // Set All Liveness And Readiness Flags To False
-func (hs *Server) ShuttingDown() {
+func (hs *Server) Shutdown() {
 	hs.SetAlive(false)
 }
 
@@ -88,7 +88,7 @@ func (hs *Server) Stop(logger *zap.Logger) {
 }
 
 // Access Function For "alive" Flag
-func (hs *Server) IsAlive() bool {
+func (hs *Server) Alive() bool {
 	return hs.alive
 }
 
@@ -98,7 +98,7 @@ func (hs *Server) handleLiveness(responseWriter http.ResponseWriter, request *ht
 		responseWriter.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if hs.status.IsAlive() {
+	if hs.status.Alive() {
 		responseWriter.WriteHeader(http.StatusOK)
 	} else {
 		responseWriter.WriteHeader(http.StatusInternalServerError)
@@ -111,7 +111,7 @@ func (hs *Server) handleReadiness(responseWriter http.ResponseWriter, request *h
 		responseWriter.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if hs.status.IsReady() {
+	if hs.status.Ready() {
 		responseWriter.WriteHeader(http.StatusOK)
 	} else {
 		responseWriter.WriteHeader(http.StatusInternalServerError)

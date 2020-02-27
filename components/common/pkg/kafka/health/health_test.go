@@ -28,12 +28,12 @@ type testStatus struct {
 }
 
 // Mock Function That Returns The Mock Status "Alive" Flag
-func (ts *testStatus) IsAlive() bool {
-	return ts.server.IsAlive()
+func (ts *testStatus) Alive() bool {
+	return ts.server.Alive()
 }
 
 // Mock Function That Returns True For Readiness Flag
-func (ts *testStatus) IsReady() bool {
+func (ts *testStatus) Ready() bool {
 	return true
 }
 
@@ -67,12 +67,12 @@ func TestFlagWrites(t *testing.T) {
 
 	// Test Liveness Flag
 	health.SetAlive(false)
-	assert.Equal(t, false, health.IsAlive())
+	assert.Equal(t, false, health.Alive())
 	health.SetAlive(true)
-	assert.Equal(t, true, health.IsAlive())
+	assert.Equal(t, true, health.Alive())
 
 	// Verify that Readiness is true by default
-	assert.Equal(t, true, health.status.IsReady())
+	assert.Equal(t, true, health.status.Ready())
 }
 
 // Test Unsupported Events Requests
@@ -114,7 +114,7 @@ func TestHealthHandler(t *testing.T) {
 	getEventToHandler(t, health.handleLiveness, livenessPath, http.StatusOK)
 
 	// Verify that the shutdown process sets liveness to false
-	health.ShuttingDown()
+	health.Shutdown()
 	getEventToHandler(t, health.handleLiveness, livenessPath, http.StatusInternalServerError)
 }
 

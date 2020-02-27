@@ -1,4 +1,4 @@
-package dispatcherhealth
+package channelhealth
 
 import (
 	"fmt"
@@ -19,34 +19,40 @@ const (
 // Set Up Test Logger
 var logger = log.TestLogger()
 
-// Test The NewDispatcherHealthServer() Functionality
-func TestNewDispatcherHealthServer(t *testing.T) {
+// Test The NewChannelHealthServer() Functionality
+func TestNewChannelHealthServer(t *testing.T) {
 
 	// Create A Health Server
-	health := NewDispatcherHealthServer(testHttpPort)
+	health := NewChannelHealthServer(testHttpPort)
 
 	// Validate The EventProxy
 	assert.NotNil(t, health)
-	assert.Equal(t, false, health.IsAlive())
-	assert.Equal(t, false, health.dispatcherReady)
+	assert.Equal(t, false, health.Alive())
+	assert.Equal(t, false, health.channelReady)
+	assert.Equal(t, false, health.producerReady)
 }
 
 // Test Flag Set And Reset Functions
 func TestReadinessFlagWrites(t *testing.T) {
 
 	// Create A New Health Server
-	chs := NewDispatcherHealthServer(testHttpPort)
+	chs := NewChannelHealthServer(testHttpPort)
 
 	// Test Readiness Flags
-	chs.SetDispatcherReady(false)
-	assert.Equal(t, false, chs.IsDispatcherReady())
-	chs.SetDispatcherReady(true)
-	assert.Equal(t, true, chs.IsDispatcherReady())
+	chs.SetProducerReady(false)
+	assert.Equal(t, false, chs.IsProducerReady())
+	chs.SetProducerReady(true)
+	assert.Equal(t, true, chs.IsProducerReady())
+	chs.SetChannelReady(false)
+	assert.Equal(t, false, chs.IsChannelReady())
+	chs.SetChannelReady(true)
+	assert.Equal(t, true, chs.IsChannelReady())
+
 }
 
-// Test The Dispatcher Health Server Via Live HTTP Calls
-func TestDispatcherHealthServer(t *testing.T) {
-	chs := NewDispatcherHealthServer(testHttpPort)
+// Test The Channel Health Server Via Live HTTP Calls
+func TestChannelHealthServer(t *testing.T) {
+	chs := NewChannelHealthServer(testHttpPort)
 	chs.Start(logger)
 
 	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
@@ -56,16 +62,27 @@ func TestDispatcherHealthServer(t *testing.T) {
 	// Verify that initially the readiness status is false
 	getEventToServer(t, readinessUri, http.StatusInternalServerError)
 
-	// Verify that the readiness status required setting all of the readiness flags
-	chs.SetDispatcherReady(true)
-	getEventToServer(t, readinessUri, http.StatusOK)
-
-	// Verify that the shutdown process sets all statuses to not live / not ready
-	chs.SetDispatcherReady(true)
-	getEventToServer(t, readinessUri, http.StatusOK)
-
-	chs.ShuttingDown()
+	// Verify that the readiness status requires setting all of the readiness flags
+	chs.SetChannelReady(true)
 	getEventToServer(t, readinessUri, http.StatusInternalServerError)
+	chs.SetProducerReady(true)
+	getEventToServer(t, readinessUri, http.StatusOK)
+	chs.SetChannelReady(false)
+	getEventToServer(t, readinessUri, http.StatusInternalServerError)
+
+	// Verify that the shutdown process sets the readiness status to false
+	chs.SetProducerReady(true)
+	chs.SetChannelReady(true)
+	getEventToServer(t, readinessUri, http.StatusOK)
+
+	chs.Shutdown()
+	getEventToServer(t, readinessUri, http.StatusInternalServerError)
+
+
+	getEventToServer(t, readinessUri, http.StatusInternalServerError)
+	chs.SetChannelReady(true)
+	chs.SetProducerReady(true)
+	getEventToServer(t, readinessUri, http.StatusOK)
 
 	chs.Stop(logger)
 }
