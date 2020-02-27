@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
@@ -48,6 +47,7 @@ func main() {
 
 	// Load Environment Variables
 	metricsPort := os.Getenv("METRICS_PORT")
+	healthPort := os.Getenv("HEALTH_PORT")
 	rawExpBackoff, expBackoffPresent := os.LookupEnv("EXPONENTIAL_BACKOFF")
 	exponentialBackoff, _ := strconv.ParseBool(rawExpBackoff)
 	maxRetryTime, _ := strconv.ParseInt(os.Getenv("MAX_RETRY_TIME"), 10, 64)
@@ -67,6 +67,7 @@ func main() {
 
 	// Log Environment Variables
 	logger.Info("Environment Variables",
+		zap.String("HEALTH_PORT", healthPort),
 		zap.String("METRICS_PORT", metricsPort),
 		zap.Bool("EXPONENTIAL_BACKOFF", exponentialBackoff),
 		zap.Int64("INITIAL_RETRY_INTERVAL", initialRetryInterval),
@@ -81,6 +82,7 @@ func main() {
 
 	// Validate Required Environment Variables
 	if len(metricsPort) == 0 ||
+		len(healthPort) == 0 ||
 		maxRetryTime <= 0 ||
 		initialRetryInterval <= 0 ||
 		!expBackoffPresent ||
@@ -93,7 +95,7 @@ func main() {
 	}
 
 	// Start The Liveness And Readiness Servers
-	healthServer := dispatcherhealth.NewDispatcherHealthServer(strconv.Itoa(health.HealthPort))
+	healthServer := dispatcherhealth.NewDispatcherHealthServer(healthPort)
 	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)

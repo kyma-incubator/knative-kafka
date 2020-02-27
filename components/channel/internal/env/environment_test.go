@@ -11,6 +11,7 @@ import (
 // Test Constants
 const (
 	metricsPort   = "TestMetricsPort"
+	healthPort    = "TestHealthPort"
 	kafkaBrokers  = "TestKafkaBrokers"
 	kafkaUsername = "TestKafkaUsername"
 	kafkaPassword = "TestKafkaPassword"
@@ -23,6 +24,7 @@ var _ = log.TestLogger() // Force The Use Of The TestLogger!
 type TestCase struct {
 	name          string
 	metricsPort   string
+	healthPort    string
 	kafkaBrokers  string
 	kafkaUsername string
 	kafkaPassword string
@@ -39,6 +41,11 @@ func TestGetEnvironment(t *testing.T) {
 
 	testCase = getValidTestCase("Missing Required Config - MetricsPort")
 	testCase.metricsPort = ""
+	testCase.expectError = true
+	testCases = append(testCases, testCase)
+
+	testCase = getValidTestCase("Missing Required Config - HealthPort")
+	testCase.healthPort = ""
 	testCase.expectError = true
 	testCases = append(testCases, testCase)
 
@@ -63,6 +70,7 @@ func TestGetEnvironment(t *testing.T) {
 		// (Re)Setup The Environment Variables From TestCase
 		os.Clearenv()
 		assert.Nil(t, os.Setenv(MetricsPortEnvVarKey, testCase.metricsPort))
+		assert.Nil(t, os.Setenv(HealthPortEnvVarKey, testCase.healthPort))
 		assert.Nil(t, os.Setenv(KafkaBrokersEnvVarKey, testCase.kafkaBrokers))
 		assert.Nil(t, os.Setenv(KafkaUsernameEnvVarKey, testCase.kafkaUsername))
 		assert.Nil(t, os.Setenv(KafkaPasswordEnvVarKey, testCase.kafkaPassword))
@@ -76,6 +84,7 @@ func TestGetEnvironment(t *testing.T) {
 		} else {
 			assert.Nil(t, err)
 			assert.Equal(t, testCase.metricsPort, environment.MetricsPort)
+			assert.Equal(t, testCase.healthPort, environment.HealthPort)
 			assert.Equal(t, testCase.kafkaBrokers, environment.KafkaBrokers)
 			assert.Equal(t, testCase.kafkaUsername, environment.KafkaUsername)
 			assert.Equal(t, testCase.kafkaPassword, environment.KafkaPassword)
@@ -88,6 +97,7 @@ func getValidTestCase(name string) TestCase {
 	return TestCase{
 		name:          name,
 		metricsPort:   metricsPort,
+		healthPort:    healthPort,
 		kafkaBrokers:  kafkaBrokers,
 		kafkaUsername: kafkaUsername,
 		kafkaPassword: kafkaPassword,

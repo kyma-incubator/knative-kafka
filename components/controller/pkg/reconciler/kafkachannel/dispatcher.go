@@ -310,6 +310,10 @@ func (r *Reconciler) dispatcherDeploymentEnvVars(channel *knativekafkav1alpha1.K
 			Value: strconv.Itoa(r.environment.MetricsPort),
 		},
 		{
+			Name:  env.HealthPortEnvVarKey,
+			Value: strconv.Itoa(constants.HealthPort),
+		},
+		{
 			Name:  env.ChannelKeyEnvVarKey,
 			Value: util.ChannelKey(channel),
 		},

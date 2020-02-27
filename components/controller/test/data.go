@@ -25,6 +25,7 @@ const (
 	// Controller Config Test Data
 	ServiceAccount                         = "TestServiceAccount"
 	MetricsPort                            = 9876
+	HealthPort                             = 8082
 	KafkaSecret                            = "testkafkasecret"
 	KafkaOffsetCommitMessageCount          = 99
 	KafkaOffsetCommitDurationMillis        = 9999
@@ -397,6 +398,10 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 									Value: strconv.Itoa(MetricsPort),
 								},
 								{
+									Name:  "HEALTH_PORT",
+									Value: strconv.Itoa(HealthPort),
+								},
+								{
 									Name: env.KafkaBrokerEnvVarKey,
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
@@ -560,6 +565,10 @@ func GetNewK8SDispatcherDeployment(topicName string, resourceVersion int) *appsv
 								{
 									Name:  env.MetricsPortEnvVarKey,
 									Value: strconv.Itoa(MetricsPort),
+								},
+								{
+									Name:  env.HealthPortEnvVarKey,
+									Value: strconv.Itoa(HealthPort),
 								},
 								{
 									Name:  env.ChannelKeyEnvVarKey,

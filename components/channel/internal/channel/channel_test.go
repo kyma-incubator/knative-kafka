@@ -3,13 +3,11 @@ package channel
 import (
 	channelhealth "github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	fakeclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	"strconv"
 	"testing"
 )
 
@@ -25,7 +23,7 @@ func TestInitializeKafkaChannelLister(t *testing.T) {
 	}
 
 	// Perform The Test
-	healthServer := channelhealth.NewChannelHealthServer(strconv.Itoa(health.HealthPort))
+	healthServer := channelhealth.NewChannelHealthServer("12345")
 	err := InitializeKafkaChannelLister("", "", healthServer)
 
 	// Verify The Results

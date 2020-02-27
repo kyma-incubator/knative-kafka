@@ -38,6 +38,7 @@ const (
 	LoggingConfigMapName    = "knative-kafka-logging"
 
 	// Health Configuration
+	HealthPort                = 8082
 	ChannelLivenessDelay      = 10
 	ChannelLivenessPeriod     = 5
 	ChannelReadinessDelay     = 10

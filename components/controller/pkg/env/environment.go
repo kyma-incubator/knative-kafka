@@ -14,6 +14,7 @@ const (
 	// Knative-Kafka Configuration
 	ServiceAccountEnvVarKey = "SERVICE_ACCOUNT"
 	MetricsPortEnvVarKey    = "METRICS_PORT"
+	HealthPortEnvVarKey     = "HEALTH_PORT"
 
 	// Kafka Authorization
 	KafkaBrokerEnvVarKey   = "KAFKA_BROKERS"
