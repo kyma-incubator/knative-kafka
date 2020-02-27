@@ -28,7 +28,7 @@ var createProducerFunctionWrapper = func(brokers string, username string, passwo
 }
 
 // Initialize The Producer
-func InitializeProducer(brokers string, username string, password string, metricsServer *prometheus.MetricsServer, healthServer *channelhealth.Server) error {
+func InitializeProducer(brokers string, username string, password string, metricsServer *prometheus.MetricsServer, healthServer *health.Server) error {
 
 	healthServer.SetProducerReady(false)
 
@@ -131,7 +131,7 @@ func Close() {
 }
 
 // Infinite Loop For Processing Kafka Producer Events
-func processProducerEvents(healthServer *channelhealth.Server) {
+func processProducerEvents(healthServer *health.Server) {
 	for {
 		select {
 		case msg := <-kafkaProducer.Events():

@@ -1,4 +1,4 @@
-package dispatcherhealth
+package health
 
 import (
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"

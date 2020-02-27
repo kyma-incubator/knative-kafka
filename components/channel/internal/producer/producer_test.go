@@ -34,7 +34,7 @@ func TestInitializeProducer(t *testing.T) {
 	}
 
 	// Perform The Test
-	healthServer := channelhealth.NewChannelHealthServer(test.HealthConfigPort)
+	healthServer := health.NewChannelHealthServer(test.HealthConfigPort)
 	err := InitializeProducer(brokers, username, password, prometheus.NewMetricsServer("8888", "/metrics"), healthServer)
 
 	// Verify The Results

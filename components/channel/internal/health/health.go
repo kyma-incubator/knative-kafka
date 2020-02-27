@@ -1,4 +1,4 @@
-package channelhealth
+package health
 
 import (
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
@@ -69,5 +69,5 @@ func (chs *Server) Ready() bool {
 
 // Response Function For Liveness Requests (/healthz)
 func (chs *Server) Alive() bool {
-	return chs.Server.IsAlive()
+	return chs.Server.Alive()
 }

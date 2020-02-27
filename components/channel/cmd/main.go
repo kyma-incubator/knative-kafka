@@ -44,7 +44,7 @@ func main() {
 	}
 
 	// Start The Liveness And Readiness Servers
-	healthServer := channelhealth.NewChannelHealthServer(HealthConfigPort)
+	healthServer := health.NewChannelHealthServer(HealthConfigPort)
 	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)
