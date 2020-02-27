@@ -367,7 +367,7 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
 										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: "/healthz",
+										Path: constants.HealthConfigLivenessPath,
 									},
 								},
 								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
@@ -377,7 +377,7 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
 										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: "/healthy",
+										Path: constants.HealthConfigReadinessPath,
 									},
 								},
 								InitialDelaySeconds: constants.HealthConfigReadinessDelay,
@@ -539,7 +539,7 @@ func GetNewK8SDispatcherDeployment(topicName string, resourceVersion int) *appsv
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
 										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: "/healthz",
+										Path: constants.HealthConfigLivenessPath,
 									},
 								},
 								InitialDelaySeconds: constants.HealthConfigLivenessDelay,
@@ -549,7 +549,7 @@ func GetNewK8SDispatcherDeployment(topicName string, resourceVersion int) *appsv
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
 										Port: intstr.FromInt(constants.HealthConfigPort),
-										Path: "/healthy",
+										Path: constants.HealthConfigReadinessPath,
 									},
 								},
 								InitialDelaySeconds: constants.HealthConfigReadinessDelay,

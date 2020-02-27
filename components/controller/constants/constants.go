@@ -41,6 +41,8 @@ const (
 	HealthConfigPort = 8082
 	HealthConfigLivenessDelay = 10
 	HealthConfigLivenessPeriod = 5
+	HealthConfigLivenessPath = "/healthz"
 	HealthConfigReadinessDelay = 10
 	HealthConfigReadinessPeriod = 5
+	HealthConfigReadinessPath = "/healthy"
 )

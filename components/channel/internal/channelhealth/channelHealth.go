@@ -62,12 +62,12 @@ func (chs *Server) IsChannelReady() bool {
 
 // Functions That Implement The HealthInterface
 
-// HTTP Request Handler For Readiness Requests (/healthy)
+// Response Function For Readiness Requests (/healthy)
 func (chs *Server) IsReady() bool {
 	return chs.producerReady && chs.channelReady
 }
 
-// HTTP Request Handler For Liveness Requests (/healthz)
+// Response Function For Liveness Requests (/healthz)
 func (chs *Server) IsAlive() bool {
 	return chs.Server.IsAlive()
 }
