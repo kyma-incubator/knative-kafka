@@ -38,11 +38,12 @@ const (
 	LoggingConfigMapName    = "knative-kafka-logging"
 
 	// Health Configuration
-	HealthConfigPort = 8082
-	HealthConfigLivenessDelay = 10
-	HealthConfigLivenessPeriod = 5
-	HealthConfigLivenessPath = "/healthz"
-	HealthConfigReadinessDelay = 10
-	HealthConfigReadinessPeriod = 5
-	HealthConfigReadinessPath = "/healthy"
+	ChannelLivenessDelay      = 10
+	ChannelLivenessPeriod     = 5
+	ChannelReadinessDelay     = 10
+	ChannelReadinessPeriod    = 5
+	DispatcherLivenessDelay   = 10
+	DispatcherLivenessPeriod  = 5
+	DispatcherReadinessDelay  = 10
+	DispatcherReadinessPeriod = 5
 )

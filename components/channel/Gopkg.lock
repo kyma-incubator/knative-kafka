@@ -311,7 +311,7 @@
 
 [[projects]]
   branch = "add-liveness-and-readiness"
-  digest = "1:2d0e21984f8ba9b46569b066bf1e759e568274eec05ee1e02191c60011c589f5"
+  digest = "1:dd93a94c693e68be27227b7c1b3ee224dfc9b8941f957fac79f9be2257ab54c6"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
@@ -334,7 +334,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "730c6288b870a2e233e82bb0600a58071e6d9081"
+  revision = "016457ae14ac0ea668204ec5eab3b1e5ddca3553"
   source = "github.com/eric-sap/knative-kafka"
 
 [[projects]]

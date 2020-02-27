@@ -4,12 +4,14 @@ import (
 	"github.com/cloudevents/sdk-go/pkg/cloudevents"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
-	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
+	channelhealth "github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 )
 
@@ -34,7 +36,7 @@ func TestInitializeProducer(t *testing.T) {
 	}
 
 	// Perform The Test
-	healthServer := health.NewChannelHealthServer(test.HealthConfigPort)
+	healthServer := channelhealth.NewChannelHealthServer(strconv.Itoa(health.HealthPort))
 	err := InitializeProducer(brokers, username, password, prometheus.NewMetricsServer("8888", "/metrics"), healthServer)
 
 	// Verify The Results
