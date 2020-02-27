@@ -6,14 +6,16 @@ import (
 	"github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/env"
-	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
+	channelhealth "github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/producer"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"go.uber.org/zap"
 	eventingChannel "knative.dev/eventing/pkg/channel"
 	"knative.dev/eventing/pkg/kncloudevents"
+	"strconv"
 )
 
 // Variables
@@ -40,7 +42,7 @@ func main() {
 	}
 
 	// Start The Liveness And Readiness Servers
-	healthServer := health.NewChannelHealthServer(HealthConfigPort)
+	healthServer := channelhealth.NewChannelHealthServer(strconv.Itoa(health.HealthPort))
 	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)

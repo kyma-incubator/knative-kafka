@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
@@ -9,7 +10,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/controller"
 	dispatch "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
-	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/health"
+	dispatcherhealth "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/health"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -92,7 +93,7 @@ func main() {
 	}
 
 	// Start The Liveness And Readiness Servers
-	healthServer := health.NewDispatcherHealthServer(HealthConfigPort)
+	healthServer := dispatcherhealth.NewDispatcherHealthServer(strconv.Itoa(health.HealthPort))
 	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)
