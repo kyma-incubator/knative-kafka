@@ -3,6 +3,7 @@ package kafkachannel
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
@@ -234,6 +235,26 @@ func (r *Reconciler) newDispatcherDeployment(channel *knativekafkav1alpha1.Kafka
 					Containers: []corev1.Container{
 						{
 							Name:            deploymentName,
+							LivenessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.LivenessPath,
+									},
+								},
+								InitialDelaySeconds: constants.DispatcherLivenessDelay,
+								PeriodSeconds: constants.DispatcherLivenessPeriod,
+							},
+							ReadinessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(health.HealthPort),
+										Path: health.ReadinessPath,
+									},
+								},
+								InitialDelaySeconds: constants.DispatcherReadinessDelay,
+								PeriodSeconds: constants.DispatcherReadinessPeriod,
+							},
 							Image:           r.environment.DispatcherImage,
 							Env:             envVars,
 							ImagePullPolicy: corev1.PullAlways,
@@ -287,6 +308,10 @@ func (r *Reconciler) dispatcherDeploymentEnvVars(channel *knativekafkav1alpha1.K
 		{
 			Name:  env.MetricsPortEnvVarKey,
 			Value: strconv.Itoa(r.environment.MetricsPort),
+		},
+		{
+			Name:  env.HealthPortEnvVarKey,
+			Value: strconv.Itoa(constants.HealthPort),
 		},
 		{
 			Name:  env.ChannelKeyEnvVarKey,

@@ -123,7 +123,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:9b33df68643da136000e03a390b09f9412acda3eb7031c1187f3975b04ca6e9f"
+  digest = "1:ebe7ae214ffe3d2a4160849d733703557e10761c54b94d5ee2501ce4077bc59e"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -140,8 +140,8 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "UT"
-  revision = "423680168ea46409121b5ef13ad563d4f0539fcb"
-  version = "v0.10.2"
+  revision = "d289f68c35e89dd9b6a32b1d41faf60a0d9d090a"
+  version = "v0.11.0"
 
 [[projects]]
   digest = "1:160ab0a25b5cc8c8741882b75db882e18806bb1dba87680ef87604aca763bdae"
@@ -311,12 +311,13 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:2eaaac5688cd464d2416b92eba4039a78f810a63e34d7cb0c9951f777d9ba3c7"
+  branch = "add-liveness-and-readiness"
+  digest = "1:39ce7554d6a0702df44c16c46f0e728d3c0efbcbe2d31daa37afd6aa687d6db5"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/kafka/constants",
     "components/common/pkg/kafka/consumer",
+    "components/common/pkg/kafka/health",
     "components/common/pkg/kafka/util",
     "components/common/pkg/log",
     "components/common/pkg/prometheus",
@@ -333,7 +334,8 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "42d9ded2c89fcf08f0ebde5d22df4937b2378a81"
+  revision = "a82943e22e22910e99ba39be92f2b6eac91929f3"
+  source = "github.com/eric-sap/knative-kafka"
 
 [[projects]]
   branch = "master"
@@ -1240,6 +1242,7 @@
     "github.com/confluentinc/confluent-kafka-go/kafka",
     "github.com/google/go-cmp/cmp",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1",

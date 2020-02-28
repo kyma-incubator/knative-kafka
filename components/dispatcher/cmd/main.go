@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/controller"
 	dispatch "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
+	dispatcherhealth "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/health"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -46,6 +47,7 @@ func main() {
 
 	// Load Environment Variables
 	metricsPort := os.Getenv("METRICS_PORT")
+	healthPort := os.Getenv("HEALTH_PORT")
 	rawExpBackoff, expBackoffPresent := os.LookupEnv("EXPONENTIAL_BACKOFF")
 	exponentialBackoff, _ := strconv.ParseBool(rawExpBackoff)
 	maxRetryTime, _ := strconv.ParseInt(os.Getenv("MAX_RETRY_TIME"), 10, 64)
@@ -65,6 +67,7 @@ func main() {
 
 	// Log Environment Variables
 	logger.Info("Environment Variables",
+		zap.String("HEALTH_PORT", healthPort),
 		zap.String("METRICS_PORT", metricsPort),
 		zap.Bool("EXPONENTIAL_BACKOFF", exponentialBackoff),
 		zap.Int64("INITIAL_RETRY_INTERVAL", initialRetryInterval),
@@ -79,6 +82,7 @@ func main() {
 
 	// Validate Required Environment Variables
 	if len(metricsPort) == 0 ||
+		len(healthPort) == 0 ||
 		maxRetryTime <= 0 ||
 		initialRetryInterval <= 0 ||
 		!expBackoffPresent ||
@@ -89,6 +93,10 @@ func main() {
 		kafkaOffsetCommitDurationMillis <= 0 {
 		logger.Fatal("Invalid / Missing Environment Variables - Terminating")
 	}
+
+	// Start The Liveness And Readiness Servers
+	healthServer := dispatcherhealth.NewDispatcherHealthServer(healthPort)
+	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)
 	metricsServer := prometheus.NewMetricsServer(metricsPort, "/metrics")
@@ -151,13 +159,25 @@ func main() {
 		return
 	}
 
+	// Set The Liveness And Readiness Flags
+	logger.Info("Registering dispatcher as alive and ready")
+	healthServer.SetAlive(true)
+	healthServer.SetDispatcherReady(true)
+
 	logger.Info("Starting controllers.")
 	kncontroller.StartAll(stopCh, controllers[:]...)
 
 	<-stopCh
+
+	// Reset The Liveness and Readiness Flags In Preparation For Shutdown
+	healthServer.Shutdown()
+
 	// Close Consumer Connections
 	dispatcher.StopConsumers()
 
 	// Shutdown The Prometheus Metrics Server
 	metricsServer.Stop()
+
+	// Stop The Liveness And Readiness Servers
+	healthServer.Stop(logger)
 }

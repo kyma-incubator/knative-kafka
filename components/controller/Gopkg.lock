@@ -288,8 +288,8 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  branch = "master"
-  digest = "1:602283f7ffc021b6e911ceb7b8ca699804ba918dd99a856366e48d707113a979"
+  branch = "add-liveness-and-readiness"
+  digest = "1:c27bf6a2ad5d5eb276c619f4faab2c065c982b5d9b114f09bb3a17c95be2c582"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/k8s",
@@ -298,12 +298,14 @@
     "components/common/pkg/kafka/admin/util",
     "components/common/pkg/kafka/constants",
     "components/common/pkg/kafka/consumer",
+    "components/common/pkg/kafka/health",
     "components/common/pkg/kafka/util",
     "components/common/pkg/log",
     "components/common/pkg/prometheus",
   ]
   pruneopts = "NUT"
-  revision = "42d9ded2c89fcf08f0ebde5d22df4937b2378a81"
+  revision = "e23961d4ba9ec1235653acfa8f1c4bc4858f4992"
+  source = "github.com/eric-sap/knative-kafka"
 
 [[projects]]
   branch = "master"
@@ -1165,6 +1167,7 @@
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",
