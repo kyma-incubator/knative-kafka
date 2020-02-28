@@ -3,7 +3,7 @@ package kafkachannel
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/health"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/health"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"

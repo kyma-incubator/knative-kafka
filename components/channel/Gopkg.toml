@@ -35,7 +35,7 @@
 
 [[constraint]]
    name = "github.com/kyma-incubator/knative-kafka"
-   branch = "add-liveness-and-readiness"
+   branch = "add-liveness"
    source = "github.com/eric-sap/knative-kafka"
 
 # Match Azure version in common component
