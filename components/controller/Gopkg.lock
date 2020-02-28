@@ -388,7 +388,7 @@
 
 [[projects]]
   branch = "knative-eventing-controller-refactor"
-  digest = "1:bcc315bbfe03e6254535fa24379af6613e07dcfa3ae10c591d02fc1ccf4214f9"
+  digest = "1:90492ebe75bdd678a3194503a3ef5600b35515d2777fb602a5f90173f7c03ac5"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/health",
@@ -402,7 +402,7 @@
     "components/common/pkg/log",
   ]
   pruneopts = "NUT"
-  revision = "1101b3b7efe0c2f62cea84dd60fbc0f204c31205"
+  revision = "a6599c74b6d3508117937c8e3b8bbc382c197b7b"
   source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
@@ -1434,11 +1434,11 @@
   analyzer-version = 1
   input-imports = [
     "github.com/confluentinc/confluent-kafka-go/kafka",
+    "github.com/google/go-cmp/cmp",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",
-    "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/stretchr/testify/assert",
     "go.uber.org/zap",
     "k8s.io/api/apps/v1",
@@ -1474,7 +1474,7 @@
     "k8s.io/code-generator/cmd/defaulter-gen",
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
-    "knative.dev/eventing/pkg/apis/duck/v1beta1",
+    "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/eventing/pkg/apis/messaging/v1alpha1",
     "knative.dev/eventing/pkg/client/clientset/versioned/fake",
     "knative.dev/eventing/pkg/client/injection/client/fake",
