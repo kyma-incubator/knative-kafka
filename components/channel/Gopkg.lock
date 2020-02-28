@@ -310,7 +310,7 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "add-liveness"
+  branch = "master"
   digest = "1:e87cf068c0edb607f26310e527bd287d3f9faab2e95f226705fa18ab67fe3298"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
@@ -334,8 +334,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "5ab9272349322c555af48c65f1033c24d2f24fb3"
-  source = "github.com/eric-sap/knative-kafka"
+  revision = "1b46adc331d27f26def07c125c5f1187dd0ced6c"
 
 [[projects]]
   branch = "master"

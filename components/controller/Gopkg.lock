@@ -288,7 +288,7 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  branch = "add-liveness"
+  branch = "master"
   digest = "1:2bd8ee3efb4bfc80e4349c59c16d0fc0230fae7f1d939f596eb2a4c10d447663"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
@@ -304,8 +304,7 @@
     "components/common/pkg/prometheus",
   ]
   pruneopts = "NUT"
-  revision = "5ab9272349322c555af48c65f1033c24d2f24fb3"
-  source = "github.com/eric-sap/knative-kafka"
+  revision = "1b46adc331d27f26def07c125c5f1187dd0ced6c"
 
 [[projects]]
   branch = "master"
