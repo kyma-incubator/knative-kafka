@@ -40,4 +40,15 @@ const (
 
 	// Reconciliation Error Messages
 	ReconciliationFailedError = "reconciliation failed"
+
+	// Health Configuration
+	HealthPort                = 8082
+	ChannelLivenessDelay      = 10
+	ChannelLivenessPeriod     = 5
+	ChannelReadinessDelay     = 10
+	ChannelReadinessPeriod    = 5
+	DispatcherLivenessDelay   = 10
+	DispatcherLivenessPeriod  = 5
+	DispatcherReadinessDelay  = 10
+	DispatcherReadinessPeriod = 5
 )

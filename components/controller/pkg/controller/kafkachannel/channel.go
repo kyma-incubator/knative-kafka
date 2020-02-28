@@ -2,6 +2,7 @@ package kafkachannel
 
 import (
 	"fmt"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/health"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
@@ -384,6 +385,26 @@ func (r *Reconciler) newChannelDeployment(channel *knativekafkav1alpha1.KafkaCha
 					Containers: []corev1.Container{
 						{
 							Name:  deploymentName,
+							LivenessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(constants.HealthPort),
+										Path: health.LivenessPath,
+									},
+								},
+								InitialDelaySeconds: constants.ChannelLivenessDelay,
+								PeriodSeconds: constants.ChannelLivenessPeriod,
+							},
+							ReadinessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(constants.HealthPort),
+										Path: health.ReadinessPath,
+									},
+								},
+								InitialDelaySeconds: constants.ChannelReadinessDelay,
+								PeriodSeconds: constants.ChannelReadinessPeriod,
+							},
 							Image: r.environment.ChannelImage,
 							Ports: []corev1.ContainerPort{
 								{
@@ -443,6 +464,10 @@ func (r *Reconciler) channelDeploymentEnvVars(channel *knativekafkav1alpha1.Kafk
 		{
 			Name:  env.MetricsPortEnvVarKey,
 			Value: strconv.Itoa(r.environment.MetricsPort),
+		},
+		{
+			Name:  env.HealthPortEnvVarKey,
+			Value: strconv.Itoa(constants.HealthPort),
 		},
 	}
 

@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/health"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
@@ -29,6 +30,7 @@ const (
 	// Environment Test Data
 	ServiceAccount                         = "TestServiceAccount"
 	MetricsPort                            = 9876
+	HealthPort                             = 8082
 	KafkaSecret                            = "testkafkasecret"
 	KafkaOffsetCommitMessageCount          = 99
 	KafkaOffsetCommitDurationMillis        = 9999
@@ -303,6 +305,26 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 					Containers: []corev1.Container{
 						{
 							Name:  ChannelDeploymentName,
+							LivenessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(constants.HealthPort),
+										Path: health.LivenessPath,
+									},
+								},
+								InitialDelaySeconds: constants.ChannelLivenessDelay,
+								PeriodSeconds: constants.ChannelLivenessPeriod,
+							},
+							ReadinessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(constants.HealthPort),
+										Path: health.ReadinessPath,
+									},
+								},
+								InitialDelaySeconds: constants.ChannelReadinessDelay,
+								PeriodSeconds: constants.ChannelReadinessPeriod,
+							},
 							Image: ChannelImage,
 							Ports: []corev1.ContainerPort{
 								{
@@ -314,6 +336,10 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 								{
 									Name:  "METRICS_PORT",
 									Value: strconv.Itoa(MetricsPort),
+								},
+								{
+									Name:  "HEALTH_PORT",
+									Value: strconv.Itoa(HealthPort),
 								},
 								{
 									Name: env.KafkaBrokerEnvVarKey,
@@ -467,10 +493,34 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 						{
 							Name:  dispatcherName,
 							Image: DispatcherImage,
+							LivenessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(constants.HealthPort),
+										Path: health.LivenessPath,
+									},
+								},
+								InitialDelaySeconds: constants.DispatcherLivenessDelay,
+								PeriodSeconds: constants.DispatcherLivenessPeriod,
+							},
+							ReadinessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Port: intstr.FromInt(constants.HealthPort),
+										Path: health.ReadinessPath,
+									},
+								},
+								InitialDelaySeconds: constants.DispatcherReadinessDelay,
+								PeriodSeconds: constants.DispatcherReadinessPeriod,
+							},
 							Env: []corev1.EnvVar{
 								{
 									Name:  env.MetricsPortEnvVarKey,
 									Value: strconv.Itoa(MetricsPort),
+								},
+								{
+									Name:  env.HealthPortEnvVarKey,
+									Value: strconv.Itoa(HealthPort),
 								},
 								{
 									Name:  env.ChannelKeyEnvVarKey,

@@ -315,6 +315,7 @@
   digest = "1:ccb5df657e09e2c90e1c8ed247f32d4a86419f1b093fba819878d05e16f2bd25"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
+    "components/common/pkg/health",
     "components/common/pkg/kafka/constants",
     "components/common/pkg/kafka/consumer",
     "components/common/pkg/kafka/util",
@@ -1232,6 +1233,7 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/confluentinc/confluent-kafka-go/kafka",
     "github.com/google/go-cmp/cmp",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",

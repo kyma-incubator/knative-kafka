@@ -391,6 +391,7 @@
   digest = "1:bcc315bbfe03e6254535fa24379af6613e07dcfa3ae10c591d02fc1ccf4214f9"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
+    "components/common/pkg/health",
     "components/common/pkg/k8s",
     "components/common/pkg/kafka/admin",
     "components/common/pkg/kafka/admin/eventhubcache",
@@ -1433,6 +1434,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/confluentinc/confluent-kafka-go/kafka",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",

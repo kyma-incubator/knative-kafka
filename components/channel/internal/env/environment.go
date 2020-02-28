@@ -12,6 +12,7 @@ const (
 
 	// Environment Variable Keys
 	MetricsPortEnvVarKey   = "METRICS_PORT"
+	HealthPortEnvVarKey    = "HEALTH_PORT"
 	KafkaBrokersEnvVarKey  = "KAFKA_BROKERS"
 	KafkaUsernameEnvVarKey = "KAFKA_USERNAME"
 	KafkaPasswordEnvVarKey = "KAFKA_PASSWORD"
@@ -20,6 +21,7 @@ const (
 // The Environment Struct
 type Environment struct {
 	MetricsPort   string
+	HealthPort    string
 	KafkaBrokers  string
 	KafkaUsername string
 	KafkaPassword string
@@ -31,6 +33,7 @@ func GetEnvironment() (Environment, error) {
 	// Create The Environment With Current Values
 	environment := Environment{
 		MetricsPort:   os.Getenv(MetricsPortEnvVarKey),
+		HealthPort:    os.Getenv(HealthPortEnvVarKey),
 		KafkaBrokers:  os.Getenv(KafkaBrokersEnvVarKey),
 		KafkaUsername: os.Getenv(KafkaUsernameEnvVarKey),
 		KafkaPassword: os.Getenv(KafkaPasswordEnvVarKey),
@@ -55,6 +58,7 @@ func GetEnvironment() (Environment, error) {
 func validateEnvironment(environment Environment) error {
 
 	valid := validateRequiredEnvironmentVariable(MetricsPortEnvVarKey, environment.MetricsPort) &&
+		validateRequiredEnvironmentVariable(HealthPortEnvVarKey, environment.HealthPort) &&
 		validateRequiredEnvironmentVariable(KafkaBrokersEnvVarKey, environment.KafkaBrokers) &&
 		validateRequiredEnvironmentVariable(KafkaUsernameEnvVarKey, environment.KafkaUsername) &&
 		validateRequiredEnvironmentVariable(KafkaPasswordEnvVarKey, environment.KafkaPassword)
