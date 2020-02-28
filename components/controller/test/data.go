@@ -368,7 +368,7 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 							LivenessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(health.HealthPort),
+										Port: intstr.FromInt(constants.HealthPort),
 										Path: health.LivenessPath,
 									},
 								},
@@ -378,7 +378,7 @@ func GetNewK8SChannelDeployment(resourceVersion int) *appsv1.Deployment {
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(health.HealthPort),
+										Port: intstr.FromInt(constants.HealthPort),
 										Path: health.ReadinessPath,
 									},
 								},
@@ -544,7 +544,7 @@ func GetNewK8SDispatcherDeployment(topicName string, resourceVersion int) *appsv
 							LivenessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(health.HealthPort),
+										Port: intstr.FromInt(constants.HealthPort),
 										Path: health.LivenessPath,
 									},
 								},
@@ -554,7 +554,7 @@ func GetNewK8SDispatcherDeployment(topicName string, resourceVersion int) *appsv
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(health.HealthPort),
+										Port: intstr.FromInt(constants.HealthPort),
 										Path: health.ReadinessPath,
 									},
 								},

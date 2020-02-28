@@ -238,7 +238,7 @@ func (r *Reconciler) newDispatcherDeployment(channel *knativekafkav1alpha1.Kafka
 							LivenessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(health.HealthPort),
+										Port: intstr.FromInt(constants.HealthPort),
 										Path: health.LivenessPath,
 									},
 								},
@@ -248,7 +248,7 @@ func (r *Reconciler) newDispatcherDeployment(channel *knativekafkav1alpha1.Kafka
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
-										Port: intstr.FromInt(health.HealthPort),
+										Port: intstr.FromInt(constants.HealthPort),
 										Path: health.ReadinessPath,
 									},
 								},
