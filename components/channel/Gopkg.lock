@@ -334,7 +334,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "39000a9f75584d86c3c0ec53798259ca316b63bf"
+  revision = "9e754acd1cb716093784d77d69f9d0f008a5d5fd"
   source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]

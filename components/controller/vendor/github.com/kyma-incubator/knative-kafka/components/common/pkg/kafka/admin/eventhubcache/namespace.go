@@ -18,13 +18,13 @@ type Namespace struct {
 }
 
 // Namespace Complete Argument Constructor
-func NewNamespace(name string, username string, password string, secret string, count int) *Namespace {
+func NewNamespace(name string, username string, password string, secret string, count int) (*Namespace, error) {
 
 	// Create A New HubManager For The Specified ConnectionString (Password)
 	hubManager, err := NewHubManagerFromConnectionStringWrapper(password)
 	if err != nil {
 		log.Logger().Error("Failed To Create New HubManager For Azure EventHubs Namespace", zap.Error(err))
-		return nil
+		return nil, err
 	}
 
 	// Create & Return A New Namespace With Specified Configuration & Initialized HubManager
@@ -35,11 +35,11 @@ func NewNamespace(name string, username string, password string, secret string, 
 		Secret:     secret,
 		HubManager: hubManager,
 		Count:      count,
-	}
+	}, nil
 }
 
 // Namespace Secret Constructor
-func NewNamespaceFromKafkaSecret(kafkaSecret *corev1.Secret) *Namespace {
+func NewNamespaceFromKafkaSecret(kafkaSecret *corev1.Secret) (*Namespace, error) {
 
 	// Extract The Relevant Data From The Kafka Secret
 	data := kafkaSecret.Data
