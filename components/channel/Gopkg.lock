@@ -309,7 +309,7 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "knative-eventing-controller-refactor"
+  branch = "master"
   digest = "1:316562f2a6b24dc1ef7e856817875d48c7606ebdc9416633dd453815b6d4fbff"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
@@ -334,8 +334,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "9e754acd1cb716093784d77d69f9d0f008a5d5fd"
-  source = "github.com/travis-minke-sap/knative-kafka"
+  revision = "d0a701af27269fe85763fd34c746288ab8325ed0"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
