@@ -59,9 +59,7 @@ func validateEnvironment(environment Environment) error {
 
 	valid := validateRequiredEnvironmentVariable(MetricsPortEnvVarKey, environment.MetricsPort) &&
 		validateRequiredEnvironmentVariable(HealthPortEnvVarKey, environment.HealthPort) &&
-		validateRequiredEnvironmentVariable(KafkaBrokersEnvVarKey, environment.KafkaBrokers) &&
-		validateRequiredEnvironmentVariable(KafkaUsernameEnvVarKey, environment.KafkaUsername) &&
-		validateRequiredEnvironmentVariable(KafkaPasswordEnvVarKey, environment.KafkaPassword)
+		validateRequiredEnvironmentVariable(KafkaBrokersEnvVarKey, environment.KafkaBrokers)
 
 	if valid {
 		return nil

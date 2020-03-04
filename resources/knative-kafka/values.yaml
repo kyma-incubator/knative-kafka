@@ -32,8 +32,6 @@ logging:
 environment:
   # Valid values: local, confluent, azure
   kafkaProvider: local
-  # Kafka Broker URL's (Comma Separated)
-  kafkaBrokers: kafka-broker:9092
   # Konduit-Kafka Channel "Producer" Docker Image Path
   channelImage: eu.gcr.io/kyma-project/incubator/knative-kafka-channel:latest
   channelReplicas: 1
