@@ -21,9 +21,10 @@ use cases.  The reference implementation was also based on the
 [Sarama Go Client](https://github.com/Shopify/sarama) which has limitations 
 compared to the [Confluent Go Client](https://github.com/confluentinc/confluent-kafka-go), 
 and the [librdkafka C library](https://github.com/edenhill/librdkafka) on which 
-it is based.  Finally, the ability to expose Kafka configuration was very 
-limited, and we needed the ability to customize certain aspects of the Kafka 
-Topics / Producers / Consumers.
+it is based.  We also had the need to support a variety of Kafka providers,
+including Azure EventHubs in Kafka compatibility mode.  Finally, the ability 
+to expose Kafka configuration was very limited, and we needed the ability to 
+customize certain aspects of the Kafka Topics / Producers / Consumers.
 
 
 
@@ -143,9 +144,14 @@ number of partitions in the Kafka topic.
 ### Messaging Guarantees
 
 An event sent to a `KafkaChannel` is guaranteed to be persisted and processed 
-if a 202 response is received by the sender.  Events are partitioned in Kafka
-by the Cloud Event attribute `subject` when present or randomly when absent.  
-Events in each partition are processed in order, with an at least once guarantee. 
+if a 202 response is received by the sender.  
+
+The CloudEvent is partitioned based on the [CloudEvent partitioning extension](https://github.com/cloudevents/spec/blob/master/extensions/partitioning.mdhttps://github.com/cloudevents/spec/blob/master/extensions/partitioning.md) 
+field called `partitionkey`.  If the `partitionkey` is not present, then the 
+`subject` field will be used.  Finally if neither is available, it will fall-back
+to random partitioning.
+
+Events in each partition are processed in order, with an **at-least-once** guarantee. 
 If a full cycle of retries for a given subscription fails, the event is ignored 
 and processing continues with the next event.
 
