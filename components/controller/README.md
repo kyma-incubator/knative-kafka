@@ -1,54 +1,27 @@
-# Kafka-Channel-Controller
+# Kafka-Channel Controller
 
-The kafka-channel-controller application is the Kubernetes Controller for the Knative Channel CustomResource.  
-The Channel Controller is responsible for creating the Kafka Topic with specified configuration, as well as for 
-creating the singular (per-topic) Channel Deployment and Services, as well as the per-Subscription Dispatcher Deployments.  
+The Controller component implements the KafkaChannel CRD (api, client, reconciler, 
+etc.) based on the latest knative-eventing SharedMain reconciler framework and
+utilities.  It was previously based on legacy kubebuilder / controller-runtime
+logic.
 
+**Note** - The controller separation describe in the next paragraph is in-progress
+and should be available soon ; )  Currently there is only one reconciler.
 
-## Makefile Targets
-The Makefile should be used to build and deploy the **kafka-channel-controller** application as follows...
+The controller defines the KafkaChannel CRD type and reconciles all such instances
+in the K8S Cluster.  It actually consists of two reconcilers, one for watching
+"Kafka" Secrets (those in knative-eventing labelled 
+`knativekafka.kyma-project.io/kafka-secret: "true"`) which provisions the Kafka
+Topic and creates the Channel / Producer Deployment/Services and another which 
+is watching KafkaChannel resources and creates the Dispatcher / Consumer 
+Deployments.
 
-- **Setup**
-  ```
-  source ./local-env.sh
-  ```
-  
-- **Cleaning**
-  ```
-  # Clean Application Build
-  make clean
-  ```
+**Note** - Deleting a KafkaChannel CRD instance is destructive in that it will
+Remove the Kafka Topic resulting in the loss of all events therein.  While the
+Dispatcher and Producer will perform semi-graceful shutdown there is no attempt
+to "drain" the topic or complete incoming CloudEvents.
 
-- **Dependencies**
-  ```
-  # Verify / Dowload Dependencies
-  make dep
-  ```
-
-- **Building**
-  ```
-  # Build Native Binary
-  make build-native
-  
-  # Build Linux Binary
-  make build-linux
-  ``` 
-
-- **Test**
-  ```
-  # Run All Unit Tests
-  make test
-  ```
-    
-- **Docker Build & Push**
-  ```
-  # Build Docker Container (Without Unit Tests)
-  make docker-build
-
-  # Build Docker Container (With Unit Tests)
-  make BUILD_TESTS=true docker-build
-  
-  # Push Docker Continer
-  make docker-push
-  ```
-
+All (most) runtime components are created in the knative-eventing namespace
+which presents some challenges in using default K8S OwnerReferences and
+Garbage Collection.  Further work is planned to sort out some of the cross-name
+issues by refactoring the controller and by using the informers/listers directly.
