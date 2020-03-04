@@ -110,13 +110,13 @@ func (r Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	if !original.Status.IsReady() {
-		return fmt.Errorf("Channel is not ready. Cannot configure and update subscriber status")
+		return fmt.Errorf("channel is not ready - cannot configure and update subscriber status")
 	}
 
 	// Don't modify the informers copy
 	channel := original.DeepCopy()
 
-	reconcileError := r.reconcile(ctx, channel)
+	reconcileError := r.reconcile(channel)
 	if reconcileError != nil {
 		r.Logger.Error("Error Reconciling KafkaChannel", zap.Error(reconcileError))
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, channelReconcileFailed, "KafkaChannel Reconciliation Failed: %v", reconcileError)
@@ -125,17 +125,24 @@ func (r Reconciler) Reconcile(ctx context.Context, key string) error {
 		r.Recorder.Event(channel, corev1.EventTypeNormal, channelReconciled, "KafkaChannel Reconciled")
 	}
 
-	if _, updateStatusErr := r.updateStatus(ctx, channel); updateStatusErr != nil {
-		r.Logger.Error("Failed to update KafkaChannel status", zap.Error(updateStatusErr))
+	_, updateStatusErr := r.updateStatus(channel)
+	if updateStatusErr != nil {
+		r.Logger.Error("Failed To Update KafkaChannel Status", zap.Error(updateStatusErr))
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, channelUpdateStatusFailed, "Failed to update KafkaChannel's status: %v", updateStatusErr)
 		return updateStatusErr
+	} else {
+		r.Logger.Info("Successfully Verified / Updated KafkaChannel Status")
 	}
 
+	// Return Success
 	return nil
 }
 
-func (r Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) error {
-	if channel.Spec.Subscribable == nil {
+// Reconcile The Specified KafkaChannel
+func (r Reconciler) reconcile(channel *kafkav1alpha1.KafkaChannel) error {
+
+	if channel.Spec.Subscribable == nil || channel.Spec.Subscribable.Subscribers == nil {
+		r.Logger.Info("KafkaChannel Has No Subscribers - Nothing To Reconcile")
 		return nil
 	}
 
@@ -148,19 +155,19 @@ func (r Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaC
 
 	failedSubscriptions := r.dispatcher.UpdateSubscriptions(subscriptions)
 
-	channel.Status.SubscribableTypeStatus.SubscribableStatus = r.createSubscribableStatus(channel.Spec.Subscribable, failedSubscriptions)
+	channel.Status.SubscribableStatus = r.createSubscribableStatus(channel.Spec.Subscribable, failedSubscriptions)
+
 	if len(failedSubscriptions) > 0 {
-		r.Logger.Error("Some kafka subscriptions failed to subscribe")
-		return fmt.Errorf("Some kafka subscriptions failed to subscribe")
+		r.Logger.Error("Failed To Subscribe Kafka Subscriptions", zap.Int("Count", len(failedSubscriptions)))
+		return fmt.Errorf("some kafka subscriptions failed to subscribe")
 	}
+
 	return nil
 }
 
 // Create The SubscribableStatus Block Based On The Updated Subscriptions
 func (r *Reconciler) createSubscribableStatus(subscribable *eventingduck.Subscribable, failedSubscriptions map[dispatcher.Subscription]error) *eventingduck.SubscribableStatus {
-	if subscribable == nil {
-		return nil
-	}
+
 	subscriberStatus := make([]eventingduck.SubscriberStatus, 0)
 	for _, sub := range subscribable.Subscribers {
 		status := eventingduck.SubscriberStatus{
@@ -181,19 +188,20 @@ func (r *Reconciler) createSubscribableStatus(subscribable *eventingduck.Subscri
 	}
 }
 
-func (r *Reconciler) updateStatus(ctx context.Context, desired *kafkav1alpha1.KafkaChannel) (*kafkav1alpha1.KafkaChannel, error) {
+func (r *Reconciler) updateStatus(desired *kafkav1alpha1.KafkaChannel) (*kafkav1alpha1.KafkaChannel, error) {
 	kc, err := r.kafkachannelLister.KafkaChannels(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	if reflect.DeepEqual(kc.Status, desired.Status) {
+		r.Logger.Debug("KafkaChannel Status Already Current - Skipping Update")
 		return kc, nil
 	}
 
 	// Don't modify the informers copy.
 	existing := kc.DeepCopy()
 	existing.Status = desired.Status
-	new, err := r.KafkaClientSet.KnativekafkaV1alpha1().KafkaChannels(desired.Namespace).UpdateStatus(existing)
-	return new, err
+	updated, err := r.KafkaClientSet.KnativekafkaV1alpha1().KafkaChannels(desired.Namespace).UpdateStatus(existing)
+	return updated, err
 }

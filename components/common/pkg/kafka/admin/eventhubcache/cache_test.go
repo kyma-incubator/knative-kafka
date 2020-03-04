@@ -142,7 +142,8 @@ func TestAddEventHub(t *testing.T) {
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
 	// Create Test Namespaces
-	namespace1 := createTestNamespaceWithCount(namespaceName1, 1)
+	namespace1, err := createTestNamespaceWithCount(namespaceName1, 1)
+	assert.Nil(t, err)
 
 	// Create The Cache's EventHub Map
 	eventHubMap := make(map[string]*Namespace)
@@ -155,7 +156,8 @@ func TestAddEventHub(t *testing.T) {
 	}
 
 	// Perform The Test
-	cache.AddEventHub(context.TODO(), namespaceName2, createTestNamespaceWithCount(namespaceName2, 0))
+	foo, _ := createTestNamespaceWithCount(namespaceName2, 0)
+	cache.AddEventHub(context.TODO(), namespaceName2, foo)
 
 	// Verify The Results
 	assert.Len(t, cache.eventhubMap, 2)
@@ -184,8 +186,12 @@ func TestRemoveEventHub(t *testing.T) {
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
 	// Create Test Namespaces
-	namespace1 := createTestNamespaceWithCount(namespaceName1, 1)
-	namespace2 := createTestNamespaceWithCount(namespaceName2, 1)
+	namespace1, err := createTestNamespaceWithCount(namespaceName1, 1)
+	assert.NotNil(t, namespace1)
+	assert.Nil(t, err)
+	namespace2, err := createTestNamespaceWithCount(namespaceName2, 1)
+	assert.NotNil(t, namespace2)
+	assert.Nil(t, err)
 
 	// Create The Cache's EventHub Map
 	eventhubMap := make(map[string]*Namespace)
@@ -230,9 +236,14 @@ func TestGetNamespace(t *testing.T) {
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
 	// Create The Cache's EventHub Map
+	var err error
 	eventHubMap := make(map[string]*Namespace)
-	eventHubMap[namespaceName1] = createTestNamespaceWithSecret(namespaceName1, namespaceSecret1)
-	eventHubMap[namespaceName2] = createTestNamespaceWithSecret(namespaceName2, namespaceSecret2)
+	eventHubMap[namespaceName1], err = createTestNamespaceWithSecret(namespaceName1, namespaceSecret1)
+	assert.NotNil(t, eventHubMap[namespaceName1])
+	assert.Nil(t, err)
+	eventHubMap[namespaceName2], err = createTestNamespaceWithSecret(namespaceName2, namespaceSecret2)
+	assert.NotNil(t, eventHubMap[namespaceName2])
+	assert.Nil(t, err)
 
 	// Create A Cache To Test
 	cache := &Cache{
@@ -276,11 +287,11 @@ func TestGetLeastPopulatedNamespace(t *testing.T) {
 
 	// Create The Cache's Namespace Map
 	namespaceMap := make(map[string]*Namespace)
-	namespaceMap[namespaceName1] = createTestNamespaceWithCount(namespaceName1, namespaceCount1)
-	namespaceMap[namespaceName2] = createTestNamespaceWithCount(namespaceName2, namespaceCount2)
-	namespaceMap[namespaceName3] = createTestNamespaceWithCount(namespaceName3, namespaceCount3)
-	namespaceMap[namespaceName4] = createTestNamespaceWithCount(namespaceName4, namespaceCount4)
-	namespaceMap[namespaceName5] = createTestNamespaceWithCount(namespaceName5, namespaceCount5)
+	namespaceMap[namespaceName1], _ = createTestNamespaceWithCount(namespaceName1, namespaceCount1)
+	namespaceMap[namespaceName2], _ = createTestNamespaceWithCount(namespaceName2, namespaceCount2)
+	namespaceMap[namespaceName3], _ = createTestNamespaceWithCount(namespaceName3, namespaceCount3)
+	namespaceMap[namespaceName4], _ = createTestNamespaceWithCount(namespaceName4, namespaceCount4)
+	namespaceMap[namespaceName5], _ = createTestNamespaceWithCount(namespaceName5, namespaceCount5)
 
 	// Create A Cache To Test
 	cache := &Cache{
@@ -330,11 +341,11 @@ func createEventHubEntity(name string) *eventhub.HubEntity {
 }
 
 // Create Cache Namespace With Name & Secret Only For Convenience
-func createTestNamespaceWithSecret(name string, secret string) *Namespace {
+func createTestNamespaceWithSecret(name string, secret string) (*Namespace, error) {
 	return NewNamespace(name, name, name, secret, 0)
 }
 
 // Create Cache Namespace With Name & Count Only For Convenience
-func createTestNamespaceWithCount(name string, count int) *Namespace {
+func createTestNamespaceWithCount(name string, count int) (*Namespace, error) {
 	return NewNamespace(name, name, name, name, count)
 }

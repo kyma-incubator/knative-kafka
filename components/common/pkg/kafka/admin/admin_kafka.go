@@ -141,8 +141,8 @@ func validateKafkaSecret(logger *zap.Logger, secret *corev1.Secret) bool {
 		username := string(secret.Data[constants.KafkaSecretKeyUsername])
 		password := string(secret.Data[constants.KafkaSecretKeyPassword])
 
-		// Validate Kafka Secret Data
-		if len(brokers) > 0 && len(username) > 0 && len(password) > 0 {
+		// Validate Kafka Secret Data (Allowing for Kafka not having Authentication enabled)
+		if len(brokers) > 0 && len(username) >= 0 && len(password) >= 0 {
 
 			// Mark Kafka Secret As Valid
 			valid = true

@@ -30,7 +30,7 @@ func NewChannelOwnerReference(channel *knativekafkav1alpha1.KafkaChannel) metav1
 	}
 
 	blockOwnerDeletion := true
-	controller := true
+	controller := false
 
 	return metav1.OwnerReference{
 		APIVersion:         kafkaChannelGroupVersion.String(),

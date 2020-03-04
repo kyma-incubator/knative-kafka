@@ -15,36 +15,27 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // KafkaChannelSpec defines the desired state of KafkaChannel
-// +kubebuilder:subresource:status
 type KafkaChannelSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	//
-	// Kafka Topics names are limited to 255 characters and the specified regex.  This implementation will,
-	// however, append the KafkaChannel's Namespace and Name to the TenantId.  We don't know how long those
-	// might be, so use with caution.
-	//
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=200
-	// +kubebuilder:validation:Pattern=[a-zA-Z0-9_\-\.\\]+
-	TenantId string `json:"tenantId,omitempty"`
-
-	// +kubebuilder:validation:Minimum=1
 	NumPartitions int `json:"numPartitions,omitempty"`
 
-	// +kubebuilder:validation:Minimum=1
 	ReplicationFactor int `json:"replicationFactor,omitempty"`
 
-	// +kubebuilder:validation:Minimum=1
 	RetentionMillis int64 `json:"retentionMillis,omitempty"`
 
 	// Channel conforms to Duck type Subscribable.
 	Subscribable *eventingduck.Subscribable `json:"subscribable,omitempty"`
+
+	// TODO - Convert To Channelable Duck Type When Knative-Eventing Moves To v1beta1 (eventingduck & Subscription Reconciler Specifically)
+	// Channel conforms to Duck type Channelable
+	//eventingduck.ChannelableSpec `json:",inline"`
 }
 
 // KafkaChannelStatus defines the observed state of KafkaChannel - Lifted From Knative Samples
 type KafkaChannelStatus struct {
+
 	// inherits duck/v1beta1 Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
@@ -59,13 +50,17 @@ type KafkaChannelStatus struct {
 
 	// Subscribers is populated with the statuses of each of the Channelable's subscribers.
 	eventingduck.SubscribableTypeStatus `json:",inline"`
+
+	// TODO - Convert To Channelable Duck Type When Knative-Eventing Moves To v1beta1 (eventingduck & Subscription Reconciler Specifically)
+	// Channel conforms to Duck type Channelable.
+	//eventingduck.ChannelableStatus `json:",inline"`
 }
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // KafkaChannel is the Schema for the kafkachannels API
-// +k8s:openapi-gen=true
 type KafkaChannel struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -81,8 +76,4 @@ type KafkaChannelList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KafkaChannel `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&KafkaChannel{}, &KafkaChannelList{})
 }

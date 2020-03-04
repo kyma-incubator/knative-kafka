@@ -34,7 +34,7 @@ dependency on common in the respective Gopkg.toml to follow the pattern
 ```
 Then update the vendor directory by running
 ```bash
-dep ensure -update github.com/kyma-incubator/knative-kafka
+dep ensure -v -update github.com/kyma-incubator/knative-kafka
 ```
 
 Once you have thoroughly tested the changes of the common component, submit a PR for **ONLY** the common component 

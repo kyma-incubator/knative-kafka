@@ -80,7 +80,11 @@ func (c *Cache) Update(ctx context.Context) error {
 		}
 
 		// Create A New Namespace From The Secret
-		namespace := NewNamespaceFromKafkaSecret(&kafkaSecret)
+		namespace, err := NewNamespaceFromKafkaSecret(&kafkaSecret)
+		if err != nil {
+			c.logger.Error("Failed To Get Namespace From Kafka Secret", zap.Any("Kafka Secret", kafkaSecret), zap.Error(err))
+			return err
+		}
 
 		// Add The Namespace To The Namespace Map
 		c.namespaceMap[namespace.Name] = namespace
@@ -211,7 +215,7 @@ func (c *Cache) validateKafkaSecret(secret *corev1.Secret) bool {
 				zap.String("Brokers", brokers),
 				zap.String("Username", username),
 				zap.String("Password", pwdString),
-				zap.String("Namespace", namespace), )
+				zap.String("Namespace", namespace))
 		}
 	}
 

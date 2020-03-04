@@ -63,6 +63,15 @@ func (in *KafkaChannelStatus) SetAddress(url *apis.URL) {
 		in.Address.URL = nil
 		kafkaCondSet.Manage(in).MarkFalse(ConditionAddressable, "emptyHostname", "hostname is the empty string")
 	}
+
+	/* TODO - Convert To Channelable Duck Type When Knative-Eventing Moves To v1beta1 (eventingduck & Subscription Reconciler Specifically)
+	in.Address = &v1.Addressable{URL: url}
+	if url != nil {
+		kafkaCondSet.Manage(in).MarkTrue(ConditionAddressable)
+	} else {
+		kafkaCondSet.Manage(in).MarkFalse(ConditionAddressable, "emptyHostname", "hostname is the empty string")
+	}
+	*/
 }
 
 func (in *KafkaChannelStatus) MarkTopicTrue() {

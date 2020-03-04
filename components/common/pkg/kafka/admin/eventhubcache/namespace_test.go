@@ -2,8 +2,8 @@ package eventhubcache
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
@@ -30,10 +30,11 @@ func TestNewNamespace(t *testing.T) {
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
 	// Perform The Test
-	namespace := NewNamespace(name, username, password, secret, count)
+	namespace, err := NewNamespace(name, username, password, secret, count)
 
 	// Verify Results
 	assert.NotNil(t, namespace)
+	assert.Nil(t, err)
 	assert.Equal(t, name, namespace.Name)
 	assert.Equal(t, username, namespace.Username)
 	assert.Equal(t, password, namespace.Password)
@@ -60,10 +61,11 @@ func TestNewNamespaceError(t *testing.T) {
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
 	// Perform The Test
-	namespace := NewNamespace(name, username, password, secret, count)
+	namespace, err := NewNamespace(name, username, password, secret, count)
 
 	// Verify Results
 	assert.Nil(t, namespace)
+	assert.NotNil(t, err)
 }
 
 // Test The NewNamespaceFromKafkaSecret() Constructor
@@ -96,10 +98,11 @@ func TestNewNamespaceFromKafkaSecret(t *testing.T) {
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
 	// Perform The Test
-	namespace := NewNamespaceFromKafkaSecret(kafkaSecret)
+	namespace, err := NewNamespaceFromKafkaSecret(kafkaSecret)
 
 	// Verify Results
 	assert.NotNil(t, namespace)
+	assert.Nil(t, err)
 	assert.Equal(t, eventhubNamespace, namespace.Name)
 	assert.Equal(t, username, namespace.Username)
 	assert.Equal(t, password, namespace.Password)

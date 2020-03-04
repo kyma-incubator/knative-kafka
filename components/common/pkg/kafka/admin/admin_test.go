@@ -3,8 +3,8 @@ package admin
 import (
 	"context"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/stretchr/testify/assert"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"testing"
 )

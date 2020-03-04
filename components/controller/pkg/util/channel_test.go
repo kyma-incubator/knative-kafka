@@ -2,19 +2,19 @@ package util
 
 import (
 	"fmt"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
-	"github.com/kyma-incubator/knative-kafka/components/controller/test"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logtesting "knative.dev/pkg/logging/testing"
 	"strings"
 	"testing"
 )
 
 // Test Data
 const (
+	kafkaSecret              = "testkafkasecret"
 	channelName              = "testname"
 	channelNamespace         = "testnamespace"
 	numPartitions            = 123
@@ -29,7 +29,7 @@ const (
 func TestChannelLogger(t *testing.T) {
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Test Data
 	channel := &knativekafkav1alpha1.KafkaChannel{
@@ -73,17 +73,18 @@ func TestNewChannelOwnerReference(t *testing.T) {
 	assert.Equal(t, knativekafkav1alpha1.SchemeGroupVersion.String(), controllerRef.APIVersion)
 	assert.Equal(t, constants.KafkaChannelKind, controllerRef.Kind)
 	assert.Equal(t, channel.ObjectMeta.Name, controllerRef.Name)
-	assert.True(t, *controllerRef.Controller)
+	assert.True(t, *controllerRef.BlockOwnerDeletion)
+	assert.False(t, *controllerRef.Controller)
 }
 
 // Test The ChannelDeploymentDnsSafeName() Functionality
 func TestChannelDeploymentDnsSafeName(t *testing.T) {
 
 	// Perform The Test
-	actualResult := ChannelDeploymentDnsSafeName(test.KafkaSecret)
+	actualResult := ChannelDeploymentDnsSafeName(kafkaSecret)
 
 	// Verify The Results
-	expectedResult := fmt.Sprintf("%s-channel", strings.ToLower(test.KafkaSecret))
+	expectedResult := fmt.Sprintf("%s-channel", strings.ToLower(kafkaSecret))
 	assert.Equal(t, expectedResult, actualResult)
 }
 
@@ -100,7 +101,7 @@ func TestChannelHostName(t *testing.T) {
 func TestNumPartitions(t *testing.T) {
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Test Data
 	environment := &env.Environment{DefaultNumPartitions: defaultNumPartitions}
@@ -120,7 +121,7 @@ func TestNumPartitions(t *testing.T) {
 func TestReplicationFactor(t *testing.T) {
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Test Data
 	environment := &env.Environment{DefaultReplicationFactor: defaultReplicationFactor}
@@ -140,7 +141,7 @@ func TestReplicationFactor(t *testing.T) {
 func TestRetentionMillis(t *testing.T) {
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Test Data
 	environment := &env.Environment{DefaultRetentionMillis: defaultRetentionMillis}

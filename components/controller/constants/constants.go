@@ -8,9 +8,11 @@ const (
 	KafkaChannelControllerAgentName = "kafka-channel-controller"
 
 	// CRD Kinds
+	ServiceKind             = "Service"
+	DeploymentKind          = "Deployment"
 	KnativeChannelKind      = "Channel"
-	KafkaChannelKind        = "KafkaChannel"
 	KnativeSubscriptionKind = "Subscription"
+	KafkaChannelKind        = "KafkaChannel"
 
 	// HTTP Port
 	HttpPortName = "http"
@@ -18,12 +20,11 @@ const (
 	// Channel resource's url doesn't currently have a port set. Therefore, any client using just the url
 	// will send to port 80 by default.
 	HttpServicePortNumber = 80
-	// IMPORTANT: HttpContainerPortNumber must be 8080 due to dependency issues in the channel. This
-	// variable is necessary in order to reconcile the channel resources (service, deployment, etc)
-	// correctly.
+	// IMPORTANT: HttpContainerPortNumber must be 8080 due to dependency issues in the channel. This variable
+	// is necessary in order to reconcile the channel resources (service, deployment, etc) correctly.
 	// Refer to: https://github.com/kyma-incubator/knative-kafka/blob/master/components/channel/cmd/main.go
 	HttpContainerPortNumber = 8080
-	
+
 	// Kafka Secret Data Keys
 	KafkaSecretDataKeyBrokers  = "brokers"
 	KafkaSecretDataKeyUsername = "username"
@@ -36,6 +37,9 @@ const (
 	LoggingConfigVolumeName = "logging-config"
 	LoggingConfigMountPath  = "/etc/knative-kafka"
 	LoggingConfigMapName    = "knative-kafka-logging"
+
+	// Reconciliation Error Messages
+	ReconciliationFailedError = "reconciliation failed"
 
 	// Health Configuration
 	HealthPort                = 8082

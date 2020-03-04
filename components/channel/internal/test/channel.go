@@ -30,7 +30,6 @@ func CreateKafkaChannel(name string, namespace string, ready corev1.ConditionSta
 			Namespace: namespace,
 		},
 		Spec: knativekafkav1alpha1.KafkaChannelSpec{
-			TenantId:          "",
 			NumPartitions:     0,
 			ReplicationFactor: 0,
 			RetentionMillis:   0,

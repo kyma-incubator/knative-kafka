@@ -37,6 +37,8 @@ spec:
               fieldPath: spec.serviceAccountName
         - name: METRICS_PORT
           value: {{ .Values.kafka.networking.container.metricsPort | quote }}
+        - name: METRICS_DOMAIN
+          value: "knative.dev/eventing"
         - name: KAFKA_PROVIDER
           value: {{ .Values.environment.kafkaProvider | quote }}
         - name: KAFKA_OFFSET_COMMIT_MESSAGE_COUNT
