@@ -54,16 +54,6 @@ func TestGetEnvironment(t *testing.T) {
 	testCase.expectError = true
 	testCases = append(testCases, testCase)
 
-	testCase = getValidTestCase("Missing Required Config - KafkaUsername")
-	testCase.kafkaUsername = ""
-	testCase.expectError = true
-	testCases = append(testCases, testCase)
-
-	testCase = getValidTestCase("Missing Required Config - KafkaPassword")
-	testCase.kafkaPassword = ""
-	testCase.expectError = true
-	testCases = append(testCases, testCase)
-
 	// Loop Over All The TestCases
 	for _, testCase := range testCases {
 
