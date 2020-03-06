@@ -71,7 +71,7 @@ func TestReconcileTopic(t *testing.T) {
 				NumPartitions:     test.NumPartitions,
 				ReplicationFactor: test.ReplicationFactor,
 				Config: map[string]string{
-					KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
+					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
 				},
 			},
 		},
@@ -93,7 +93,7 @@ func TestReconcileTopic(t *testing.T) {
 				NumPartitions:     test.NumPartitions,
 				ReplicationFactor: test.ReplicationFactor,
 				Config: map[string]string{
-					KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
+					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
 				},
 			},
 			MockErrorCode: kafka.ErrTopicAlreadyExists,
@@ -116,7 +116,7 @@ func TestReconcileTopic(t *testing.T) {
 				NumPartitions:     test.NumPartitions,
 				ReplicationFactor: test.ReplicationFactor,
 				Config: map[string]string{
-					KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
+					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
 				},
 			},
 			MockErrorCode: kafka.ErrAllBrokersDown,
@@ -140,7 +140,7 @@ func TestReconcileTopic(t *testing.T) {
 				NumPartitions:     test.NumPartitions,
 				ReplicationFactor: test.ReplicationFactor,
 				Config: map[string]string{
-					KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
+					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
 				},
 			},
 		},
@@ -162,7 +162,7 @@ func TestReconcileTopic(t *testing.T) {
 				NumPartitions:     test.NumPartitions,
 				ReplicationFactor: test.ReplicationFactor,
 				Config: map[string]string{
-					KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
+					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
 				},
 			},
 			MockErrorCode: kafka.ErrUnknownTopic,
@@ -185,7 +185,7 @@ func TestReconcileTopic(t *testing.T) {
 				NumPartitions:     test.NumPartitions,
 				ReplicationFactor: test.ReplicationFactor,
 				Config: map[string]string{
-					KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
+					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
 				},
 			},
 			MockErrorCode: kafka.ErrAllBrokersDown,

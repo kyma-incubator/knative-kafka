@@ -48,6 +48,7 @@ func NewChannelOwnerReference(channel *knativekafkav1alpha1.KafkaChannel) metav1
 // Note - The current implementation creates a single Channel Deployment for each
 //        Kafka Authentication (K8S Secrets) instance.
 //
+// TODO - used for service and deployment - rename function ?
 func ChannelDeploymentDnsSafeName(kafkaSecretName string) string {
 
 	// In order for the resulting name to be a valid DNS component it's length must be no more than 63 characters.
