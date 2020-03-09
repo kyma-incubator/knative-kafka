@@ -1,68 +1,37 @@
 package kafkachannel
 
 import (
-	"context"
+	"fmt"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkachannel"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-	"knative.dev/pkg/reconciler"
 )
 
-var (
-	_ kafkachannel.Interface = (*Reconciler)(nil) // Verify Reconciler Implements Interface
-	_ kafkachannel.Finalizer = (*Reconciler)(nil) // Verify Reconciler Implements Finalizer
-)
+// Reconcile The KafkaChannel Itself (Add Labels, etc.)
+func (r *Reconciler) reconcileKafkaChannel(channel *knativekafkav1alpha1.KafkaChannel) error {
 
-// TODO - do these belong here or in the reconcile.go ?  would like to move them ; )
+	// Get Channel Specific Logger
+	logger := util.ChannelLogger(r.Logger.Desugar(), channel)
 
-// ReconcileKind Implements The Reconciler Interface & Is Responsible For Performing The Reconciliation (Creation)
-func (r *Reconciler) ReconcileKind(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) reconciler.Event {
-
-	r.Logger.Debug("<==========  START KAFKA-CHANNEL RECONCILIATION  ==========>")
-
-	// Reset The Channel's Status Conditions To Unknown (Addressable, Topic, Service, Deployment, etc...)
-	channel.Status.InitializeConditions()
-
-	// Perform The KafkaChannel Reconciliation & Handle Error Response
-	r.Logger.Info("Channel Owned By Controller - Reconciling", zap.Any("Channel.Spec", channel.Spec))
-	err := r.reconcile(ctx, channel)
-	if err != nil {
-		r.Logger.Error("Failed To Reconcile KafkaChannel", zap.Any("Channel", channel), zap.Error(err))
-		return err
+	// Reconcile The KafkaChannel's Labels
+	labelsErr := r.reconcileLabels(channel)
+	if labelsErr != nil {
+		logger.Error("Failed To Reconcile KafkaChannel Labels", zap.Error(labelsErr))
+	} else {
+		logger.Info("Successfully Reconciled KafkaChannel Labels")
 	}
 
-	// Return Success
-	r.Logger.Info("Successfully Reconciled KafkaChannel", zap.Any("Channel", channel))
-	channel.Status.ObservedGeneration = channel.Generation
-	return reconciler.NewEvent(corev1.EventTypeNormal, event.KafkaChannelReconciled.String(), "KafkaChannel Reconciled Successfully: \"%s/%s\"", channel.Namespace, channel.Name)
-}
-
-// ReconcileKind Implements The Finalizer Interface & Is Responsible For Performing The Finalization (Topic Deletion)
-func (r *Reconciler) FinalizeKind(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) reconciler.Event {
-
-	r.Logger.Debug("<==========  START KAFKA-CHANNEL FINALIZATION  ==========>")
-
-	// Get The Kafka Topic Name For Specified Channel
-	topicName := util.TopicName(channel)
-
-	// Delete The Kafka Topic & Handle Error Response
-	err := r.deleteTopic(ctx, topicName)
-	if err != nil {
-		r.Logger.Error("Failed To Finalize KafkaChannel", zap.Any("Channel", channel), zap.Error(err))
-		return err
+	// Return Results
+	if labelsErr != nil {
+		return fmt.Errorf("failed to reconcile kafkachannel labels")
+	} else {
+		return nil // Success
 	}
-
-	// Return Success
-	r.Logger.Info("Successfully Finalized KafkaChannel", zap.Any("Channel", channel))
-	return reconciler.NewEvent(corev1.EventTypeNormal, event.KafkaChannelFinalized.String(), "KafkaChannel Finalized Successfully: \"%s/%s\"", channel.Namespace, channel.Name)
 }
 
-// Add Labels To KafkaChannel (Call After KafkaChannel Reconciliation !)
-func (r *Reconciler) reconcileKafkaChannelLabels(channel *knativekafkav1alpha1.KafkaChannel) error {
+// Add Labels To KafkaChannel (Call After Channel Reconciliation !)
+func (r *Reconciler) reconcileLabels(channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Get The KafkaChannel's Current Labels
 	labels := channel.Labels

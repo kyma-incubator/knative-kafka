@@ -47,7 +47,7 @@ func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChan
 
 	// Return Results
 	if serviceErr != nil || deploymentErr != nil {
-		return fmt.Errorf("failed to reconcile dispatcher components")
+		return fmt.Errorf("failed to reconcile dispatcher resources")
 	} else {
 		return nil
 	}

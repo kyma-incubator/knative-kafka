@@ -16,17 +16,6 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-/* TODO - status !!!!
-
-- lastTransitionTime: "2020-03-05T17:26:53Z"
-  status: Unknown
-  type: ChannelDeploymentReady
-
-- lastTransitionTime: "2020-03-05T17:26:53Z"
-  status: Unknown
-  type: ChannelDeploymentServiceReady
-*/
-
 // Reconcile The "Channel" Inbound For The Specified Channel
 func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel) error {
 
@@ -44,7 +33,7 @@ func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel
 
 	// Return Results
 	if channelServiceErr != nil {
-		return fmt.Errorf("failed to reconcile channel components")
+		return fmt.Errorf("failed to reconcile channel resources")
 	} else {
 		return nil // Success
 	}

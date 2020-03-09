@@ -58,7 +58,7 @@ func (r *Reconciler) reconcileChannel(secret *corev1.Secret) error {
 
 	// Return Results
 	if serviceErr != nil || deploymentErr != nil || statusErr != nil {
-		return fmt.Errorf("failed to reconcile channel components")
+		return fmt.Errorf("failed to reconcile channel resources")
 	} else {
 		return nil // Success
 	}
