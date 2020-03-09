@@ -61,7 +61,7 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *knativekafkav1alpha1.
 			service, err = r.KubeClientSet.CoreV1().Services(service.Namespace).Create(service)
 			if err != nil {
 				r.Logger.Error("Failed To Create KafkaChannel Service", zap.Error(err))
-				channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
+				channel.Status.MarkKafkaChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
 				return err
 			} else {
 				r.Logger.Info("Successfully Created KafkaChannel Service")
@@ -69,7 +69,7 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *knativekafkav1alpha1.
 			}
 		} else {
 			r.Logger.Error("Failed To Get KafkaChannel Service", zap.Error(err))
-			channel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
+			channel.Status.MarkKafkaChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
 			return err
 		}
 	} else {
@@ -78,7 +78,7 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *knativekafkav1alpha1.
 	}
 
 	// Update Channel Status
-	channel.Status.MarkChannelServiceTrue()
+	channel.Status.MarkKafkaChannelServiceTrue()
 	channel.Status.SetAddress(&apis.URL{
 		Scheme: "http",
 		Host:   eventingNames.ServiceHostName(service.Name, service.Namespace),
@@ -110,7 +110,7 @@ func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 
 	// Get The Dispatcher Service Name For The Channel (One Channel Service Per KafkaChannel Instance)
 	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))
-	deploymentServiceAddress := fmt.Sprintf("%s.%s.svc.%s", deploymentName, constants.KnativeEventingNamespace, eventingUtils.GetClusterDomainName())
+	serviceAddress := fmt.Sprintf("%s.%s.svc.%s", deploymentName, constants.KnativeEventingNamespace, eventingUtils.GetClusterDomainName())
 
 	// Create & Return The Service Model
 	return &corev1.Service{
@@ -133,7 +133,7 @@ func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 		},
 		Spec: corev1.ServiceSpec{
 			Type:         corev1.ServiceTypeExternalName,
-			ExternalName: deploymentServiceAddress,
+			ExternalName: serviceAddress,
 		},
 	}
 }

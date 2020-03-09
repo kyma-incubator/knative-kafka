@@ -21,8 +21,6 @@ import (
 	"strconv"
 )
 
-// TODO - search everywhere for extra "channelDeploymentService" and change to "channelService"
-
 // Reconcile The "Channel" Inbound For The Specified Kafka Secret
 func (r *Reconciler) reconcileChannel(secret *corev1.Secret) error {
 
@@ -84,34 +82,24 @@ func (r *Reconciler) reconcileChannelService(secret *corev1.Secret) error {
 			service, err = r.KubeClientSet.CoreV1().Services(service.Namespace).Create(service)
 			if err != nil {
 				r.Logger.Error("Failed To Create Channel Service", zap.Error(err))
-				// TODO - no status on secret - but... will what to do with the status on the KafkaChannel ?
-				//channel.Status.MarkChannelDeploymentServiceFailed("ChannelDeploymentServiceFailed", fmt.Sprintf("Channel Deployment Service Failed: %s", err))
 				return err
 			} else {
 				r.Logger.Info("Successfully Created Channel Service")
-				// Continue To Update Channel Status
+				return nil
 			}
 
 		} else {
 
 			// Failed In Attempt To Get Kafka Channel Service From K8S
 			r.Logger.Error("Failed To Get Channel Service", zap.Error(err))
-			// TODO - no status on secret - but... will what to do with the status on the KafkaChannel ?
-			//channel.Status.MarkChannelDeploymentServiceFailed("ChannelDeploymentServiceFailed", fmt.Sprintf("Channel Deployment Service Failed: %s", err))
 			return err
 		}
 	} else {
-		// TODO - no status on secret - but... will what to do with the status on the KafkaChannel ?
+
+		// Verified The Channel Service Exists
 		r.Logger.Info("Successfully Verified Channel Service")
-		// Continue To Update Channel Status
+		return nil
 	}
-
-	// TODO - no status on secret - but... will what to do with the status on the KafkaChannel ?
-	//// Update Channel Status
-	//channel.Status.MarkChannelDeploymentServiceTrue()
-
-	// Return Success
-	return nil
 }
 
 // Get The Kafka Service Associated With The Specified Channel
@@ -190,19 +178,15 @@ func (r *Reconciler) reconcileChannelDeployment(secret *corev1.Secret) error {
 			deployment, err = r.newChannelDeployment(secret)
 			if err != nil {
 				r.Logger.Error("Failed To Create KafkaChannel Deployment YAML", zap.Error(err))
-				// TODO - no status on secret - but... will what to do with the status on the KafkaChannel ?
-				//channel.Status.MarkChannelDeploymentFailed("ChannelDeploymentFailed", fmt.Sprintf("Channel Deployment Failed: %s", err))
 				return err
 			} else {
 				deployment, err = r.KubeClientSet.AppsV1().Deployments(deployment.Namespace).Create(deployment)
 				if err != nil {
 					r.Logger.Error("Failed To Create KafkaChannel Deployment", zap.Error(err))
-					// TODO - no status on secret - but... will what to do with the status on the KafkaChannel ?
-					//channel.Status.MarkChannelDeploymentFailed("ChannelDeploymentFailed", fmt.Sprintf("Channel Deployment Failed: %s", err))
 					return err
 				} else {
 					r.Logger.Info("Successfully Created KafkaChannel Deployment")
-					// Continue To Update Channel Status
+					return nil
 				}
 			}
 
@@ -210,22 +194,14 @@ func (r *Reconciler) reconcileChannelDeployment(secret *corev1.Secret) error {
 
 			// Failed In Attempt To Get Deployment From K8S
 			r.Logger.Error("Failed To Get KafkaChannel Deployment", zap.Error(err))
-			// TODO - no status on secret - but... will what to do with the status on the KafkaChannel ?
-			//channel.Status.MarkChannelDeploymentFailed("ChannelDeploymentFailed", fmt.Sprintf("Channel Deployment Failed: %s", err))
 			return err
 		}
 	} else {
-		// TODO - no status on secret - but... will what to do with the status on the KafkaChannel ?
+
+		// Verified The Channel Service Exists
 		r.Logger.Info("Successfully Verified Channel Deployment")
-		// Continue To Update Channel Status
+		return nil
 	}
-
-	// TODO - no status on secret - but... will what to do with the status on the KafkaChannel ?
-	//// Update Channel Status
-	//channel.Status.MarkChannelDeploymentTrue()
-
-	// Return Success
-	return nil
 }
 
 // Get The Kafka Channel Deployment Associated With The Specified Secret
@@ -484,10 +460,9 @@ func (r *Reconciler) updateKafkaChannelStatus(originalChannel *knativekafkav1alp
 
 		// Update Service Status Based On Specified State
 		if validService {
-			updatedChannel.Status.MarkChannelDeploymentServiceTrue()
+			updatedChannel.Status.MarkChannelServiceTrue()
 		} else {
-			// TODO - change these reasons ???
-			updatedChannel.Status.MarkChannelDeploymentServiceFailed("ChannelDeploymentServiceFailed", fmt.Sprint("Channel Service Failed"))
+			updatedChannel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprint("Channel Service Failed"))
 		}
 
 		// Update Deployment Status Based On Specified State

@@ -453,7 +453,7 @@ func TestReconcile(t *testing.T) {
 			adminClient:           &test.MockAdminClient{},
 			environment:           test.NewEnvironment(),
 			kafkachannelLister:    listers.GetKafkaChannelLister(),
-			kafkachannelInformer:  nil, // TODO - Fix ???
+			kafkachannelInformer:  nil,
 			deploymentLister:      listers.GetDeploymentLister(),
 			serviceLister:         listers.GetServiceLister(),
 			knativekafkaClientSet: fakeknativekafkaclient.Get(ctx),

@@ -41,8 +41,6 @@ var (
 	_ kafkachannel.Finalizer = (*Reconciler)(nil) // Verify Reconciler Implements Finalizer
 )
 
-// TODO - do these belong here or in the reconcile.go ?  would like to move them ; )
-
 // ReconcileKind Implements The Reconciler Interface & Is Responsible For Performing The Reconciliation (Creation)
 func (r *Reconciler) ReconcileKind(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) reconciler.Event {
 

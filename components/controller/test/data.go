@@ -167,22 +167,24 @@ func WithKafkaChannelAddress(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
 
 // Set The KafkaChannel's Channel Service As READY
 func WithKafkaChannelChannelServiceReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelServiceTrue()
+	kafkachannel.Status.MarkKafkaChannelServiceTrue()
 }
 
 // Set The KafkaChannel's Channel Services As Failed
 func WithKafkaChannelChannelServiceFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: inducing failure for create services"))
+	kafkachannel.Status.MarkKafkaChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: inducing failure for create services"))
 }
 
+// TODO - Rename DeploymentService -> Service
 // Set The KafkaChannel's Deployment Service As READY
 func WithKafkaChannelDeploymentServiceReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelDeploymentServiceTrue()
+	kafkachannel.Status.MarkChannelServiceTrue()
 }
 
+// TODO - Rename DeploymentService -> Service
 // Set The KafkaChannel's Deployment Service As Failed
 func WithKafkaChannelDeploymentServiceFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelDeploymentServiceFailed("ChannelDeploymentServiceFailed", "Channel Deployment Service Failed: inducing failure for create services")
+	kafkachannel.Status.MarkChannelServiceFailed("ChannelDeploymentServiceFailed", "Channel Deployment Service Failed: inducing failure for create services")
 }
 
 // Set The KafkaChannel's Channel Deployment As READY
@@ -304,7 +306,7 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 					ServiceAccountName: ServiceAccount,
 					Containers: []corev1.Container{
 						{
-							Name:  ChannelDeploymentName,
+							Name: ChannelDeploymentName,
 							LivenessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
@@ -313,7 +315,7 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 									},
 								},
 								InitialDelaySeconds: constants.ChannelLivenessDelay,
-								PeriodSeconds: constants.ChannelLivenessPeriod,
+								PeriodSeconds:       constants.ChannelLivenessPeriod,
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
@@ -323,7 +325,7 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 									},
 								},
 								InitialDelaySeconds: constants.ChannelReadinessDelay,
-								PeriodSeconds: constants.ChannelReadinessPeriod,
+								PeriodSeconds:       constants.ChannelReadinessPeriod,
 							},
 							Image: ChannelImage,
 							Ports: []corev1.ContainerPort{
@@ -501,7 +503,7 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 									},
 								},
 								InitialDelaySeconds: constants.DispatcherLivenessDelay,
-								PeriodSeconds: constants.DispatcherLivenessPeriod,
+								PeriodSeconds:       constants.DispatcherLivenessPeriod,
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
@@ -511,7 +513,7 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 									},
 								},
 								InitialDelaySeconds: constants.DispatcherReadinessDelay,
-								PeriodSeconds: constants.DispatcherReadinessPeriod,
+								PeriodSeconds:       constants.DispatcherReadinessPeriod,
 							},
 							Env: []corev1.EnvVar{
 								{
