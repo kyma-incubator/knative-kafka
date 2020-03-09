@@ -48,7 +48,8 @@ const (
 
 	// Labels
 	AppLabel                    = "app"
-	KafkaChannelLabel           = "kafkachannel"
+	KafkaChannelNameLabel       = "kafkachannel-name"
+	KafkaChannelNamespaceLabel  = "kafkachannel-namespace"
 	KafkaChannelChannelLabel    = "kafkachannel-channel"    // Channel Label - Used To Mark Deployment As Related To Channel
 	KafkaChannelDispatcherLabel = "kafkachannel-dispatcher" // Dispatcher Label - Used To Mark Deployment As Dispatcher
 	KafkaSecretLabel            = "kafkasecret"             // Secret Label - Indicates The Kafka Secret Of The KafkaChannel

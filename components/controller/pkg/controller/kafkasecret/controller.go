@@ -63,7 +63,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	})
 	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(corev1.SchemeGroupVersion.WithKind(constants.SecretKind)),
-		Handler:    controller.HandleAll(controllerImpl.EnqueueControllerOf), // tODO - is this correct ???
+		Handler:    controller.HandleAll(controllerImpl.EnqueueControllerOf),
 	})
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(corev1.SchemeGroupVersion.WithKind(constants.SecretKind)),

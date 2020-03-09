@@ -133,8 +133,9 @@ func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 			Name:      serviceName,       // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 			Namespace: channel.Namespace, // Must Match KafkaChannel For HOST Parsing In Channel Implementation!
 			Labels: map[string]string{
-				constants.KafkaChannelLabel:          channel.Name,
-				constants.KafkaChannelChannelLabel:   "true",                               // Allows for identification of KafkaChannels
+				constants.KafkaChannelChannelLabel:   "true",                               // Identifies the Service as being a KafkaChannel "Channel"
+				constants.KafkaChannelNameLabel:      channel.Name,                         // Identifies the Service's Owning KafkaChannel's Name
+				constants.KafkaChannelNamespaceLabel: channel.Namespace,                    // Identifies the Service's Owning KafkaChannel's Namespace
 				constants.K8sAppChannelSelectorLabel: constants.K8sAppChannelSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 			OwnerReferences: []metav1.OwnerReference{

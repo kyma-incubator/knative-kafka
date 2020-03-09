@@ -71,18 +71,25 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	// Create A New KafkaChannel Controller Impl With The Reconciler
 	controllerImpl := kafkachannelreconciler.NewImpl(ctx, r)
 
+	//
 	// Configure The Informers' EventHandlers
+	//
+	// Note - The use of EnqueueLabelOfNamespaceScopedResource() is to facilitate cross-namespace OwnerReference
+	//        management and relies upon the reconciler creating the Services/Deployments with appropriate labels.
+	//        Kubernetes OwnerReferences are not intended to be cross-namespace and thus don't include the namespace
+	//        information.
+	//
 	r.Logger.Info("Setting Up EventHandlers")
 	kafkachannelInformer.Informer().AddEventHandler(
 		controller.HandleAll(controllerImpl.Enqueue),
 	)
 	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(kafkachannelv1alpha1.SchemeGroupVersion.WithKind(constants.KafkaChannelKind)),
-		Handler:    controller.HandleAll(controllerImpl.EnqueueControllerOf), // TODO - EnqueueController Of ??? Confirm This is not firing because we ownerreferences are not controller !!!
+		Handler:    controller.HandleAll(controllerImpl.EnqueueLabelOfNamespaceScopedResource(constants.KafkaChannelNamespaceLabel, constants.KafkaChannelNameLabel)),
 	})
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(kafkachannelv1alpha1.SchemeGroupVersion.WithKind(constants.KafkaChannelKind)),
-		Handler:    controller.HandleAll(controllerImpl.EnqueueControllerOf), // TODO - EnqueueController Of ??? Confirm This is not firing because we removed controller from ownerreferences ?
+		Handler:    controller.HandleAll(controllerImpl.EnqueueLabelOfNamespaceScopedResource(constants.KafkaChannelNamespaceLabel, constants.KafkaChannelNameLabel)),
 	})
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: util.FilterKafkaSecrets(),

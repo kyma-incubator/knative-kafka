@@ -116,8 +116,9 @@ func (r *Reconciler) newDispatcherService(channel *knativekafkav1alpha1.KafkaCha
 			Name:      serviceName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				constants.KafkaChannelLabel:             channel.Name,
-				constants.KafkaChannelDispatcherLabel:   "true",                                  // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
+				constants.KafkaChannelDispatcherLabel:   "true",                                  // Identifies the Service as being a KafkaChannel "Dispatcher"
+				constants.KafkaChannelNameLabel:         channel.Name,                            // Identifies the Service's Owning KafkaChannel's Name
+				constants.KafkaChannelNamespaceLabel:    channel.Namespace,                       // Identifies the Service's Owning KafkaChannel's Namespace
 				constants.K8sAppDispatcherSelectorLabel: constants.K8sAppDispatcherSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 			OwnerReferences: []metav1.OwnerReference{
@@ -220,9 +221,10 @@ func (r *Reconciler) newDispatcherDeployment(channel *knativekafkav1alpha1.Kafka
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				constants.AppLabel:                    deploymentName, // Matches K8S Service Selector Key/Value Below
-				constants.KafkaChannelDispatcherLabel: "true",         // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
-				constants.KafkaChannelLabel:           channel.Name,
+				constants.AppLabel:                    deploymentName,    // Matches K8S Service Selector Key/Value Below
+				constants.KafkaChannelDispatcherLabel: "true",            // Identifies the Deployment as being a KafkaChannel "Dispatcher"
+				constants.KafkaChannelNameLabel:       channel.Name,      // Identifies the Deployment's Owning KafkaChannel's Name
+				constants.KafkaChannelNamespaceLabel:  channel.Namespace, // Identifies the Deployment's Owning KafkaChannel's Namespace
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				util.NewChannelOwnerReference(channel),
