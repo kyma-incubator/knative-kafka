@@ -11,13 +11,14 @@ func TestNewChannelLogger(t *testing.T) {
 	performEventTypeStringTest(t, ClusterChannelProvisionerReconciliationFailed, "ClusterChannelProvisionerReconciliationFailed")
 	performEventTypeStringTest(t, ClusterChannelProvisionerUpdateStatusFailed, "ClusterChannelProvisionerUpdateStatusFailed")
 	performEventTypeStringTest(t, ChannelUpdateFailed, "ChannelUpdateFailed")
-	performEventTypeStringTest(t, ChannelServiceReconciliationFailed, "ChannelK8sServiceReconciliationFailed")
+	performEventTypeStringTest(t, ChannelServiceReconciliationFailed, "ChannelServiceReconciliationFailed")
+	performEventTypeStringTest(t, ChannelServiceReconciliationFailed, "ChannelServiceReconciliationFailed")
 	performEventTypeStringTest(t, ChannelDeploymentReconciliationFailed, "ChannelDeploymentReconciliationFailed")
 	performEventTypeStringTest(t, KafkaTopicReconciliationFailed, "KafkaTopicReconciliationFailed")
-	performEventTypeStringTest(t, DispatcherServiceReconciliationFailed, "DispatcherK8sServiceReconciliationFailed")
+	performEventTypeStringTest(t, DispatcherServiceReconciliationFailed, "DispatcherServiceReconciliationFailed")
 	performEventTypeStringTest(t, DispatcherDeploymentReconciliationFailed, "DispatcherDeploymentReconciliationFailed")
-
-	// TODO - Add Missing Test Cases
+	performEventTypeStringTest(t, KafkaSecretReconciled, "KafkaSecretReconciled")
+	performEventTypeStringTest(t, KafkaSecretFinalized, "KafkaSecretFinalized")
 }
 
 // Perform A Single Instance Of The CoreV1 EventType String Test

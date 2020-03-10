@@ -41,12 +41,12 @@ func TestReconcileTopic(t *testing.T) {
 		{
 			Name: "Skip Deleted Topic",
 			Channel: test.NewKnativeKafkaChannel(
-				test.WithFinalizer,
+				test.WithKafkaChannelFinalizer,
 				test.WithKafkaChannelDeleted,
 				test.WithKafkaChannelAddress,
 				test.WithInitKafkaChannelConditions,
+				test.WithKafkaChannelServiceReady,
 				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelDeploymentServiceReady,
 				test.WithKafkaChannelChannelDeploymentReady,
 				test.WithKafkaChannelDispatcherDeploymentReady,
 			),
@@ -56,11 +56,11 @@ func TestReconcileTopic(t *testing.T) {
 		{
 			Name: "Create New Topic",
 			Channel: test.NewKnativeKafkaChannel(
-				test.WithFinalizer,
+				test.WithKafkaChannelFinalizer,
 				test.WithKafkaChannelAddress,
 				test.WithInitKafkaChannelConditions,
+				test.WithKafkaChannelServiceReady,
 				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelDeploymentServiceReady,
 				test.WithKafkaChannelChannelDeploymentReady,
 				test.WithKafkaChannelDispatcherDeploymentReady,
 			),
@@ -78,11 +78,11 @@ func TestReconcileTopic(t *testing.T) {
 		{
 			Name: "Create Preexisting Topic",
 			Channel: test.NewKnativeKafkaChannel(
-				test.WithFinalizer,
+				test.WithKafkaChannelFinalizer,
 				test.WithKafkaChannelAddress,
 				test.WithInitKafkaChannelConditions,
+				test.WithKafkaChannelServiceReady,
 				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelDeploymentServiceReady,
 				test.WithKafkaChannelChannelDeploymentReady,
 				test.WithKafkaChannelDispatcherDeploymentReady,
 			),
@@ -101,11 +101,11 @@ func TestReconcileTopic(t *testing.T) {
 		{
 			Name: "Error Creating Topic",
 			Channel: test.NewKnativeKafkaChannel(
-				test.WithFinalizer,
+				test.WithKafkaChannelFinalizer,
 				test.WithKafkaChannelAddress,
 				test.WithInitKafkaChannelConditions,
+				test.WithKafkaChannelServiceReady,
 				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelDeploymentServiceReady,
 				test.WithKafkaChannelChannelDeploymentReady,
 				test.WithKafkaChannelDispatcherDeploymentReady,
 			),
@@ -125,11 +125,11 @@ func TestReconcileTopic(t *testing.T) {
 		{
 			Name: "Delete Existing Topic",
 			Channel: test.NewKnativeKafkaChannel(
-				test.WithFinalizer,
+				test.WithKafkaChannelFinalizer,
 				test.WithKafkaChannelAddress,
 				test.WithInitKafkaChannelConditions,
+				test.WithKafkaChannelServiceReady,
 				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelDeploymentServiceReady,
 				test.WithKafkaChannelChannelDeploymentReady,
 				test.WithKafkaChannelDispatcherDeploymentReady,
 			),
@@ -147,11 +147,11 @@ func TestReconcileTopic(t *testing.T) {
 		{
 			Name: "Delete Nonexistent Topic",
 			Channel: test.NewKnativeKafkaChannel(
-				test.WithFinalizer,
+				test.WithKafkaChannelFinalizer,
 				test.WithKafkaChannelAddress,
 				test.WithInitKafkaChannelConditions,
+				test.WithKafkaChannelServiceReady,
 				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelDeploymentServiceReady,
 				test.WithKafkaChannelChannelDeploymentReady,
 				test.WithKafkaChannelDispatcherDeploymentReady,
 			),
@@ -170,11 +170,11 @@ func TestReconcileTopic(t *testing.T) {
 		{
 			Name: "Error Deleting Topic",
 			Channel: test.NewKnativeKafkaChannel(
-				test.WithFinalizer,
+				test.WithKafkaChannelFinalizer,
 				test.WithKafkaChannelAddress,
 				test.WithInitKafkaChannelConditions,
+				test.WithKafkaChannelServiceReady,
 				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelDeploymentServiceReady,
 				test.WithKafkaChannelChannelDeploymentReady,
 				test.WithKafkaChannelDispatcherDeploymentReady,
 			),

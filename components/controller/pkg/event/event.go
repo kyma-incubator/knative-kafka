@@ -52,7 +52,7 @@ func (et CoreV1EventType) String() string {
 	case ChannelUpdateFailed:
 		eventTypeString = "ChannelUpdateFailed"
 	case ChannelServiceReconciliationFailed:
-		eventTypeString = "ChannelK8sServiceReconciliationFailed"
+		eventTypeString = "ChannelServiceReconciliationFailed"
 	case ChannelDeploymentReconciliationFailed:
 		eventTypeString = "ChannelDeploymentReconciliationFailed"
 	case ChannelStatusReconciliationFailed:
@@ -60,7 +60,7 @@ func (et CoreV1EventType) String() string {
 	case KafkaTopicReconciliationFailed:
 		eventTypeString = "KafkaTopicReconciliationFailed"
 	case DispatcherServiceReconciliationFailed:
-		eventTypeString = "DispatcherK8sServiceReconciliationFailed"
+		eventTypeString = "DispatcherServiceReconciliationFailed"
 	case DispatcherDeploymentReconciliationFailed:
 		eventTypeString = "DispatcherDeploymentReconciliationFailed"
 	case KafkaSecretReconciled:

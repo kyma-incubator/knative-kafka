@@ -78,6 +78,10 @@ func (l *Listers) GetAllObjects() []runtime.Object {
 	return all
 }
 
+func (l *Listers) GetSecretLister() corev1listers.SecretLister {
+	return corev1listers.NewSecretLister(l.indexerFor(&corev1.Secret{}))
+}
+
 func (l *Listers) GetServiceLister() corev1listers.ServiceLister {
 	return corev1listers.NewServiceLister(l.indexerFor(&corev1.Service{}))
 }

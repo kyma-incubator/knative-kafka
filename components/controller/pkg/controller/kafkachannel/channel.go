@@ -25,7 +25,7 @@ func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel
 	// Reconcile The KafkaChannel's Service
 	channelServiceErr := r.reconcileKafkaChannelService(channel)
 	if channelServiceErr != nil {
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile Channel Service (Channel): %v", channelServiceErr)
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service: %v", channelServiceErr)
 		logger.Error("Failed To Reconcile KafkaChannel Service", zap.Error(channelServiceErr))
 	} else {
 		logger.Info("Successfully Reconciled KafkaChannel Service")
@@ -61,7 +61,7 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *knativekafkav1alpha1.
 			service, err = r.KubeClientSet.CoreV1().Services(service.Namespace).Create(service)
 			if err != nil {
 				r.Logger.Error("Failed To Create KafkaChannel Service", zap.Error(err))
-				channel.Status.MarkKafkaChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
+				channel.Status.MarkKafkaChannelServiceFailed("KafkaChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
 				return err
 			} else {
 				r.Logger.Info("Successfully Created KafkaChannel Service")
@@ -69,7 +69,7 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *knativekafkav1alpha1.
 			}
 		} else {
 			r.Logger.Error("Failed To Get KafkaChannel Service", zap.Error(err))
-			channel.Status.MarkKafkaChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
+			channel.Status.MarkKafkaChannelServiceFailed("KafkaChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
 			return err
 		}
 	} else {
@@ -109,7 +109,7 @@ func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 	serviceName := kafkautil.AppendKafkaChannelServiceNameSuffix(channel.Name)
 
 	// Get The Dispatcher Service Name For The Channel (One Channel Service Per KafkaChannel Instance)
-	deploymentName := util.ChannelDeploymentDnsSafeName(r.kafkaSecretName(channel))
+	deploymentName := util.ChannelDnsSafeName(r.kafkaSecretName(channel))
 	serviceAddress := fmt.Sprintf("%s.%s.svc.%s", deploymentName, constants.KnativeEventingNamespace, eventingUtils.GetClusterDomainName())
 
 	// Create & Return The Service Model

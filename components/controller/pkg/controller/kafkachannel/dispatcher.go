@@ -35,7 +35,7 @@ func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChan
 	}
 
 	// Reconcile The Dispatcher's Deployment
-	deploymentErr := r.reconcileChannelDeployment(channel)
+	deploymentErr := r.reconcileDispatcherDeployment(channel)
 	if deploymentErr != nil {
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Reconcile Dispatcher Deployment: %v", deploymentErr)
 		logger.Error("Failed To Reconcile Dispatcher Deployment", zap.Error(deploymentErr))
@@ -61,7 +61,7 @@ func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChan
 func (r *Reconciler) reconcileDispatcherService(channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Attempt To Get The Dispatcher Service Associated With The Specified Channel
-	service, err := r.getKafkaChannelService(channel)
+	service, err := r.getDispatcherService(channel)
 	if err != nil {
 
 		// If The Service Was Not Found - Then Create A New One For The Channel
@@ -145,7 +145,7 @@ func (r *Reconciler) newDispatcherService(channel *knativekafkav1alpha1.KafkaCha
 //
 
 // Reconcile The Dispatcher Deployment
-func (r *Reconciler) reconcileChannelDeployment(channel *knativekafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileDispatcherDeployment(channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Attempt To Get The Dispatcher Deployment Associated With The Specified Channel
 	deployment, err := r.getDispatcherDeployment(channel)

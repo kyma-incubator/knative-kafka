@@ -60,7 +60,9 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, secret *corev1.Secret) re
 	logger := r.Logger.With(zap.String("Secret", secret.Name))
 
 	// Reconcile The Affected KafkaChannel Status To Indicate The Channel Service/Deployment Are Not Longer Available
-	err := r.reconcileKafkaChannelStatus(secret, false, false)
+	err := r.reconcileKafkaChannelStatus(secret,
+		false, "ChannelServiceUnavailable", "Kafka Auth Secret Finalized",
+		false, "ChannelDeploymentUnavailable", "Kafka Auth Secret Finalized")
 	if err != nil {
 		logger.Error("Failed To Finalize Kafka Secret - KafkaChannel Status Update Failed", zap.Error(err))
 		return err

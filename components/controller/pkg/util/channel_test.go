@@ -74,14 +74,14 @@ func TestNewChannelOwnerReference(t *testing.T) {
 	assert.Equal(t, constants.KafkaChannelKind, controllerRef.Kind)
 	assert.Equal(t, channel.ObjectMeta.Name, controllerRef.Name)
 	assert.True(t, *controllerRef.BlockOwnerDeletion)
-	assert.False(t, *controllerRef.Controller)
+	assert.True(t, *controllerRef.Controller)
 }
 
-// Test The ChannelDeploymentDnsSafeName() Functionality
+// Test The ChannelDnsSafeName() Functionality
 func TestChannelDeploymentDnsSafeName(t *testing.T) {
 
 	// Perform The Test
-	actualResult := ChannelDeploymentDnsSafeName(kafkaSecret)
+	actualResult := ChannelDnsSafeName(kafkaSecret)
 
 	// Verify The Results
 	expectedResult := fmt.Sprintf("%s-channel", strings.ToLower(kafkaSecret))

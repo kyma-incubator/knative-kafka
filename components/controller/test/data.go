@@ -31,7 +31,6 @@ const (
 	ServiceAccount                         = "TestServiceAccount"
 	MetricsPort                            = 9876
 	HealthPort                             = 8082
-	KafkaSecret                            = "testkafkasecret"
 	KafkaOffsetCommitMessageCount          = 99
 	KafkaOffsetCommitDurationMillis        = 9999
 	ChannelImage                           = "TestChannelImage"
@@ -49,8 +48,15 @@ const (
 	KafkaChannelNamespace = "kafkachannel-namespace"
 	KafkaChannelName      = "kafkachannel-name"
 	KafkaChannelKey       = KafkaChannelNamespace + "/" + KafkaChannelName
-	ChannelDeploymentName = KafkaSecret + "-channel"
+	KafkaSecretNamespace  = constants.KnativeEventingNamespace // Needs To Match Hardcoded Value In Reconciliation
+	KafkaSecretName       = "kafkasecret-name"
+	KafkaSecretKey        = KafkaSecretNamespace + "/" + KafkaSecretName
+	ChannelDeploymentName = KafkaSecretName + "-channel"
 	TopicName             = KafkaChannelNamespace + "." + KafkaChannelName
+
+	KafkaSecretDataValueBrokers  = "TestKafkaSecretDataBrokers"
+	KafkaSecretDataValueUsername = "TestKafkaSecretDataUsername"
+	KafkaSecretDataValuePassword = "TestKafkaSecretDataPassword"
 
 	// ChannelSpec Test Data
 	NumPartitions     = 123
@@ -106,7 +112,92 @@ func NewEnvironment() *env.Environment {
 }
 
 //
-// K8S Test Model Utility Functions
+// Kafka Secret Resources
+//
+
+// KafkaSecretOption Enables Customization Of A KafkaChannel
+type KafkaSecretOption func(secret *corev1.Secret)
+
+// Create A New Kafka Auth Secret For Testing
+func NewKafkaSecret(options ...KafkaSecretOption) *corev1.Secret {
+
+	// Create The Specified Kafka Secret
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       constants.SecretKind,
+			APIVersion: corev1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      KafkaSecretName,
+			Namespace: KafkaSecretNamespace,
+		},
+		Data: map[string][]byte{
+			constants.KafkaSecretDataKeyBrokers:  []byte(KafkaSecretDataValueBrokers),
+			constants.KafkaSecretDataKeyUsername: []byte(KafkaSecretDataValueUsername),
+			constants.KafkaSecretDataKeyPassword: []byte(KafkaSecretDataValuePassword),
+		},
+		Type: "opaque",
+	}
+
+	// Apply The Specified Kafka secret Customizations
+	for _, option := range options {
+		option(secret)
+	}
+
+	// Return The Test Kafka Secret
+	return secret
+
+}
+
+// Set The Kafka Secret's DeletionTimestamp To Current Time
+func WithKafkaSecretDeleted(secret *corev1.Secret) {
+	deleteTime := metav1.NewTime(time.Unix(1e9, 0))
+	secret.ObjectMeta.SetDeletionTimestamp(&deleteTime)
+}
+
+// Set The Kafka Secret's Finalizer
+func WithKafkaSecretFinalizer(secret *corev1.Secret) {
+	secret.ObjectMeta.Finalizers = []string{constants.KonduitFinalizerPrefix + "kafkasecrets.knativekafka.kyma-project.io"}
+}
+
+// Utility Function For Creating A PatchActionImpl For The Finalizer Patch Command
+func NewKafkaSecretFinalizerPatchActionImpl() clientgotesting.PatchActionImpl {
+	return clientgotesting.PatchActionImpl{
+		ActionImpl: clientgotesting.ActionImpl{
+			Namespace:   KafkaSecretNamespace,
+			Verb:        "patch",
+			Resource:    schema.GroupVersionResource{Group: corev1.SchemeGroupVersion.Group, Version: corev1.SchemeGroupVersion.Version, Resource: "secrets"},
+			Subresource: "",
+		},
+		Name:      KafkaSecretName,
+		PatchType: "application/merge-patch+json",
+		Patch:     []byte(`{"metadata":{"finalizers":["konduit.cx/kafkasecrets.knativekafka.kyma-project.io"],"resourceVersion":""}}`),
+		// Above finalizer name matches package private "defaultFinalizerName" constant in injection/reconciler/knativekafka/v1alpha1/kafkachannel ;)
+	}
+}
+
+// Utility Function For Creating A Successful Kafka Secret Reconciled Event
+func NewKafkaSecretSuccessfulReconciliationEvent() string {
+	return reconcilertesting.Eventf(corev1.EventTypeNormal, event.KafkaSecretReconciled.String(), fmt.Sprintf("Kafka Secret Reconciled Successfully: \"%s/%s\"", KafkaSecretNamespace, KafkaSecretName))
+}
+
+// Utility Function For Creating A Failed Kafka secret Reconciled Event
+func NewKafkaSecretFailedReconciliationEvent() string {
+	return reconcilertesting.Eventf(corev1.EventTypeWarning, "InternalError", constants.ReconciliationFailedError)
+}
+
+// Utility Function For Creating A Successful Kafka Secret Finalizer Update Event
+func NewKafkaSecretSuccessfulFinalizedEvent() string {
+	return reconcilertesting.Eventf(corev1.EventTypeNormal, event.KafkaSecretFinalized.String(), fmt.Sprintf("Kafka Secret Finalized Successfully: \"%s/%s\"", KafkaSecretNamespace, KafkaSecretName))
+}
+
+// Utility Function For Creating A Successful Kafka Secret Finalizer Update Event
+func NewKafkaSecretFinalizerUpdateEvent() string {
+	return reconcilertesting.Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "%s" finalizers`, KafkaSecretName)
+}
+
+//
+// KafkaChannel Resources
 //
 
 // KafkaChannelOption Enables Customization Of A KafkaChannel
@@ -153,8 +244,16 @@ func WithKafkaChannelDeleted(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
 }
 
 // Set The KafkaChannel's Finalizer
-func WithFinalizer(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+func WithKafkaChannelFinalizer(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
 	kafkachannel.ObjectMeta.Finalizers = []string{"kafkachannels.knativekafka.kyma-project.io"}
+}
+
+// Set The KafkaChannel's Labels
+func WithKafkaChannelLabels(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+	kafkachannel.ObjectMeta.Labels = map[string]string{
+		constants.KafkaTopicLabel:  fmt.Sprintf("%s.%s", KafkaChannelNamespace, KafkaChannelName),
+		constants.KafkaSecretLabel: KafkaSecretName,
+	}
 }
 
 // Set The KafkaChannel's Address
@@ -165,26 +264,29 @@ func WithKafkaChannelAddress(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
 	})
 }
 
-// Set The KafkaChannel's Channel Service As READY
-func WithKafkaChannelChannelServiceReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+// Set The KafkaChannel's Service As READY
+func WithKafkaChannelServiceReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
 	kafkachannel.Status.MarkKafkaChannelServiceTrue()
 }
 
-// Set The KafkaChannel's Channel Services As Failed
-func WithKafkaChannelChannelServiceFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkKafkaChannelServiceFailed("ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: inducing failure for create services"))
+// Set The KafkaChannel's Services As Failed
+func WithKafkaChannelServiceFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkKafkaChannelServiceFailed("KafkaChannelServiceFailed", fmt.Sprintf("Channel Service Failed: inducing failure for create services"))
 }
 
-// TODO - Rename DeploymentService -> Service
-// Set The KafkaChannel's Deployment Service As READY
-func WithKafkaChannelDeploymentServiceReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+// Set The KafkaChannel's Channel Service As READY
+func WithKafkaChannelChannelServiceReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
 	kafkachannel.Status.MarkChannelServiceTrue()
 }
 
-// TODO - Rename DeploymentService -> Service
-// Set The KafkaChannel's Deployment Service As Failed
-func WithKafkaChannelDeploymentServiceFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelServiceFailed("ChannelDeploymentServiceFailed", "Channel Deployment Service Failed: inducing failure for create services")
+// Set The KafkaChannel's Channel Service As Failed
+func WithKafkaChannelChannelServiceFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkChannelServiceFailed("ChannelServiceFailed", "Channel Service Failed: inducing failure for create services")
+}
+
+// Set The KafkaChannel's Channel Service As Finalized
+func WithKafkaChannelChannelServiceFinalized(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkChannelServiceFailed("ChannelServiceUnavailable", "Kafka Auth Secret Finalized")
 }
 
 // Set The KafkaChannel's Channel Deployment As READY
@@ -195,6 +297,11 @@ func WithKafkaChannelChannelDeploymentReady(kafkachannel *knativekafkav1alpha1.K
 // Set The KafkaChannel's Channel Deployment As Failed
 func WithKafkaChannelChannelDeploymentFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
 	kafkachannel.Status.MarkChannelDeploymentFailed("ChannelDeploymentFailed", "Channel Deployment Failed: inducing failure for create deployments")
+}
+
+// Set The KafkaChannel's Channel Deployment As Finalized
+func WithKafkaChannelChannelDeploymentFinalized(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkChannelDeploymentFailed("ChannelDeploymentUnavailable", "Kafka Auth Secret Finalized")
 }
 
 // Set The KafkaChannel's Dispatcher Deployment As READY
@@ -213,7 +320,7 @@ func WithKafkaChannelTopicReady(kafkachannel *knativekafkav1alpha1.KafkaChannel)
 }
 
 // Utility Function For Creating A Custom KafkaChannel "Channel" Service For Testing
-func NewKafkaChannelChannelService() *corev1.Service {
+func NewKafkaChannelService() *corev1.Service {
 	return &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.String(),
@@ -223,9 +330,10 @@ func NewKafkaChannelChannelService() *corev1.Service {
 			Name:      kafkautil.AppendKafkaChannelServiceNameSuffix(KafkaChannelName),
 			Namespace: KafkaChannelNamespace,
 			Labels: map[string]string{
-				"kafkachannel":         KafkaChannelName,
-				"kafkachannel-channel": "true",
-				"k8s-app":              "knative-kafka-channels",
+				constants.KafkaChannelNameLabel:      KafkaChannelName,
+				constants.KafkaChannelNamespaceLabel: KafkaChannelNamespace,
+				constants.KafkaChannelChannelLabel:   "true",
+				constants.K8sAppChannelSelectorLabel: constants.K8sAppChannelSelectorValue,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				NewChannelOwnerRef(),
@@ -239,7 +347,7 @@ func NewKafkaChannelChannelService() *corev1.Service {
 }
 
 // Utility Function For Creating A Custom KafkaChannel "Deployment" Service For Testing
-func NewKafkaChannelDeploymentService() *corev1.Service {
+func NewKafkaChannelChannelService() *corev1.Service {
 	return &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.String(),
@@ -251,6 +359,9 @@ func NewKafkaChannelDeploymentService() *corev1.Service {
 			Labels: map[string]string{
 				"k8s-app":              "knative-kafka-channels",
 				"kafkachannel-channel": "true",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				NewSecretOwnerRef(),
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -287,6 +398,9 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 			Labels: map[string]string{
 				"app":                  ChannelDeploymentName,
 				"kafkachannel-channel": "true",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				NewSecretOwnerRef(),
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -347,7 +461,7 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 									Name: env.KafkaBrokerEnvVarKey,
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecret},
+											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecretName},
 											Key:                  constants.KafkaSecretDataKeyBrokers,
 										},
 									},
@@ -356,7 +470,7 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 									Name: env.KafkaUsernameEnvVarKey,
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecret},
+											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecretName},
 											Key:                  constants.KafkaSecretDataKeyUsername,
 										},
 									},
@@ -365,7 +479,7 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 									Name: env.KafkaPasswordEnvVarKey,
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecret},
+											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecretName},
 											Key:                  constants.KafkaSecretDataKeyPassword,
 										},
 									},
@@ -425,9 +539,10 @@ func NewKafkaChannelDispatcherService() *corev1.Service {
 			Name:      serviceName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"kafkachannel":            KafkaChannelName,
-				"kafkachannel-dispatcher": "true",
-				"k8s-app":                 "knative-kafka-dispatchers",
+				constants.KafkaChannelNameLabel:       KafkaChannelName,
+				constants.KafkaChannelNamespaceLabel:  KafkaChannelNamespace,
+				constants.KafkaChannelDispatcherLabel: "true",
+				constants.K8sAppChannelSelectorLabel:  constants.K8sAppDispatcherSelectorValue,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				NewChannelOwnerRef(),
@@ -468,9 +583,10 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 			Name:      dispatcherName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				"app":                     dispatcherName,
-				"kafkachannel-dispatcher": "true",
-				"kafkachannel":            KafkaChannelName,
+				constants.AppLabel:                    dispatcherName,
+				constants.KafkaChannelNameLabel:       KafkaChannelName,
+				constants.KafkaChannelNamespaceLabel:  KafkaChannelNamespace,
+				constants.KafkaChannelDispatcherLabel: "true",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				NewChannelOwnerRef(),
@@ -556,7 +672,7 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 									Name: env.KafkaBrokerEnvVarKey,
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecret},
+											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecretName},
 											Key:                  constants.KafkaSecretDataKeyBrokers,
 										},
 									},
@@ -565,7 +681,7 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 									Name: env.KafkaUsernameEnvVarKey,
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecret},
+											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecretName},
 											Key:                  constants.KafkaSecretDataKeyUsername,
 										},
 									},
@@ -574,7 +690,7 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 									Name: env.KafkaPasswordEnvVarKey,
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecret},
+											LocalObjectReference: corev1.LocalObjectReference{Name: KafkaSecretName},
 											Key:                  constants.KafkaSecretDataKeyPassword,
 										},
 									},
@@ -617,10 +733,24 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 	}
 }
 
+// Utility Function For Creating A New OwnerReference Model For The Test Kafka Secret
+func NewSecretOwnerRef() metav1.OwnerReference {
+	blockOwnerDeletion := true
+	controller := true
+	return metav1.OwnerReference{
+		APIVersion:         corev1.SchemeGroupVersion.String(),
+		Kind:               constants.SecretKind,
+		Name:               KafkaSecretName,
+		UID:                "",
+		BlockOwnerDeletion: &blockOwnerDeletion,
+		Controller:         &controller,
+	}
+}
+
 // Utility Function For Creating A New OwnerReference Model For The Test Channel
 func NewChannelOwnerRef() metav1.OwnerReference {
 	blockOwnerDeletion := true
-	controller := false
+	controller := true
 	return metav1.OwnerReference{
 		APIVersion:         "knativekafka.kyma-project.io/v1alpha1",
 		Kind:               constants.KafkaChannelKind,
@@ -628,6 +758,19 @@ func NewChannelOwnerRef() metav1.OwnerReference {
 		UID:                "",
 		BlockOwnerDeletion: &blockOwnerDeletion,
 		Controller:         &controller,
+	}
+}
+
+// Utility Function For Creating A UpdateActionImpl For The KafkaChannel Labels Update Command
+func NewKafkaChannelLabelUpdate(kafkachannel *knativekafkav1alpha1.KafkaChannel) clientgotesting.UpdateActionImpl {
+	return clientgotesting.UpdateActionImpl{
+		ActionImpl: clientgotesting.ActionImpl{
+			Namespace:   "KafkaChannelNamespace",
+			Verb:        "update",
+			Resource:    schema.GroupVersionResource{Group: knativekafkav1alpha1.SchemeGroupVersion.Group, Version: knativekafkav1alpha1.SchemeGroupVersion.Version, Resource: "kafkachannels"},
+			Subresource: "",
+		},
+		Object: kafkachannel,
 	}
 }
 
@@ -655,4 +798,14 @@ func NewKafkaChannelSuccessfulReconciliationEvent() string {
 // Utility Function For Creating A Failed KafkaChannel Reconciled Event
 func NewKafkaChannelFailedReconciliationEvent() string {
 	return reconcilertesting.Eventf(corev1.EventTypeWarning, "InternalError", constants.ReconciliationFailedError)
+}
+
+// Utility Function For Creating A Successful KafkaChannel Finalizer Update Event
+func NewKafkaChannelFinalizerUpdateEvent() string {
+	return reconcilertesting.Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "%s" finalizers`, KafkaChannelName)
+}
+
+// Utility Function For Creating A Successful KafkaChannel Finalizer Update Event
+func NewKafkaChannelSuccessfulFinalizedEvent() string {
+	return reconcilertesting.Eventf(corev1.EventTypeNormal, event.KafkaChannelFinalized.String(), fmt.Sprintf("KafkaChannel Finalized Successfully: \"%s/%s\"", KafkaChannelNamespace, KafkaChannelName))
 }

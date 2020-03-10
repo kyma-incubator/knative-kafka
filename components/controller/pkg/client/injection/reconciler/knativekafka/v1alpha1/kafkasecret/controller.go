@@ -54,19 +54,10 @@ func NewImpl(ctx context.Context, r Interface) *controller.Impl {
 	}
 
 	rec := &reconcilerImpl{
-		// TODO client corev1client.CoreV1Interface
-		//Client:     injectionclient.Get(ctx), // tODO - whats this now ??? need the k8s client ; )
-		//Client:     v1.NewForConfig(),
-		Client:     kubeclient.Get(ctx).CoreV1(), // TODO - trying this ; )
+		Client:     kubeclient.Get(ctx).CoreV1(),
 		Lister:     secretInformer.Lister(),
 		Recorder:   recorder,
 		reconciler: r,
 	}
 	return controller.NewImpl(rec, logger, defaultQueueName)
 }
-
-// TODO - shouldn't corev1 already be added to the scheme ?
-//func init() {
-//	versionedscheme.AddToScheme(scheme.Scheme)
-//
-//}
