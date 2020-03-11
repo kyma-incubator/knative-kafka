@@ -77,7 +77,7 @@ knative-gen:
 		github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis  \
 		knativekafka:v1alpha1
 	@echo ''
-	@echo '***          Manually Update kafkasecrets Controller's Injected Implementation          ***'
+	@echo '***    Manually Update kafkasecrets Controller / Reconciler Injected Implementation     ***'
 	@echo '     (See pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkasecret/README.md)'
 	@echo ''
 
