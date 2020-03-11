@@ -33,9 +33,6 @@ type Reconciler struct {
 	serviceLister         corev1listers.ServiceLister
 }
 
-// Verify The KafkaChannel Reconciler Implements It's Interface
-//var _ kafkachannelreconciler.Interface = (*Reconciler)(nil)
-
 var (
 	_ kafkachannel.Interface = (*Reconciler)(nil) // Verify Reconciler Implements Interface
 	_ kafkachannel.Finalizer = (*Reconciler)(nil) // Verify Reconciler Implements Finalizer

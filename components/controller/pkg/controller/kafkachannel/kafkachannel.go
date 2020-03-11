@@ -15,17 +15,12 @@ func (r *Reconciler) reconcileKafkaChannel(channel *knativekafkav1alpha1.KafkaCh
 	logger := util.ChannelLogger(r.Logger.Desugar(), channel)
 
 	// Reconcile The KafkaChannel's Labels
-	labelsErr := r.reconcileLabels(channel)
-	if labelsErr != nil {
-		logger.Error("Failed To Reconcile KafkaChannel Labels", zap.Error(labelsErr))
-	} else {
-		logger.Info("Successfully Reconciled KafkaChannel Labels")
-	}
-
-	// Return Results
-	if labelsErr != nil {
+	err := r.reconcileLabels(channel)
+	if err != nil {
+		logger.Error("Failed To Reconcile KafkaChannel Labels", zap.Error(err))
 		return fmt.Errorf("failed to reconcile kafkachannel labels")
 	} else {
+		logger.Info("Successfully Reconciled KafkaChannel Labels")
 		return nil // Success
 	}
 }

@@ -23,18 +23,13 @@ func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel
 	logger := util.ChannelLogger(r.Logger.Desugar(), channel)
 
 	// Reconcile The KafkaChannel's Service
-	channelServiceErr := r.reconcileKafkaChannelService(channel)
-	if channelServiceErr != nil {
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service: %v", channelServiceErr)
-		logger.Error("Failed To Reconcile KafkaChannel Service", zap.Error(channelServiceErr))
-	} else {
-		logger.Info("Successfully Reconciled KafkaChannel Service")
-	}
-
-	// Return Results
-	if channelServiceErr != nil {
+	err := r.reconcileKafkaChannelService(channel)
+	if err != nil {
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service: %v", err)
+		logger.Error("Failed To Reconcile KafkaChannel Service", zap.Error(err))
 		return fmt.Errorf("failed to reconcile channel resources")
 	} else {
+		logger.Info("Successfully Reconciled KafkaChannel Service")
 		return nil // Success
 	}
 }
