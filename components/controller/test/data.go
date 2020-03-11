@@ -157,7 +157,7 @@ func WithKafkaSecretDeleted(secret *corev1.Secret) {
 
 // Set The Kafka Secret's Finalizer
 func WithKafkaSecretFinalizer(secret *corev1.Secret) {
-	secret.ObjectMeta.Finalizers = []string{constants.KonduitFinalizerPrefix + "kafkasecrets.knativekafka.kyma-project.io"}
+	secret.ObjectMeta.Finalizers = []string{constants.KnativeKafkaFinalizerPrefix + "kafkasecrets.knativekafka.kyma-project.io"}
 }
 
 // Utility Function For Creating A PatchActionImpl For The Finalizer Patch Command
@@ -171,7 +171,7 @@ func NewKafkaSecretFinalizerPatchActionImpl() clientgotesting.PatchActionImpl {
 		},
 		Name:      KafkaSecretName,
 		PatchType: "application/merge-patch+json",
-		Patch:     []byte(`{"metadata":{"finalizers":["konduit.cx/kafkasecrets.knativekafka.kyma-project.io"],"resourceVersion":""}}`),
+		Patch:     []byte(`{"metadata":{"finalizers":["knative-kafka/kafkasecrets.knativekafka.kyma-project.io"],"resourceVersion":""}}`),
 		// Above finalizer name matches package private "defaultFinalizerName" constant in injection/reconciler/knativekafka/v1alpha1/kafkachannel ;)
 	}
 }

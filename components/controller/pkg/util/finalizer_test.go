@@ -10,5 +10,5 @@ import (
 func TestKubernetesResourceFinalizerName(t *testing.T) {
 	const suffix = "TestSuffix"
 	result := KubernetesResourceFinalizerName(suffix)
-	assert.Equal(t, constants.KonduitFinalizerPrefix+suffix, result)
+	assert.Equal(t, constants.KnativeKafkaFinalizerPrefix+suffix, result)
 }

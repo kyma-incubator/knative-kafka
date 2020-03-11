@@ -32,10 +32,10 @@ logging:
 environment:
   # Valid values: local, confluent, azure
   kafkaProvider: local
-  # Konduit-Kafka Channel "Producer" Docker Image Path
+  # Knative-Kafka Channel "Producer" Docker Image Path
   channelImage: eu.gcr.io/kyma-project/incubator/knative-kafka-channel:latest
   channelReplicas: 1
-  # Konduit-Kafka Dispatcher "Consumer" Docker Image Path
+  # Knative-Kafka Dispatcher "Consumer" Docker Image Path
   dispatcherImage: eu.gcr.io/kyma-project/incubator/knative-kafka-dispatcher:latest
   dispatcherReplicas: 1
   defaultNumPartitions: 4

@@ -43,8 +43,8 @@ const (
 	// Reconciliation Error Messages
 	ReconciliationFailedError = "reconciliation failed"
 
-	// Konduit Finalizers Prefix
-	KonduitFinalizerPrefix = "konduit.cx/"
+	// KnativeKafka Finalizers Prefix
+	KnativeKafkaFinalizerPrefix = "knative-kafka/"
 
 	// Labels
 	AppLabel                    = "app"
