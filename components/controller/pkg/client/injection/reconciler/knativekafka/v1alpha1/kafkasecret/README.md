@@ -1,11 +1,12 @@
+# KafkaSecret Reconciler
 
-Copied from kafkachannel injection
-changed Client type
-changed all kafkachannel to secret
-removed status (no status on secret)
-keep finalizer logic
+The files in this directory were NOT generated via 
+`knative.dev/pkg/hack/generate-knative.sh` as would normally be expected.  This
+is because we're creating a Controller / Reconciler for the K8S CoreV1 Secret
+instead of a CRD.  We do not want to generate Controllers / Reconcilers for the
+entire CoreV1 set of resources.  Therefore, we've manually copied the previously 
+generated code from `../kakfachannel` and modified it for CoreV1 Secrets.  This 
+means that whenever we re-generate or update the `../kafka/channel` 
+implementation, we should also perform a manual diff and uplift relevant changes 
+here. 
 
-
-### TODO
-- Cleanup these two files - commenting, naming, remove unused, etc...
-- fill out this file saying "whenever generating new content manually update these"

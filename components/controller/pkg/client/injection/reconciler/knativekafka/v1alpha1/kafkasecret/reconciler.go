@@ -19,12 +19,10 @@ import (
 
 // Code manually created based on generated implementation in ../kafkachannel - KEEP IN SYNC WHEN RE-GENERATING!
 
-// TODO - review all this copied text for consistency with new secret implementation ?
-
 // Interface defines the strongly typed interfaces to be implemented by a
-// controller reconciling v1alpha1.KafkaChannel.
+// controller reconciling corev1.Secret.
 type Interface interface {
-	// ReconcileKind implements custom logic to reconcile v1alpha1.KafkaChannel. Any changes
+	// ReconcileKind implements custom logic to reconcile corev1.Secret. Any changes
 	// to the objects .Status or .Finalizers will be propagated to the stored
 	// object. It is recommended that implementors do not call any update calls
 	// for the Kind inside of ReconcileKind, it is the responsibility of the calling
@@ -34,9 +32,9 @@ type Interface interface {
 }
 
 // Finalizer defines the strongly typed interfaces to be implemented by a
-// controller finalizing v1alpha1.KafkaChannel.
+// controller finalizing corev1.Secret.
 type Finalizer interface {
-	// FinalizeKind implements custom logic to finalize v1alpha1.KafkaChannel. Any changes
+	// FinalizeKind implements custom logic to finalize corev1.Secret. Any changes
 	// to the objects .Status or .Finalizers will be ignored. Returning a nil or
 	// Normal type reconciler.Event will allow the finalizer to be deleted on
 	// the resource. The resource passed to FinalizeKind will always have a set
@@ -44,7 +42,7 @@ type Finalizer interface {
 	FinalizeKind(ctx context.Context, o *corev1.Secret) reconciler.Event
 }
 
-// reconcilerImpl implements controller.Reconciler for v1alpha1.KafkaChannel resources.
+// reconcilerImpl implements controller.Reconciler for corev1.Secret resources.
 type reconcilerImpl struct {
 
 	// Client is used to write back finalizer updates
@@ -182,7 +180,6 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource 
 		return err
 	}
 
-	// TODO _, err = r.Client.KnativekafkaV1alpha1().KafkaChannels(resource.Namespace).Patch(resource.Name, types.MergePatchType, patch)
 	_, err = r.Client.Secrets(resource.Namespace).Patch(resource.Name, types.MergePatchType, patch)
 	if err != nil {
 		r.Recorder.Eventf(resource, corev1.EventTypeWarning, "FinalizerUpdateFailed",
