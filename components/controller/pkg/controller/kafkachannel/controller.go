@@ -2,19 +2,21 @@ package kafkachannel
 
 import (
 	"context"
-	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
-	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
-
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkachannelv1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
+	knativekafkaclientsetinjection "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/informers/knativekafka/v1alpha1/kafkachannel"
 	kafkachannelreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkachannel"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
 	"go.uber.org/zap"
+	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler"
+	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
+	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"os"
@@ -23,6 +25,7 @@ import (
 // Package Level Kafka AdminClient Reference (For Shutdown() Usage)
 var adminClient kafkaadmin.AdminClientInterface
 
+// Create A New KafkaChannel Controller
 func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 
 	// Get A Logger
@@ -32,6 +35,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	kafkachannelInformer := kafkachannel.Get(ctx)
 	deploymentInformer := deployment.Get(ctx)
 	serviceInformer := service.Get(ctx)
+	secretInformer := secret.Get(ctx)
 
 	// Load The Environment Variables
 	environment, err := env.GetEnvironment(logger)
@@ -54,29 +58,42 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 
 	// Create A KafkaChannel Reconciler
 	r := &Reconciler{
-		Base: reconciler.NewBase(ctx, constants.KafkaChannelControllerAgentName, cmw),
-
-		environment:          environment,
-		kafkachannelLister:   kafkachannelInformer.Lister(),
-		kafkachannelInformer: kafkachannelInformer.Informer(),
-		deploymentLister:     deploymentInformer.Lister(),
-		serviceLister:        serviceInformer.Lister(),
-		adminClient:          adminClient,
+		Base:                  reconciler.NewBase(ctx, constants.KafkaChannelControllerAgentName, cmw),
+		environment:           environment,
+		knativekafkaClientSet: knativekafkaclientsetinjection.Get(ctx),
+		kafkachannelLister:    kafkachannelInformer.Lister(),
+		kafkachannelInformer:  kafkachannelInformer.Informer(),
+		deploymentLister:      deploymentInformer.Lister(),
+		serviceLister:         serviceInformer.Lister(),
+		adminClient:           adminClient,
 	}
 
 	// Create A New KafkaChannel Controller Impl With The Reconciler
 	controllerImpl := kafkachannelreconciler.NewImpl(ctx, r)
 
+	//
 	// Configure The Informers' EventHandlers
+	//
+	// Note - The use of EnqueueLabelOfNamespaceScopedResource() is to facilitate cross-namespace OwnerReference
+	//        management and relies upon the reconciler creating the Services/Deployments with appropriate labels.
+	//        Kubernetes OwnerReferences are not intended to be cross-namespace and thus don't include the namespace
+	//        information.
+	//
 	r.Logger.Info("Setting Up EventHandlers")
-	kafkachannelInformer.Informer().AddEventHandler(controller.HandleAll(controllerImpl.Enqueue))
+	kafkachannelInformer.Informer().AddEventHandler(
+		controller.HandleAll(controllerImpl.Enqueue),
+	)
 	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(kafkachannelv1alpha1.SchemeGroupVersion.WithKind("KafkaChannel")),
-		Handler:    controller.HandleAll(controllerImpl.EnqueueControllerOf),
+		FilterFunc: controller.Filter(kafkachannelv1alpha1.SchemeGroupVersion.WithKind(constants.KafkaChannelKind)),
+		Handler:    controller.HandleAll(controllerImpl.EnqueueLabelOfNamespaceScopedResource(constants.KafkaChannelNamespaceLabel, constants.KafkaChannelNameLabel)),
 	})
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(kafkachannelv1alpha1.SchemeGroupVersion.WithKind("KafkaChannel")),
-		Handler:    controller.HandleAll(controllerImpl.EnqueueControllerOf),
+		FilterFunc: controller.Filter(kafkachannelv1alpha1.SchemeGroupVersion.WithKind(constants.KafkaChannelKind)),
+		Handler:    controller.HandleAll(controllerImpl.EnqueueLabelOfNamespaceScopedResource(constants.KafkaChannelNamespaceLabel, constants.KafkaChannelNameLabel)),
+	})
+	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: util.FilterKafkaSecrets(),
+		Handler:    controller.HandleAll(r.resetKafkaAdminClient(kafkaAdminClientType)),
 	})
 
 	// Return The KafkaChannel Controller Impl
@@ -86,4 +103,17 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 // Graceful Shutdown Hook
 func Shutdown() {
 	adminClient.Close()
+}
+
+// Recreate The Kafka AdminClient On The Reconciler (Useful To Reload Cache Which Is Not Yet Exposed)
+func (r *Reconciler) resetKafkaAdminClient(kafkaAdminClientType kafkaadmin.AdminClientType) func(obj interface{}) {
+	return func(obj interface{}) {
+		adminClient, err := kafkaadmin.CreateAdminClient(r.Logger.Desugar(), kafkaAdminClientType, constants.KnativeEventingNamespace)
+		if adminClient == nil || err != nil {
+			r.Logger.Error("Failed To Re-Create Kafka AdminClient", zap.Error(err))
+		} else {
+			r.Logger.Info("Successfully Re-Created Kafka AdminClient")
+			r.adminClient = adminClient
+		}
+	}
 }

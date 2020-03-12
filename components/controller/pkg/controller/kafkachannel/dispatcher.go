@@ -25,14 +25,8 @@ func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChan
 	// Get Channel Specific Logger
 	logger := util.ChannelLogger(r.Logger.Desugar(), channel)
 
-	// If The KafkaChannel Is Being Deleted - Nothing To Do Since K8S Garbage Collection Will Cleanup Based On OwnerReference
-	if channel.DeletionTimestamp != nil {
-		logger.Info("Successfully Reconciled Dispatcher Deletion")
-		return nil
-	}
-
 	// Reconcile The Dispatcher's Service (For Prometheus Only)
-	_, serviceErr := r.createDispatcherService(channel)
+	serviceErr := r.reconcileDispatcherService(channel)
 	if serviceErr != nil {
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherServiceReconciliationFailed.String(), "Failed To Reconcile Dispatcher Service: %v", serviceErr)
 		logger.Error("Failed To Reconcile Dispatcher Service", zap.Error(serviceErr))
@@ -41,7 +35,7 @@ func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChan
 	}
 
 	// Reconcile The Dispatcher's Deployment
-	_, deploymentErr := r.createDispatcherDeployment(channel)
+	deploymentErr := r.reconcileDispatcherDeployment(channel)
 	if deploymentErr != nil {
 		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Reconcile Dispatcher Deployment: %v", deploymentErr)
 		logger.Error("Failed To Reconcile Dispatcher Deployment", zap.Error(deploymentErr))
@@ -53,7 +47,7 @@ func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChan
 
 	// Return Results
 	if serviceErr != nil || deploymentErr != nil {
-		return fmt.Errorf("failed to reconcile dispatcher components")
+		return fmt.Errorf("failed to reconcile dispatcher resources")
 	} else {
 		return nil
 	}
@@ -63,34 +57,44 @@ func (r *Reconciler) reconcileDispatcher(channel *knativekafkav1alpha1.KafkaChan
 // Dispatcher Service
 //
 
-// Create The Dispatcher Service If Not Already Existing
-func (r *Reconciler) createDispatcherService(channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+// Reconcile The Dispatcher Service
+func (r *Reconciler) reconcileDispatcherService(channel *knativekafkav1alpha1.KafkaChannel) error {
 
-	// Attempt To Get The Service Associated With The Specified Channel
+	// Attempt To Get The Dispatcher Service Associated With The Specified Channel
 	service, err := r.getDispatcherService(channel)
-
-	// If The Service Was Not Found - Then Create A New One For The Dispatcher
-	if errors.IsNotFound(err) {
-		r.Logger.Info("Kubernetes Dispatcher Service Not Found - Creating New One")
-		service = r.newDispatcherService(channel)
-		service, err = r.KubeClientSet.CoreV1().Services(service.Namespace).Create(service)
-	}
-
-	// If Any Error Occurred (Either Get Or Create) - Then Reconcile Again
 	if err != nil {
-		return nil, err
-	}
 
-	// Return The Service
-	return service, nil
+		// If The Service Was Not Found - Then Create A New One For The Channel
+		if errors.IsNotFound(err) {
+			r.Logger.Info("Dispatcher Service Not Found - Creating New One")
+			service = r.newDispatcherService(channel)
+			service, err = r.KubeClientSet.CoreV1().Services(service.Namespace).Create(service)
+			if err != nil {
+				r.Logger.Error("Failed To Create Dispatcher Service", zap.Error(err))
+				return err
+			} else {
+				r.Logger.Info("Successfully Created Dispatcher Service")
+				return nil
+			}
+		} else {
+			r.Logger.Error("Failed To Get Dispatcher Service", zap.Error(err))
+			return err
+		}
+	} else {
+		r.Logger.Info("Successfully Verified Dispatcher Service")
+		return nil
+	}
 }
 
 // Get The Dispatcher Service Associated With The Specified Channel
 func (r *Reconciler) getDispatcherService(channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
+	// Get The Dispatcher Service Name
+	serviceName := util.DispatcherDnsSafeName(channel)
+
 	// Get The Service By Namespace / Name
 	service := &corev1.Service{}
-	service, err := r.serviceLister.Services(constants.KnativeEventingNamespace).Get(util.DispatcherDnsSafeName(channel))
+	service, err := r.serviceLister.Services(constants.KnativeEventingNamespace).Get(serviceName)
 
 	// Return The Results
 	return service, err
@@ -112,9 +116,10 @@ func (r *Reconciler) newDispatcherService(channel *knativekafkav1alpha1.KafkaCha
 			Name:      serviceName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				KafkaChannelLabel:             channel.Name,
-				KafkaChannelDispatcherLabel:   "true",                        // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
-				K8sAppDispatcherSelectorLabel: K8sAppDispatcherSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
+				constants.KafkaChannelDispatcherLabel:   "true",                                  // Identifies the Service as being a KafkaChannel "Dispatcher"
+				constants.KafkaChannelNameLabel:         channel.Name,                            // Identifies the Service's Owning KafkaChannel's Name
+				constants.KafkaChannelNamespaceLabel:    channel.Namespace,                       // Identifies the Service's Owning KafkaChannel's Namespace
+				constants.K8sAppDispatcherSelectorLabel: constants.K8sAppDispatcherSelectorValue, // Prometheus ServiceMonitor (See Helm Chart)
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				util.NewChannelOwnerReference(channel),
@@ -123,13 +128,13 @@ func (r *Reconciler) newDispatcherService(channel *knativekafkav1alpha1.KafkaCha
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
-					Name:       MetricsPortName,
+					Name:       constants.MetricsPortName,
 					Port:       int32(r.environment.MetricsPort),
 					TargetPort: intstr.FromInt(r.environment.MetricsPort),
 				},
 			},
 			Selector: map[string]string{
-				AppLabel: serviceName, // Matches Deployment Label Key/Value
+				constants.AppLabel: serviceName, // Matches Deployment Label Key/Value
 			},
 		},
 	}
@@ -139,28 +144,41 @@ func (r *Reconciler) newDispatcherService(channel *knativekafkav1alpha1.KafkaCha
 // Dispatcher Deployment
 //
 
-// Create The Dispatcher Deployment If Not Already Existing
-func (r *Reconciler) createDispatcherDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+// Reconcile The Dispatcher Deployment
+func (r *Reconciler) reconcileDispatcherDeployment(channel *knativekafkav1alpha1.KafkaChannel) error {
 
 	// Attempt To Get The Dispatcher Deployment Associated With The Specified Channel
 	deployment, err := r.getDispatcherDeployment(channel)
-
-	// If The Dispatcher Deployment Was Not Found - Then Create A New One For The Channel
-	if errors.IsNotFound(err) {
-		r.Logger.Info("Kubernetes Dispatcher Deployment Not Found - Creating New One")
-		deployment, err = r.newK8sDispatcherDeployment(channel)
-		if err == nil {
-			deployment, err = r.KubeClientSet.AppsV1().Deployments(deployment.Namespace).Create(deployment)
-		}
-	}
-
-	// If Any Error Occurred (Either Get Or Create) - Then Reconcile Again
 	if err != nil {
-		return nil, err
-	}
 
-	// Return The Dispatcher Deployment
-	return deployment, nil
+		// If The Dispatcher Deployment Was Not Found - Then Create A New Deployment For The Channel
+		if errors.IsNotFound(err) {
+
+			// Then Create The New Deployment
+			r.Logger.Info("Dispatcher Deployment Not Found - Creating New One")
+			deployment, err = r.newDispatcherDeployment(channel)
+			if err != nil {
+				r.Logger.Error("Failed To Create Dispatcher Deployment YAML", zap.Error(err))
+				return err
+			} else {
+				deployment, err = r.KubeClientSet.AppsV1().Deployments(deployment.Namespace).Create(deployment)
+				if err != nil {
+					r.Logger.Error("Failed To Create Dispatcher Deployment", zap.Error(err))
+					return err
+				} else {
+					r.Logger.Info("Successfully Created Dispatcher Deployment")
+					return nil
+				}
+			}
+		} else {
+			// Failed In Attempt To Get Deployment From K8S
+			r.Logger.Error("Failed To Get KafkaChannel Deployment", zap.Error(err))
+			return err
+		}
+	} else {
+		r.Logger.Info("Successfully Verified Dispatcher Deployment")
+		return nil
+	}
 }
 
 // Get The Dispatcher Deployment Associated With The Specified Channel
@@ -178,7 +196,7 @@ func (r *Reconciler) getDispatcherDeployment(channel *knativekafkav1alpha1.Kafka
 }
 
 // Create Dispatcher Deployment Model For The Specified Channel
-func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
+func (r *Reconciler) newDispatcherDeployment(channel *knativekafkav1alpha1.KafkaChannel) (*appsv1.Deployment, error) {
 
 	// Get The Dispatcher Deployment Name For The Channel
 	deploymentName := util.DispatcherDnsSafeName(channel)
@@ -203,9 +221,10 @@ func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.Ka
 			Name:      deploymentName,
 			Namespace: constants.KnativeEventingNamespace,
 			Labels: map[string]string{
-				AppLabel:                    deploymentName, // Matches K8S Service Selector Key/Value Below
-				KafkaChannelDispatcherLabel: "true",         // The dispatcher/channel values allows for identification of a Channel's Dispatcher Deployments
-				KafkaChannelLabel:           channel.Name,
+				constants.AppLabel:                    deploymentName,    // Matches K8S Service Selector Key/Value Below
+				constants.KafkaChannelDispatcherLabel: "true",            // Identifies the Deployment as being a KafkaChannel "Dispatcher"
+				constants.KafkaChannelNameLabel:       channel.Name,      // Identifies the Deployment's Owning KafkaChannel's Name
+				constants.KafkaChannelNamespaceLabel:  channel.Namespace, // Identifies the Deployment's Owning KafkaChannel's Namespace
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				util.NewChannelOwnerReference(channel),
@@ -215,20 +234,20 @@ func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.Ka
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					AppLabel: deploymentName, // Matches Template ObjectMeta Pods
+					constants.AppLabel: deploymentName, // Matches Template ObjectMeta Pods
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						AppLabel: deploymentName, // Matched By Deployment Selector Above
+						constants.AppLabel: deploymentName, // Matched By Deployment Selector Above
 					},
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: r.environment.ServiceAccount,
 					Containers: []corev1.Container{
 						{
-							Name:            deploymentName,
+							Name: deploymentName,
 							LivenessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
@@ -237,7 +256,7 @@ func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.Ka
 									},
 								},
 								InitialDelaySeconds: constants.DispatcherLivenessDelay,
-								PeriodSeconds: constants.DispatcherLivenessPeriod,
+								PeriodSeconds:       constants.DispatcherLivenessPeriod,
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
@@ -247,7 +266,7 @@ func (r *Reconciler) newK8sDispatcherDeployment(channel *knativekafkav1alpha1.Ka
 									},
 								},
 								InitialDelaySeconds: constants.DispatcherReadinessDelay,
-								PeriodSeconds: constants.DispatcherReadinessPeriod,
+								PeriodSeconds:       constants.DispatcherReadinessPeriod,
 							},
 							Image:           r.environment.DispatcherImage,
 							Env:             envVars,

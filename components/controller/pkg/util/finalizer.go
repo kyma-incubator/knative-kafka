@@ -1,68 +1,28 @@
 package util
 
 import (
-	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	"k8s.io/apimachinery/pkg/util/sets"
-	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 )
 
-// FinalizerResult Indicates Whether Finalizer Was Added Or Not
-type AddFinalizerResult bool
-type RemoveFinalizerResult bool
-
-const (
-	FinalizerAlreadyPresent AddFinalizerResult    = false
-	FinalizerAdded          AddFinalizerResult    = true
-	FinalizerNotPresent     RemoveFinalizerResult = false
-	FinalizerRemoved        RemoveFinalizerResult = true
-)
-
-// Add Finalizer To The Specified Channel
-func AddFinalizerToChannel(channel *kafkav1alpha1.KafkaChannel, finalizerName string) AddFinalizerResult {
-	updatedFinalizers, addFinalizerResult := addFinalizer(channel.Finalizers, finalizerName)
-	channel.Finalizers = updatedFinalizers
-	return addFinalizerResult
-}
-
-// Remove Finalizer From The Specified Channel
-func RemoveFinalizerFromChannel(channel *kafkav1alpha1.KafkaChannel, finalizerName string) RemoveFinalizerResult {
-	updatedFinalizers, removeFinalizerResult := removeFinalizer(channel.Finalizers, finalizerName)
-	channel.Finalizers = updatedFinalizers
-	return removeFinalizerResult
-}
-
-// Add Finalizer To The Specified Subscription
-func AddFinalizerToSubscription(subscription *messagingv1alpha1.Subscription, finalizerName string) AddFinalizerResult {
-	updatedFinalizers, addFinalizerResult := addFinalizer(subscription.Finalizers, finalizerName)
-	subscription.Finalizers = updatedFinalizers
-	return addFinalizerResult
-}
-
-// Remove Finalizer From The Specified Subscription
-func RemoveFinalizerFromSubscription(subscription *messagingv1alpha1.Subscription, finalizerName string) RemoveFinalizerResult {
-	updatedFinalizers, removeFinalizerResult := removeFinalizer(subscription.Finalizers, finalizerName)
-	subscription.Finalizers = updatedFinalizers
-	return removeFinalizerResult
-}
-
-// Add The Specified Finalizer Name To The Specified Array Of Finalizers
-func addFinalizer(finalizers []string, finalizerName string) ([]string, AddFinalizerResult) {
-	finalizersSetString := sets.NewString(finalizers...)
-	if finalizersSetString.Has(finalizerName) {
-		return finalizersSetString.List(), FinalizerAlreadyPresent
-	} else {
-		finalizersSetString.Insert(finalizerName)
-		return finalizersSetString.List(), FinalizerAdded
-	}
-}
-
-// Remove The Specified Finalizer Name From The Specified Array Of Finalizers
-func removeFinalizer(finalizers []string, finalizerName string) ([]string, RemoveFinalizerResult) {
-	finalizersSetString := sets.NewString(finalizers...)
-	if finalizersSetString.Has(finalizerName) {
-		finalizersSetString.Delete(finalizerName)
-		return finalizersSetString.List(), FinalizerRemoved
-	} else {
-		return finalizersSetString.List(), FinalizerNotPresent
-	}
+//
+// Get A Kubernetes "Qualified" Finalizer Name With The Specified Suffix
+//
+// When adding finalizers to Kubernetes built-in components (Secrets, ConfigMaps, Services, etc...)
+// it is necessary to "qualify" the finalizer name by including a "/".  Kubernetes performs validation
+// on the finalizer names and only accepts the following values if NOT qualified ...
+//
+//     FinalizerOrphanDependents string = "orphan"
+//     FinalizerDeleteDependents string = "foregroundDeletion"
+//	   FinalizerKubernetes FinalizerName = "kubernetes"
+//
+// ... and will produce the following error message ...
+//
+//     metadata.finalizers[0]: Invalid value: \"externaltarget-controller\": name is neither a standard finalizer name nor is it fully qualified
+//
+// This is in contrast with Finalizers on a Custom Resource which can just be any arbitrary string.
+// There was little to no documentation on this and it required tracing the Kubernetes pkg/apis/core
+// source code to decipher what a "qualified" name format would be.
+//
+func KubernetesResourceFinalizerName(finalizerSuffix string) string {
+	return constants.KnativeKafkaFinalizerPrefix + finalizerSuffix
 }

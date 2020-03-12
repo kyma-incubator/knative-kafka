@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
@@ -21,12 +22,6 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *kafkav1alpha1.
 
 	// Get Channel Specific Logger & Add Topic Name
 	logger := util.ChannelLogger(r.Logger.Desugar(), channel).With(zap.String("TopicName", topicName))
-
-	// If The Channel Is Being Deleted Then reconcileTopic() Should Not Have Been Called - Log Warning & Skip Reconciliation
-	if channel.DeletionTimestamp != nil {
-		logger.Warn("Skipping Topic Reconciliation Of Deleted KafkaChannel - Should Never Happen")
-		return nil
-	}
 
 	// Get The Topic Configuration (First From Channel With Failover To Environment)
 	numPartitions := util.NumPartitions(channel, r.environment, r.Logger.Desugar())
@@ -61,7 +56,7 @@ func (r *Reconciler) createTopic(ctx context.Context, topicName string, partitio
 			NumPartitions:     partitions,
 			ReplicationFactor: replicationFactor,
 			Config: map[string]string{
-				KafkaTopicConfigRetentionMs: strconv.FormatInt(retentionMillis, 10),
+				constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(retentionMillis, 10),
 			},
 		},
 	}

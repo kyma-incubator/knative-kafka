@@ -19,6 +19,7 @@ const (
 	// Channel (Kafka Producer) Reconciliation
 	ChannelServiceReconciliationFailed
 	ChannelDeploymentReconciliationFailed
+	ChannelStatusReconciliationFailed
 
 	// Kafka Topic Reconciliation
 	KafkaTopicReconciliationFailed
@@ -26,6 +27,10 @@ const (
 	// Dispatcher (Kafka Consumer) Reconciliation
 	DispatcherServiceReconciliationFailed
 	DispatcherDeploymentReconciliationFailed
+
+	// Kafka Secret Reconciliation
+	KafkaSecretReconciled
+	KafkaSecretFinalized
 )
 
 // CoreV1 EventType String Value
@@ -47,15 +52,21 @@ func (et CoreV1EventType) String() string {
 	case ChannelUpdateFailed:
 		eventTypeString = "ChannelUpdateFailed"
 	case ChannelServiceReconciliationFailed:
-		eventTypeString = "ChannelK8sServiceReconciliationFailed"
+		eventTypeString = "ChannelServiceReconciliationFailed"
 	case ChannelDeploymentReconciliationFailed:
 		eventTypeString = "ChannelDeploymentReconciliationFailed"
+	case ChannelStatusReconciliationFailed:
+		eventTypeString = "ChannelStatusReconciliationFailed"
 	case KafkaTopicReconciliationFailed:
 		eventTypeString = "KafkaTopicReconciliationFailed"
 	case DispatcherServiceReconciliationFailed:
-		eventTypeString = "DispatcherK8sServiceReconciliationFailed"
+		eventTypeString = "DispatcherServiceReconciliationFailed"
 	case DispatcherDeploymentReconciliationFailed:
 		eventTypeString = "DispatcherDeploymentReconciliationFailed"
+	case KafkaSecretReconciled:
+		eventTypeString = "KafkaSecretReconciled"
+	case KafkaSecretFinalized:
+		eventTypeString = "KafkaSecretFinalized"
 	}
 
 	// Return The EventType String Value

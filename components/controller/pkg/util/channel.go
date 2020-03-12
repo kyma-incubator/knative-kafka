@@ -21,7 +21,7 @@ func ChannelKey(channel *knativekafkav1alpha1.KafkaChannel) string {
 	return fmt.Sprintf("%s/%s", channel.Namespace, channel.Name)
 }
 
-// Create A New OwnerReference For The Specified KafkaChannel (Non-Controller)
+// Create A New OwnerReference For The Specified KafkaChannel (Controller)
 func NewChannelOwnerReference(channel *knativekafkav1alpha1.KafkaChannel) metav1.OwnerReference {
 
 	kafkaChannelGroupVersion := schema.GroupVersion{
@@ -30,7 +30,7 @@ func NewChannelOwnerReference(channel *knativekafkav1alpha1.KafkaChannel) metav1
 	}
 
 	blockOwnerDeletion := true
-	controller := false
+	controller := true
 
 	return metav1.OwnerReference{
 		APIVersion:         kafkaChannelGroupVersion.String(),
@@ -48,7 +48,7 @@ func NewChannelOwnerReference(channel *knativekafkav1alpha1.KafkaChannel) metav1
 // Note - The current implementation creates a single Channel Deployment for each
 //        Kafka Authentication (K8S Secrets) instance.
 //
-func ChannelDeploymentDnsSafeName(kafkaSecretName string) string {
+func ChannelDnsSafeName(kafkaSecretName string) string {
 
 	// In order for the resulting name to be a valid DNS component it's length must be no more than 63 characters.
 	// We are consuming 9 chars for the component separators, and the Channel suffix, which reduces the available
@@ -66,7 +66,7 @@ func ChannelHostName(channelName, channelNamespace string) string {
 func NumPartitions(channel *knativekafkav1alpha1.KafkaChannel, environment *env.Environment, logger *zap.Logger) int {
 	value := channel.Spec.NumPartitions
 	if value <= 0 {
-		logger.Warn("Kafka Channel Spec 'NumPartitions' Not Specified - Using Default", zap.Int("Value", environment.DefaultNumPartitions))
+		logger.Debug("Kafka Channel Spec 'NumPartitions' Not Specified - Using Default", zap.Int("Value", environment.DefaultNumPartitions))
 		value = environment.DefaultNumPartitions
 	}
 	return value
@@ -76,7 +76,7 @@ func NumPartitions(channel *knativekafkav1alpha1.KafkaChannel, environment *env.
 func ReplicationFactor(channel *knativekafkav1alpha1.KafkaChannel, environment *env.Environment, logger *zap.Logger) int {
 	value := channel.Spec.ReplicationFactor
 	if value <= 0 {
-		logger.Warn("Kafka Channel Spec 'ReplicationFactor' Not Specified - Using Default", zap.Int("Value", environment.DefaultReplicationFactor))
+		logger.Debug("Kafka Channel Spec 'ReplicationFactor' Not Specified - Using Default", zap.Int("Value", environment.DefaultReplicationFactor))
 		value = environment.DefaultReplicationFactor
 	}
 	return value
@@ -86,7 +86,7 @@ func ReplicationFactor(channel *knativekafkav1alpha1.KafkaChannel, environment *
 func RetentionMillis(channel *knativekafkav1alpha1.KafkaChannel, environment *env.Environment, logger *zap.Logger) int64 {
 	value := channel.Spec.RetentionMillis
 	if value <= 0 {
-		logger.Warn("Kafka Channel Spec 'RetentionMillis' Not Specified - Using Default", zap.Int64("Value", environment.DefaultRetentionMillis))
+		logger.Debug("Kafka Channel Spec 'RetentionMillis' Not Specified - Using Default", zap.Int64("Value", environment.DefaultRetentionMillis))
 		value = environment.DefaultRetentionMillis
 	}
 	return value

@@ -57,7 +57,7 @@ func (m *MockAdminClient) Close() {
 
 // Mock Kafka Secret Name Function - Return Test Data
 func (m *MockAdminClient) GetKafkaSecretName(topicName string) string {
-	return KafkaSecret
+	return KafkaSecretName
 }
 
 //
