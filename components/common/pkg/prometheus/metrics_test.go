@@ -1,17 +1,18 @@
 package prometheus
 
 import (
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
+	logtesting "knative.dev/pkg/logging/testing"
 	"testing"
 )
 
-var logger = log.TestLogger()
-
 func TestMetricsServer_Observe(t *testing.T) {
-	m := NewMetricsServer("8888", "/metrics")
+
+	logger := logtesting.TestLogger(t).Desugar()
+	
+	m := NewMetricsServer(logger, "8888", "/metrics")
 
 	m.Observe(statsJson)
 

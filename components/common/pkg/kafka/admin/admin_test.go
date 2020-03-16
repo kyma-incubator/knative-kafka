@@ -3,9 +3,9 @@ package admin
 import (
 	"context"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	logtesting "knative.dev/pkg/logging/testing"
 	"testing"
 )
 
@@ -21,12 +21,12 @@ func TestCreateAdminClient(t *testing.T) {
 	mockAdminClient = &MockAdminClient{}
 
 	// Test Logger
-	testLogger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Replace The NewAdminClient Wrapper To Provide Mock AdminClient & Defer Reset
 	newAdminClientWrapperPlaceholder := NewAdminClientWrapper
 	NewAdminClientWrapper = func(logger *zap.Logger, adminClientType AdminClientType, k8sNamespace string) (clientInterface AdminClientInterface, e error) {
-		assert.Equal(t, testLogger, logger)
+		assert.Equal(t, logger, logger)
 		assert.Equal(t, adminClientType, adminClientType)
 		assert.Equal(t, namespace, k8sNamespace)
 		return mockAdminClient, nil
@@ -34,7 +34,7 @@ func TestCreateAdminClient(t *testing.T) {
 	defer func() { NewAdminClientWrapper = newAdminClientWrapperPlaceholder }()
 
 	// Perform The Test
-	adminClient, err := CreateAdminClient(testLogger, adminClientType, namespace)
+	adminClient, err := CreateAdminClient(logger, adminClientType, namespace)
 
 	// Verify The Results
 	assert.Nil(t, err)

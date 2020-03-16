@@ -5,13 +5,13 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	logtesting "knative.dev/pkg/logging/testing"
 	"strconv"
 	"testing"
 )
@@ -29,7 +29,7 @@ func TestNewKafkaAdminClientSuccess(t *testing.T) {
 	kafkaSecret := createKafkaSecret(kafkaSecretName, namespace, kafkaSecretBrokers, kafkaSecretUsername, kafkaSecretPassword)
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Replace The GetKubernetesClient Wrapper To Provide Mock Implementation & Defer Reset
 	getKubernetesClientWrapperPlaceholder := GetKubernetesClientWrapper
@@ -46,14 +46,14 @@ func TestNewKafkaAdminClientSuccess(t *testing.T) {
 	assert.NotNil(t, adminClient)
 }
 
-// Test The NewKafkaAdminClient() Constructor - No Kakfa Secrets Path
+// Test The NewKafkaAdminClient() Constructor - No Kafka Secrets Path
 func TestNewKafkaAdminClientNoSecrets(t *testing.T) {
 
 	// Test Data
 	namespace := "TestNamespace"
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Replace The GetKubernetesClient Wrapper To Provide Mock Implementation & Defer Reset
 	getKubernetesClientWrapperPlaceholder := GetKubernetesClientWrapper
@@ -94,7 +94,7 @@ func TestKafkaAdminClientCreateTopics(t *testing.T) {
 	mockConfluentAdminClient.On("CreateTopics", ctx, topicSpecifications, []kafka.CreateTopicsAdminOption(nil)).Return(topicResults, nil)
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New Kafka AdminClient To Test
 	adminClient := &KafkaAdminClient{
@@ -129,7 +129,7 @@ func TestKafkaAdminClientDeleteTopics(t *testing.T) {
 	mockConfluentAdminClient.On("DeleteTopics", ctx, []string{topicName}, []kafka.DeleteTopicsAdminOption(nil)).Return(topicResults, nil)
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New Kafka AdminClient To Test
 	adminClient := &KafkaAdminClient{
@@ -157,7 +157,7 @@ func TestKafkaAdminClientClose(t *testing.T) {
 	mockConfluentAdminClient.On("Close").Return()
 
 	// Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New Kafka AdminClient To Test
 	adminClient := &KafkaAdminClient{
@@ -180,8 +180,8 @@ func TestKafkaAdminClientGetKafkaSecretName(t *testing.T) {
 	secretName := "TestSecretName"
 
 	// Test Logger
-	logger := log.TestLogger()
-
+	logger := logtesting.TestLogger(t).Desugar()
+	
 	// Create A New Kafka AdminClient To Test
 	adminClient := &KafkaAdminClient{logger: logger, kafkaSecret: secretName}
 

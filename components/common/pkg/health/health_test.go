@@ -2,9 +2,9 @@ package health
 
 import (
 	"fmt"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"io"
+	logtesting "knative.dev/pkg/logging/testing"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,14 +14,11 @@ import (
 
 // Test Constants
 const (
-	testHttpPort    = "8089"
-	testHttpHost    = "localhost"
-	livenessPath    = "/healthz"
-	readinessPath   = "/healthy"
+	testHttpPort  = "8089"
+	testHttpHost  = "localhost"
+	livenessPath  = "/healthz"
+	readinessPath = "/healthy"
 )
-
-// Set Up Test Logger
-var logger = log.TestLogger()
 
 // Test Struct That Implements The HealthInterface Functions
 type testStatus struct {
@@ -121,14 +118,17 @@ func TestHealthHandler(t *testing.T) {
 
 // Test The Health Server Via Live HTTP Calls
 func TestHealthServer(t *testing.T) {
+
+	logger := logtesting.TestLogger(t).Desugar()
+
 	health := getTestHealthServer()
 	health.Start(logger)
 
-	livenessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, livenessPath))
+	livenessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost, testHttpPort, livenessPath))
 	assert.Nil(t, err)
-	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
+	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost, testHttpPort, readinessPath))
 	assert.Nil(t, err)
-	waitServerReady(readinessUri.String(), 3 * time.Second)
+	waitServerReady(readinessUri.String(), 3*time.Second)
 
 	// Test basic functionality - advanced logical tests are in TestHealthHandler
 	getEventToServer(t, livenessUri, http.StatusInternalServerError)
@@ -137,6 +137,10 @@ func TestHealthServer(t *testing.T) {
 	getEventToServer(t, livenessUri, http.StatusOK)
 
 	health.Stop(logger)
+
+	// Pause to let async go process finish logging :(
+	// Appears to be race condition between test finishing and logging in health.Stop() above
+	time.Sleep(1 * time.Second)
 }
 
 //
@@ -148,7 +152,7 @@ func waitServerReady(uri string, timeout time.Duration) {
 	// Create An HTTP Client And Send The Request Until Success Or Timeout
 	client := http.DefaultClient
 	for start := time.Now(); time.Since(start) < timeout; {
-		_, err := client.Get(uri)  // Don't care what the response actually is, only if there was an error getting it
+		_, err := client.Get(uri) // Don't care what the response actually is, only if there was an error getting it
 		if err == nil {
 			return
 		}

@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	logtesting "knative.dev/pkg/logging/testing"
 	"testing"
 )
 
@@ -29,8 +30,11 @@ func TestNewNamespace(t *testing.T) {
 	}
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Perform The Test
-	namespace, err := NewNamespace(name, username, password, secret, count)
+	namespace, err := NewNamespace(logger, name, username, password, secret, count)
 
 	// Verify Results
 	assert.NotNil(t, namespace)
@@ -60,8 +64,11 @@ func TestNewNamespaceError(t *testing.T) {
 	}
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Perform The Test
-	namespace, err := NewNamespace(name, username, password, secret, count)
+	namespace, err := NewNamespace(logger, name, username, password, secret, count)
 
 	// Verify Results
 	assert.Nil(t, namespace)
@@ -97,8 +104,11 @@ func TestNewNamespaceFromKafkaSecret(t *testing.T) {
 	}
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+	
 	// Perform The Test
-	namespace, err := NewNamespaceFromKafkaSecret(kafkaSecret)
+	namespace, err := NewNamespaceFromKafkaSecret(logger, kafkaSecret)
 
 	// Verify Results
 	assert.NotNil(t, namespace)

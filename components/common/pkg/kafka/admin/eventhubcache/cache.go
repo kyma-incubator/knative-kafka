@@ -80,7 +80,7 @@ func (c *Cache) Update(ctx context.Context) error {
 		}
 
 		// Create A New Namespace From The Secret
-		namespace, err := NewNamespaceFromKafkaSecret(&kafkaSecret)
+		namespace, err := NewNamespaceFromKafkaSecret(c.logger, &kafkaSecret)
 		if err != nil {
 			c.logger.Error("Failed To Get Namespace From Kafka Secret", zap.Any("Kafka Secret", kafkaSecret), zap.Error(err))
 			return err
