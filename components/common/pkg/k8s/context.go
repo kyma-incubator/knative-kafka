@@ -2,12 +2,12 @@ package k8s
 
 import (
 	"context"
-	injectionclient "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	k8sclientcmd "k8s.io/client-go/tools/clientcmd"
+	injectionclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/logging"
