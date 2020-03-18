@@ -402,7 +402,7 @@
     "components/common/pkg/log",
   ]
   pruneopts = "NUT"
-  revision = "d0a701af27269fe85763fd34c746288ab8325ed0"
+  revision = "54f27af1b6c5721a48393db84f0d6a2f3d9779d7"
 
 [[projects]]
   digest = "1:5985ef4caf91ece5d54817c11ea25f182697534f8ae6521eadcd628c142ac4b6"
@@ -1377,6 +1377,7 @@
     "client/injection/kube/client",
     "client/injection/kube/client/fake",
     "client/injection/kube/informers/apps/v1/deployment",
+    "client/injection/kube/informers/core/v1/secret",
     "client/injection/kube/informers/core/v1/service",
     "client/injection/kube/informers/factory",
     "codegen/cmd/injection-gen",
@@ -1436,6 +1437,7 @@
     "github.com/google/go-cmp/cmp",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",
     "github.com/stretchr/testify/assert",
@@ -1450,6 +1452,7 @@
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/runtime/serializer",
+    "k8s.io/apimachinery/pkg/selection",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/runtime",
@@ -1489,6 +1492,7 @@
     "knative.dev/pkg/client/injection/kube/client",
     "knative.dev/pkg/client/injection/kube/client/fake",
     "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment",
+    "knative.dev/pkg/client/injection/kube/informers/core/v1/secret",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/service",
     "knative.dev/pkg/codegen/cmd/injection-gen",
     "knative.dev/pkg/configmap",
