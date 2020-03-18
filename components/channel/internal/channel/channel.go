@@ -1,9 +1,9 @@
 package channel
 
 import (
+	"context"
 	"errors"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	knativekafkainformers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions"
 	knativekafkalisters "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
@@ -12,21 +12,23 @@ import (
 	k8sclientcmd "k8s.io/client-go/tools/clientcmd"
 	eventingChannel "knative.dev/eventing/pkg/channel"
 	knativecontroller "knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 )
 
 // Package Variables
 var (
+	logger             *zap.Logger
 	kafkaChannelLister knativekafkalisters.KafkaChannelLister
 	stopChan           chan struct{}
 )
 
 // Wrapper Around KnativeKafka Client Creation To Facilitate Unit Testing
-var getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
+var getKnativeKafkaClient = func(ctx context.Context, masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
 
 	// Create The K8S Configuration (In-Cluster With Cmd Line Flags For Out-Of-Cluster Usage)
 	k8sConfig, err := k8sclientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 	if err != nil {
-		log.Logger().Error("Failed To Build Kubernetes Config", zap.Error(err))
+		logging.FromContext(ctx).Error("Failed To Build Kubernetes Config", zap.Error(err))
 		return nil, err
 	}
 
@@ -35,12 +37,15 @@ var getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knati
 }
 
 // Initialize The KafkaChannel Lister Singleton
-func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string, healthServer *health.Server) error {
+func InitializeKafkaChannelLister(ctx context.Context, masterUrl string, kubeconfigPath string, healthServer *health.Server) error {
 
-	// Create The K8S KnativeKafka Client For KafkaChannels
-	client, err := getKnativeKafkaClient(masterUrl, kubeconfigPath)
+	// Get The Logger From The Provided Context
+	logger = logging.FromContext(ctx).Desugar()
+
+	// Get The K8S KnativeKafka Client For KafkaChannels
+	client, err := getKnativeKafkaClient(ctx, masterUrl, kubeconfigPath)
 	if err != nil {
-		log.Logger().Error("Failed To Create KnativeKafka Client", zap.Error(err))
+		logger.Error("Failed To Create KnativeKafka Client", zap.Error(err))
 		return err
 	}
 
@@ -60,16 +65,13 @@ func InitializeKafkaChannelLister(masterUrl string, kubeconfigPath string, healt
 	kafkaChannelLister = kafkaChannelInformer.Lister()
 
 	// Return Success
-	log.Logger().Info("Successfully Initialized KafkaChannel Lister")
+	logger.Info("Successfully Initialized KafkaChannel Lister")
 	healthServer.SetChannelReady(true)
 	return nil
 }
 
 // Validate The Specified ChannelReference Is For A Valid (Existing / READY) KafkaChannel
 func ValidateKafkaChannel(channelReference eventingChannel.ChannelReference) error {
-
-	// Update The Logger With ChannelReference
-	logger := log.Logger().With(zap.Any("ChannelReference", channelReference))
 
 	// Validate The Specified Channel Reference
 	if len(channelReference.Name) <= 0 || len(channelReference.Namespace) <= 0 {
@@ -106,7 +108,7 @@ func ValidateKafkaChannel(channelReference eventingChannel.ChannelReference) err
 // Close The Channel Lister (Stop Processing)
 func Close() {
 	if stopChan != nil {
-		log.Logger().Info("Closing Informer's Stop Channel")
+		logger.Info("Closing Informer's Stop Channel")
 		close(stopChan)
 	}
 }

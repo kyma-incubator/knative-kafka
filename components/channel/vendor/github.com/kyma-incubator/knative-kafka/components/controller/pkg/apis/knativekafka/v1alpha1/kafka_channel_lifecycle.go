@@ -8,10 +8,10 @@ import (
 // The Set Of KafkaChannel Status Conditions Required To Be Happy/Ready
 var kafkaCondSet = apis.NewLivingConditionSet(
 	ConditionTopicReady,
-	ConditionChannelDeploymentServiceReady,
+	ConditionChannelServiceReady,
 	ConditionChannelDeploymentReady,
 	ConditionAddressable,
-	ConditionChannelServiceReady,
+	ConditionKafkaChannelServiceReady,
 	ConditionDispatcherDeploymentReady)
 
 const (
@@ -22,12 +22,12 @@ const (
 	ConditionTopicReady apis.ConditionType = "TopicReady"
 
 	// KafkaChannel Condition ChannelServiceReady has status True when the Service representing the KafkaChannel exists.
+	ConditionKafkaChannelServiceReady apis.ConditionType = "KafkaChannelServiceReady"
+
+	// KafkaChannel Condition ChannelServiceReady has status True when the associated Deployment's Service exists.
 	ConditionChannelServiceReady apis.ConditionType = "ChannelServiceReady"
 
-	// KafkaChannel Condition DeploymentServiceReady has status True when the associated Deployment's Service exists.
-	ConditionChannelDeploymentServiceReady apis.ConditionType = "ChannelDeploymentServiceReady"
-
-	// KafkaChannel Condition DeploymentReady has status True when the associated Deployment exists.
+	// KafkaChannel Condition ChannelDeploymentReady has status True when the associated Deployment exists.
 	ConditionChannelDeploymentReady apis.ConditionType = "ChannelDeploymentReady"
 
 	// KafkaChannel Condition DispatcherDeploymentReady has status True when the associated Deployment exists.
@@ -82,20 +82,20 @@ func (in *KafkaChannelStatus) MarkTopicFailed(reason, messageFormat string, mess
 	kafkaCondSet.Manage(in).MarkFalse(ConditionTopicReady, reason, messageFormat, messageA...)
 }
 
+func (in *KafkaChannelStatus) MarkKafkaChannelServiceTrue() {
+	kafkaCondSet.Manage(in).MarkTrue(ConditionKafkaChannelServiceReady)
+}
+
+func (in *KafkaChannelStatus) MarkKafkaChannelServiceFailed(reason, messageFormat string, messageA ...interface{}) {
+	kafkaCondSet.Manage(in).MarkFalse(ConditionKafkaChannelServiceReady, reason, messageFormat, messageA...)
+}
+
 func (in *KafkaChannelStatus) MarkChannelServiceTrue() {
 	kafkaCondSet.Manage(in).MarkTrue(ConditionChannelServiceReady)
 }
 
 func (in *KafkaChannelStatus) MarkChannelServiceFailed(reason, messageFormat string, messageA ...interface{}) {
 	kafkaCondSet.Manage(in).MarkFalse(ConditionChannelServiceReady, reason, messageFormat, messageA...)
-}
-
-func (in *KafkaChannelStatus) MarkChannelDeploymentServiceTrue() {
-	kafkaCondSet.Manage(in).MarkTrue(ConditionChannelDeploymentServiceReady)
-}
-
-func (in *KafkaChannelStatus) MarkChannelDeploymentServiceFailed(reason, messageFormat string, messageA ...interface{}) {
-	kafkaCondSet.Manage(in).MarkFalse(ConditionChannelDeploymentServiceReady, reason, messageFormat, messageA...)
 }
 
 func (in *KafkaChannelStatus) MarkChannelDeploymentTrue() {

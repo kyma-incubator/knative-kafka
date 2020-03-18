@@ -7,14 +7,11 @@ import (
 	channelhealth "github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"github.com/stretchr/testify/assert"
+	logtesting "knative.dev/pkg/logging/testing"
 	"testing"
 )
-
-// Package Variables
-var _ = log.TestLogger() // Force The Use Of The TestLogger!
 
 // Test The InitializeProducer Functionality
 func TestInitializeProducer(t *testing.T) {
@@ -30,9 +27,12 @@ func TestInitializeProducer(t *testing.T) {
 		return mockProducer, nil
 	}
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Perform The Test
 	healthServer := channelhealth.NewChannelHealthServer("12345")
-	err := InitializeProducer(brokers, username, password, prometheus.NewMetricsServer("8888", "/metrics"), healthServer)
+	err := InitializeProducer(logger, brokers, username, password, prometheus.NewMetricsServer(logger, "8888", "/metrics"), healthServer)
 
 	// Verify The Results
 	assert.Nil(t, err)

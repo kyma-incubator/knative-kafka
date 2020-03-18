@@ -6,8 +6,10 @@ const (
 
 	// Knative Controller Naming
 	KafkaChannelControllerAgentName = "kafka-channel-controller"
+	KafkaSecretControllerAgentName  = "kafka-secret-controller"
 
 	// CRD Kinds
+	SecretKind              = "Secret"
 	ServiceKind             = "Service"
 	DeploymentKind          = "Deployment"
 	KnativeChannelKind      = "Channel"
@@ -40,6 +42,27 @@ const (
 
 	// Reconciliation Error Messages
 	ReconciliationFailedError = "reconciliation failed"
+
+	// KnativeKafka Finalizers Prefix
+	KnativeKafkaFinalizerPrefix = "knative-kafka/"
+
+	// Labels
+	AppLabel                    = "app"
+	KafkaChannelNameLabel       = "kafkachannel-name"
+	KafkaChannelNamespaceLabel  = "kafkachannel-namespace"
+	KafkaChannelChannelLabel    = "kafkachannel-channel"    // Channel Label - Used To Mark Deployment As Related To Channel
+	KafkaChannelDispatcherLabel = "kafkachannel-dispatcher" // Dispatcher Label - Used To Mark Deployment As Dispatcher
+	KafkaSecretLabel            = "kafkasecret"             // Secret Label - Indicates The Kafka Secret Of The KafkaChannel
+	KafkaTopicLabel             = "kafkaTopic"              // Topic Label - Indicates The Kafka Topic Of The KnativeChannel
+
+	// Prometheus ServiceMonitor Selector Labels / Values
+	K8sAppChannelSelectorLabel    = "k8s-app"
+	K8sAppChannelSelectorValue    = "knative-kafka-channels"
+	K8sAppDispatcherSelectorLabel = "k8s-app"
+	K8sAppDispatcherSelectorValue = "knative-kafka-dispatchers"
+
+	// Kafka Topic Configuration
+	KafkaTopicConfigRetentionMs = "retention.ms"
 
 	// Health Configuration
 	HealthPort                = 8082
