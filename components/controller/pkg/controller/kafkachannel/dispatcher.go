@@ -14,6 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/system"
 	"strconv"
 )
 
@@ -318,6 +320,14 @@ func (r *Reconciler) dispatcherDeploymentEnvVars(channel *knativekafkav1alpha1.K
 
 	// Create The Dispatcher Deployment EnvVars
 	envVars := []corev1.EnvVar{
+		{
+			Name:  system.NamespaceEnvKey,
+			Value: constants.KnativeEventingNamespace,
+		},
+		{
+			Name:  logging.ConfigMapNameEnv,
+			Value: logging.ConfigMapName(),
+		},
 		{
 			Name:  env.MetricsPortEnvVarKey,
 			Value: strconv.Itoa(r.environment.MetricsPort),
