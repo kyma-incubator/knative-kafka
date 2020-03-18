@@ -3,38 +3,61 @@ package admin
 import (
 	"context"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	logtesting "knative.dev/pkg/logging/testing"
 	"testing"
 )
 
 // Mock AdminClient Reference
 var mockAdminClient AdminClientInterface
 
-// Test The CreateAdminClient() Functionality
-func TestCreateAdminClient(t *testing.T) {
+// Test The CreateAdminClient() Kafka Functionality
+func TestCreateAdminClientKafka(t *testing.T) {
 
 	// Test Data
-	namespace := "TestNamespace"
+	ctx := context.TODO()
 	adminClientType := Kafka
 	mockAdminClient = &MockAdminClient{}
 
-	// Test Logger
-	logger := logtesting.TestLogger(t).Desugar()
-
-	// Replace The NewAdminClient Wrapper To Provide Mock AdminClient & Defer Reset
-	newAdminClientWrapperPlaceholder := NewAdminClientWrapper
-	NewAdminClientWrapper = func(logger *zap.Logger, adminClientType AdminClientType, k8sNamespace string) (clientInterface AdminClientInterface, e error) {
-		assert.Equal(t, logger, logger)
+	// Replace the NewKafkaAdminClientWrapper To Provide Mock AdminClient & Defer Reset
+	NewKafkaAdminClientWrapperRef := NewKafkaAdminClientWrapper
+	NewKafkaAdminClientWrapper = func(ctxArg context.Context, namespaceArg string) (AdminClientInterface, error) {
+		assert.Equal(t, ctx, ctxArg)
+		assert.Equal(t, constants.KnativeEventingNamespace, namespaceArg)
 		assert.Equal(t, adminClientType, adminClientType)
-		assert.Equal(t, namespace, k8sNamespace)
 		return mockAdminClient, nil
 	}
-	defer func() { NewAdminClientWrapper = newAdminClientWrapperPlaceholder }()
+	defer func() { NewKafkaAdminClientWrapper = NewKafkaAdminClientWrapperRef }()
 
 	// Perform The Test
-	adminClient, err := CreateAdminClient(logger, adminClientType, namespace)
+	adminClient, err := CreateAdminClient(ctx, adminClientType)
+
+	// Verify The Results
+	assert.Nil(t, err)
+	assert.NotNil(t, adminClient)
+	assert.Equal(t, mockAdminClient, adminClient)
+}
+
+// Test The CreateAdminClient() EventHub Functionality
+func TestCreateAdminClientEventHub(t *testing.T) {
+
+	// Test Data
+	ctx := context.TODO()
+	adminClientType := EventHub
+	mockAdminClient = &MockAdminClient{}
+
+	// Replace the NewEventHubAdminClientWrapper To Provide Mock AdminClient & Defer Reset
+	NewEventHubAdminClientWrapperRef := NewEventHubAdminClientWrapper
+	NewEventHubAdminClientWrapper = func(ctxArg context.Context, namespaceArg string) (AdminClientInterface, error) {
+		assert.Equal(t, ctx, ctxArg)
+		assert.Equal(t, constants.KnativeEventingNamespace, namespaceArg)
+		assert.Equal(t, adminClientType, adminClientType)
+		return mockAdminClient, nil
+	}
+	defer func() { NewEventHubAdminClientWrapper = NewEventHubAdminClientWrapperRef }()
+
+	// Perform The Test
+	adminClient, err := CreateAdminClient(ctx, adminClientType)
 
 	// Verify The Results
 	assert.Nil(t, err)

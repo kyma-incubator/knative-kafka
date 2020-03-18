@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin/util"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/logging"
 )
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -38,16 +39,14 @@ type Cache struct {
 	eventhubMap  map[string]*Namespace // Maps The Azure EventHub Name To It's Namespace Struct
 }
 
-// GetKubernetesClient Wrapper To Facilitate Unit Testing
-var GetKubernetesClientWrapper = func(logger *zap.Logger) kubernetes.Interface {
-	return k8s.GetKubernetesClient(logger)
-}
-
 // Azure EventHubs Cache Constructor
-func NewCache(logger *zap.Logger, k8sNamespace string) CacheInterface {
+func NewCache(ctx context.Context, k8sNamespace string) CacheInterface {
 
-	// Get The Kubernetes Client
-	k8sClient := GetKubernetesClientWrapper(logger)
+	// Get The Logger From The Context
+	logger := logging.FromContext(ctx).Desugar()
+
+	// Get The K8S Client From The Context
+	k8sClient := kubeclient.Get(ctx)
 
 	// Create & Return A New Cache
 	return &Cache{

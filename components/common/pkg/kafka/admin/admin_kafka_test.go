@@ -3,14 +3,14 @@ package admin
 import (
 	"context"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+	injectionclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
 	"strconv"
 	"testing"
@@ -26,20 +26,15 @@ func TestNewKafkaAdminClientSuccess(t *testing.T) {
 	kafkaSecretUsername := "TestKafkaSecretUsername"
 	kafkaSecretPassword := "TestKafkaSecretPassword"
 
+	// Create Test Kafka Secret
 	kafkaSecret := createKafkaSecret(kafkaSecretName, namespace, kafkaSecretBrokers, kafkaSecretUsername, kafkaSecretPassword)
 
-	// Test Logger
-	logger := logtesting.TestLogger(t).Desugar()
-
-	// Replace The GetKubernetesClient Wrapper To Provide Mock Implementation & Defer Reset
-	getKubernetesClientWrapperPlaceholder := GetKubernetesClientWrapper
-	GetKubernetesClientWrapper = func(logger *zap.Logger) kubernetes.Interface {
-		return k8s.GetTestKubernetesClient(kafkaSecret)
-	}
-	defer func() { GetKubernetesClientWrapper = getKubernetesClientWrapperPlaceholder }()
+	// Create A Context With Test Logger & K8S Client
+	ctx := logging.WithLogger(context.TODO(), logtesting.TestLogger(t))
+	ctx = context.WithValue(ctx, injectionclient.Key{}, fake.NewSimpleClientset(kafkaSecret))
 
 	// Perform The Test
-	adminClient, err := NewKafkaAdminClient(logger, namespace)
+	adminClient, err := NewKafkaAdminClient(ctx, namespace)
 
 	// Verify The Results
 	assert.Nil(t, err)
@@ -52,18 +47,12 @@ func TestNewKafkaAdminClientNoSecrets(t *testing.T) {
 	// Test Data
 	namespace := "TestNamespace"
 
-	// Test Logger
-	logger := logtesting.TestLogger(t).Desugar()
-
-	// Replace The GetKubernetesClient Wrapper To Provide Mock Implementation & Defer Reset
-	getKubernetesClientWrapperPlaceholder := GetKubernetesClientWrapper
-	GetKubernetesClientWrapper = func(logger *zap.Logger) kubernetes.Interface {
-		return k8s.GetTestKubernetesClient()
-	}
-	defer func() { GetKubernetesClientWrapper = getKubernetesClientWrapperPlaceholder }()
+	// Create A Context With Test Logger & K8S Client
+	ctx := logging.WithLogger(context.TODO(), logtesting.TestLogger(t))
+	ctx = context.WithValue(ctx, injectionclient.Key{}, fake.NewSimpleClientset())
 
 	// Perform The Test
-	adminClient, err := NewKafkaAdminClient(logger, namespace)
+	adminClient, err := NewKafkaAdminClient(ctx, namespace)
 
 	// Verify The Results
 	assert.NotNil(t, err)
@@ -181,7 +170,7 @@ func TestKafkaAdminClientGetKafkaSecretName(t *testing.T) {
 
 	// Test Logger
 	logger := logtesting.TestLogger(t).Desugar()
-	
+
 	// Create A New Kafka AdminClient To Test
 	adminClient := &KafkaAdminClient{logger: logger, kafkaSecret: secretName}
 

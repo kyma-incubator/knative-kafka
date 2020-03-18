@@ -15,18 +15,8 @@ import (
 	"log"
 )
 
-// TODO - i think we should roll the initialization of the kafkachannel client into this context and make a general InitializeContext() fn
-
-//
-// Initialize The Specified Context With A K8S Client & Logger (ConfigMap Watcher)
-//
-// Note - This logic represents a stepping stone on our path towards alignment with the Knative eventing-contrib implementations.
-//        We are not an "injected controller" in the knative-eventing injection framework, but still want to leverage that
-//        implementation as much as possible to ease future refactoring.  This will allow us to use the default knative-eventing
-//        logging configuration and dynamic updating.  To that end, we are setting up a basic context ourselves that mirrors
-//        what the injection framework would have created.
-//
-func LoggingContext(ctx context.Context, component string, masterUrl string, kubeconfigPath string) context.Context {
+// K8sClientWrapper Used To Facilitate Unit Testing
+var K8sClientWrapper = func(masterUrl string, kubeconfigPath string) kubernetes.Interface {
 
 	// Create The K8S Configuration (In-Cluster By Default / Cmd Line Flags For Out-Of-Cluster Usage)
 	k8sConfig, err := k8sclientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
@@ -35,7 +25,22 @@ func LoggingContext(ctx context.Context, component string, masterUrl string, kub
 	}
 
 	// Create A New Kubernetes Client From The K8S Configuration
-	k8sClient := kubernetes.NewForConfigOrDie(k8sConfig)
+	return kubernetes.NewForConfigOrDie(k8sConfig)
+}
+
+//
+// Initialize The Specified Context With A K8S Client & Logger (ConfigMap Watcher)
+//
+// Note - This logic represents a stepping stone on our path towards alignment with the Knative eventing-contrib implementations.
+//        The Channel / Dispatcher are not "injected controllers" in the knative-eventing injection framework, but still want to
+//        leverage that implementation as much as possible to ease future refactoring.  This will allow us to use the default
+//        knative-eventing logging configuration and dynamic updating.  To that end, we are setting up a basic context ourselves
+//        that mirrors what the injection framework would have created.
+//
+func LoggingContext(ctx context.Context, component string, masterUrl string, kubeconfigPath string) context.Context {
+
+	// Get The K8S Client
+	k8sClient := K8sClientWrapper(masterUrl, kubeconfigPath)
 
 	// Put The Kubernetes Client Into The Context Where The Injection Framework Expects It
 	ctx = context.WithValue(ctx, injectionclient.Key{}, k8sClient)

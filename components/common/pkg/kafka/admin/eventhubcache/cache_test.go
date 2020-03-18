@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	eventhub "github.com/Azure/azure-event-hubs-go"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+	injectionclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
 	"strings"
 	"testing"
@@ -22,18 +23,12 @@ func TestNewCache(t *testing.T) {
 	// Test Data
 	k8sNamespace := "TestK8SNamespace"
 
-	// Create A Test Logger
-	logger := logtesting.TestLogger(t).Desugar()
-
-	// Replace The GetKubernetesClient Wrapper To Provide Mock Implementation & Defer Reset
-	getKubernetesClientWrapperPlaceholder := GetKubernetesClientWrapper
-	GetKubernetesClientWrapper = func(logger *zap.Logger) kubernetes.Interface {
-		return k8s.GetTestKubernetesClient()
-	}
-	defer func() { GetKubernetesClientWrapper = getKubernetesClientWrapperPlaceholder }()
+	// Create A Context With Test Logger & K8S Client
+	ctx := logging.WithLogger(context.TODO(), logtesting.TestLogger(t))
+	ctx = context.WithValue(ctx, injectionclient.Key{}, fake.NewSimpleClientset())
 
 	// Perform The Test
-	cache := NewCache(logger, k8sNamespace)
+	cache := NewCache(ctx, k8sNamespace)
 
 	// Verify The Results
 	assert.NotNil(t, cache)
@@ -84,7 +79,7 @@ func TestUpdate(t *testing.T) {
 	// Create A Cache To Test
 	cache := &Cache{
 		logger:       logger,
-		k8sClient:    k8s.GetTestKubernetesClient(kafkaSecret1, kafkaSecret2, kafkaSecret3),
+		k8sClient:    fake.NewSimpleClientset(kafkaSecret1, kafkaSecret2, kafkaSecret3),
 		k8sNamespace: k8sNamespace1,
 		namespaceMap: make(map[string]*Namespace),
 		eventhubMap:  make(map[string]*Namespace),
