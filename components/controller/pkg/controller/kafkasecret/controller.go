@@ -7,7 +7,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/informers/knativekafka/v1alpha1/kafkachannel"
 	kafkasecretreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkasecret"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinformer"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +16,6 @@ import (
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
-	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -30,7 +29,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	logger := logging.FromContext(ctx)
 
 	// Get The Needed Informers
-	secretInformer := secret.Get(ctx)
+	kafkaSecretInformer := kafkasecretinformer.Get(ctx)
 	kafkachannelInformer := kafkachannel.Get(ctx)
 	deploymentInformer := deployment.Get(ctx)
 	serviceInformer := service.Get(ctx)
@@ -57,10 +56,9 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 
 	// Configure The Informers' EventHandlers
 	r.Logger.Info("Setting Up EventHandlers")
-	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: util.FilterKafkaSecrets(),
-		Handler:    controller.HandleAll(controllerImpl.Enqueue),
-	})
+	kafkaSecretInformer.Informer().AddEventHandler(
+		controller.HandleAll(controllerImpl.Enqueue),
+	)
 	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(corev1.SchemeGroupVersion.WithKind(constants.SecretKind)),
 		Handler:    controller.HandleAll(controllerImpl.EnqueueControllerOf),
