@@ -237,14 +237,6 @@
   version = "v4.5.0"
 
 [[projects]]
-  digest = "1:1b91ae0dc69a41d4c2ed23ea5cffb721ea63f5037ca4b81e6d6771fbb8f45129"
-  name = "github.com/fsnotify/fsnotify"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
-  version = "v1.4.7"
-
-[[projects]]
   digest = "1:2b0e6c0bea11257c646616ebd6a62be0ef2b6a0fd8210ac3caeaf57ee136123b"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -387,22 +379,21 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  branch = "master"
-  digest = "1:0c2f870adf173e19f9bb82d05c4b131e44192347120f7b92f852f951ff6b9ff8"
+  branch = "remove-common-logger"
+  digest = "1:95c22080ed68dfaf17aec39f0b0460d9244af30d89b77cc81ff90d0ed550a606"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/health",
-    "components/common/pkg/k8s",
     "components/common/pkg/kafka/admin",
     "components/common/pkg/kafka/admin/eventhubcache",
     "components/common/pkg/kafka/admin/util",
     "components/common/pkg/kafka/constants",
     "components/common/pkg/kafka/consumer",
     "components/common/pkg/kafka/util",
-    "components/common/pkg/log",
   ]
   pruneopts = "NUT"
-  revision = "54f27af1b6c5721a48393db84f0d6a2f3d9779d7"
+  revision = "00b02eac1196af1c7921b54ce4bbb6f0cafb36a4"
+  source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
   digest = "1:5985ef4caf91ece5d54817c11ea25f182697534f8ae6521eadcd628c142ac4b6"
@@ -1020,7 +1011,7 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:b03297e45cd203dee7e9449141555d3973d04d5323ece6b4e20562b80185767e"
+  digest = "1:9542c06182fde4ed856e83aabbe5c8f7d61ae05fa4045b3907d4b7aefd79b18c"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1199,11 +1190,9 @@
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
     "plugin/pkg/client/auth/exec",
-    "plugin/pkg/client/auth/gcp",
     "rest",
     "rest/watch",
     "testing",
-    "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -1220,7 +1209,6 @@
     "util/connrotation",
     "util/flowcontrol",
     "util/homedir",
-    "util/jsonpath",
     "util/keyutil",
     "util/retry",
     "util/workqueue",
@@ -1504,6 +1492,7 @@
     "knative.dev/pkg/logging/testing",
     "knative.dev/pkg/reconciler",
     "knative.dev/pkg/reconciler/testing",
+    "knative.dev/pkg/system",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

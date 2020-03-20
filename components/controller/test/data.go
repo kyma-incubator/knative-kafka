@@ -496,12 +496,6 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 								},
 							},
 							ImagePullPolicy: corev1.PullAlways,
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      constants.LoggingConfigVolumeName,
-									MountPath: constants.LoggingConfigMountPath,
-								},
-							},
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse(ChannelCpuRequest),
@@ -510,18 +504,6 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 								Limits: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse(ChannelCpuLimit),
 									corev1.ResourceMemory: resource.MustParse(ChannelMemoryLimit),
-								},
-							},
-						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: constants.LoggingConfigVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: constants.LoggingConfigMapName,
-									},
 								},
 							},
 						},
@@ -715,12 +697,6 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 								},
 							},
 							ImagePullPolicy: corev1.PullAlways,
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      constants.LoggingConfigVolumeName,
-									MountPath: constants.LoggingConfigMountPath,
-								},
-							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									corev1.ResourceMemory: resource.MustParse(DispatcherMemoryLimit),
@@ -729,18 +705,6 @@ func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 								Requests: corev1.ResourceList{
 									corev1.ResourceMemory: resource.MustParse(DispatcherMemoryRequest),
 									corev1.ResourceCPU:    resource.MustParse(DispatcherCpuRequest),
-								},
-							},
-						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: constants.LoggingConfigVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: constants.LoggingConfigMapName,
-									},
 								},
 							},
 						},

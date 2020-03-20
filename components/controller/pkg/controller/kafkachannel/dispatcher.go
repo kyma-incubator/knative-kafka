@@ -273,12 +273,6 @@ func (r *Reconciler) newDispatcherDeployment(channel *knativekafkav1alpha1.Kafka
 							Image:           r.environment.DispatcherImage,
 							Env:             envVars,
 							ImagePullPolicy: corev1.PullAlways,
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      constants.LoggingConfigVolumeName,
-									MountPath: constants.LoggingConfigMountPath,
-								},
-							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									corev1.ResourceMemory: r.environment.DispatcherMemoryLimit,
@@ -287,18 +281,6 @@ func (r *Reconciler) newDispatcherDeployment(channel *knativekafkav1alpha1.Kafka
 								Requests: corev1.ResourceList{
 									corev1.ResourceMemory: r.environment.DispatcherMemoryRequest,
 									corev1.ResourceCPU:    r.environment.DispatcherCpuRequest,
-								},
-							},
-						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: constants.LoggingConfigVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: constants.LoggingConfigMapName,
-									},
 								},
 							},
 						},

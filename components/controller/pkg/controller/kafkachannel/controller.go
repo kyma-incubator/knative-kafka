@@ -51,7 +51,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	}
 
 	// Get The Kafka AdminClient
-	adminClient, err := kafkaadmin.CreateAdminClient(logger, kafkaAdminClientType, constants.KnativeEventingNamespace)
+	adminClient, err := kafkaadmin.CreateAdminClient(ctx, kafkaAdminClientType)
 	if adminClient == nil || err != nil {
 		logger.Fatal("Failed To Create Kafka AdminClient", zap.Error(err))
 	}
@@ -93,7 +93,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	})
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: util.FilterKafkaSecrets(),
-		Handler:    controller.HandleAll(r.resetKafkaAdminClient(kafkaAdminClientType)),
+		Handler:    controller.HandleAll(r.resetKafkaAdminClient(ctx, kafkaAdminClientType)),
 	})
 
 	// Return The KafkaChannel Controller Impl
@@ -106,9 +106,9 @@ func Shutdown() {
 }
 
 // Recreate The Kafka AdminClient On The Reconciler (Useful To Reload Cache Which Is Not Yet Exposed)
-func (r *Reconciler) resetKafkaAdminClient(kafkaAdminClientType kafkaadmin.AdminClientType) func(obj interface{}) {
+func (r *Reconciler) resetKafkaAdminClient(ctx context.Context, kafkaAdminClientType kafkaadmin.AdminClientType) func(obj interface{}) {
 	return func(obj interface{}) {
-		adminClient, err := kafkaadmin.CreateAdminClient(r.Logger.Desugar(), kafkaAdminClientType, constants.KnativeEventingNamespace)
+		adminClient, err := kafkaadmin.CreateAdminClient(ctx, kafkaAdminClientType)
 		if adminClient == nil || err != nil {
 			r.Logger.Error("Failed To Re-Create Kafka AdminClient", zap.Error(err))
 		} else {
