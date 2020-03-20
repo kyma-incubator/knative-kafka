@@ -36,7 +36,7 @@ func main() {
 
 	// Get The Logger From The Context
 	logger = logging.FromContext(ctx).Desugar()
-	defer logger.Sync()
+	defer func() { _ = logger.Sync() }()
 
 	// Load Environment Variables
 	environment, err := env.GetEnvironment(logger)
@@ -107,7 +107,7 @@ func main() {
 }
 
 // Handler For Receiving Cloud Events And Sending The Event To Kafka
-func handleEvent(ctx context.Context, channelReference eventingChannel.ChannelReference, cloudEvent cloudevents.Event) error {
+func handleEvent(_ context.Context, channelReference eventingChannel.ChannelReference, cloudEvent cloudevents.Event) error {
 
 	// Note - The context provided here is a different context from the one created in main() and does not have our logger instance.
 

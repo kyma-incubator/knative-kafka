@@ -5,7 +5,6 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"go.uber.org/zap"
@@ -16,6 +15,7 @@ import (
 
 // Define A Dispatcher Config Struct To Hold Configuration
 type DispatcherConfig struct {
+	Logger                      *zap.Logger
 	Brokers                     string
 	Topic                       string
 	Offset                      string
@@ -70,7 +70,7 @@ func (d *Dispatcher) StopConsumers() {
 }
 
 func (d *Dispatcher) stopConsumer(subscription Subscription) {
-	log.Logger().Info("Stopping Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
+	d.Logger.Info("Stopping Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
 
 	d.consumers[subscription].stopCh <- true
 	delete(d.consumers, subscription)
@@ -80,17 +80,17 @@ func (d *Dispatcher) stopConsumer(subscription Subscription) {
 func (d *Dispatcher) initConsumer(subscription Subscription) (*ConsumerOffset, error) {
 
 	// Create Consumer
-	log.Logger().Info("Creating Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
+	d.Logger.Info("Creating Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
 	consumer, err := kafkaconsumer.CreateConsumer(d.Brokers, subscription.GroupId, d.Offset, d.Username, d.Password)
 	if err != nil {
-		log.Logger().Error("Failed To Create New Consumer", zap.Error(err))
+		d.Logger.Error("Failed To Create New Consumer", zap.Error(err))
 		return nil, err
 	}
 
 	// Subscribe To The Topic
 	err = consumer.Subscribe(d.Topic, nil)
 	if err != nil {
-		log.Logger().Error("Failed To Subscribe To Topic", zap.String("Topic", d.Topic), zap.Error(err))
+		d.Logger.Error("Failed To Subscribe To Topic", zap.String("Topic", d.Topic), zap.Error(err))
 		return nil, err
 	}
 
@@ -108,7 +108,7 @@ func (d *Dispatcher) initConsumer(subscription Subscription) (*ConsumerOffset, e
 func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscription Subscription) {
 
 	// Configure The Logger
-	logger := log.Logger().With(zap.String("GroupID", subscription.GroupId))
+	logger := d.Logger.With(zap.String("GroupID", subscription.GroupId))
 
 	stopped := false
 	// Message Processing Loop
@@ -190,7 +190,10 @@ func (d *Dispatcher) updateOffsets(consumer kafkaconsumer.ConsumerInterface, mes
 	// Store The Updated Offsets
 	offsets := []kafka.TopicPartition{message.TopicPartition}
 	offsets[0].Offset++
-	consumer.StoreOffsets(offsets)
+	_, err := consumer.StoreOffsets(offsets)
+	if err != nil {
+		d.Logger.Error("Kafka Consumer Failed To Store Offsets", zap.Error(err))
+	}
 }
 
 // Commit The Stored Offsets For Partitions Still Assigned To This Consumer

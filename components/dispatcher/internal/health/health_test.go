@@ -2,8 +2,8 @@ package health
 
 import (
 	"fmt"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
+	logtesting "knative.dev/pkg/logging/testing"
 	"net/http"
 	"net/url"
 	"testing"
@@ -11,13 +11,10 @@ import (
 )
 
 const (
-	testHttpPort    = "8089"
-	testHttpHost    = "localhost"
-	readinessPath   = "/healthy"
+	testHttpPort  = "8089"
+	testHttpHost  = "localhost"
+	readinessPath = "/healthy"
 )
-
-// Set Up Test Logger
-var logger = log.TestLogger()
 
 // Test The NewDispatcherHealthServer() Functionality
 func TestNewDispatcherHealthServer(t *testing.T) {
@@ -46,12 +43,15 @@ func TestReadinessFlagWrites(t *testing.T) {
 
 // Test The Dispatcher Health Server Via Live HTTP Calls
 func TestDispatcherHealthServer(t *testing.T) {
+
+	logger := logtesting.TestLogger(t).Desugar()
+
 	chs := NewDispatcherHealthServer(testHttpPort)
 	chs.Start(logger)
 
-	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost , testHttpPort, readinessPath))
+	readinessUri, err := url.Parse(fmt.Sprintf("http://%s:%s%s", testHttpHost, testHttpPort, readinessPath))
 	assert.Nil(t, err)
-	waitServerReady(readinessUri.String(), 3 * time.Second)
+	waitServerReady(readinessUri.String(), 3*time.Second)
 
 	// Verify that initially the readiness status is false
 	getEventToServer(t, readinessUri, http.StatusInternalServerError)
@@ -68,6 +68,10 @@ func TestDispatcherHealthServer(t *testing.T) {
 	getEventToServer(t, readinessUri, http.StatusInternalServerError)
 
 	chs.Stop(logger)
+
+	// Pause to let async go process finish logging :(
+	// Appears to be race condition between test finishing and logging in Stop() above
+	time.Sleep(1 * time.Second)
 }
 
 //
@@ -79,7 +83,7 @@ func waitServerReady(uri string, timeout time.Duration) {
 	// Create An HTTP Client And Send The Request Until Success Or Timeout
 	client := http.DefaultClient
 	for start := time.Now(); time.Since(start) < timeout; {
-		_, err := client.Get(uri)  // Don't care what the response actually is, only if there was an error getting it
+		_, err := client.Get(uri) // Don't care what the response actually is, only if there was an error getting it
 		if err == nil {
 			return
 		}

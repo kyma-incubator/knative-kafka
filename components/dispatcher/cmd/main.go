@@ -1,8 +1,9 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	commonk8s "github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions"
@@ -15,6 +16,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	kncontroller "knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 	"os"
 	"strconv"
@@ -23,6 +25,7 @@ import (
 
 // Constants
 const (
+	Component                                      = "KnativeKafkaDispatcher"
 	DefaultKafkaConsumerOffset                     = "latest"
 	DefaultKafkaConsumerPollTimeoutMillis          = 500 // Timeout Millis When Polling For Events
 	MinimumKafkaConsumerOffsetCommitDurationMillis = 250 // Azure EventHubs Restrict To 250ms Between Offset Commits
@@ -39,11 +42,15 @@ var (
 // The Main Function (Go Command)
 func main() {
 
-	// Initialize The Logger
-	logger = log.Logger()
-
 	// Parse The Flags For Local Development Usage
 	flag.Parse()
+
+	// Initialize A Knative Injection Lite Context (K8S Client & Logger)
+	ctx := commonk8s.LoggingContext(context.TODO(), Component, *masterURL, *kubeconfig)
+
+	// Get The Logger From The Context
+	logger = logging.FromContext(ctx).Desugar()
+	defer func() { _ = logger.Sync() }()
 
 	// Load Environment Variables
 	metricsPort := os.Getenv("METRICS_PORT")
@@ -99,14 +106,15 @@ func main() {
 	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)
-	metricsServer := prometheus.NewMetricsServer(metricsPort, "/metrics")
+	metricsServer := prometheus.NewMetricsServer(logger, metricsPort, "/metrics")
 	metricsServer.Start()
 
 	// Create HTTP Client With Retry Settings
-	ceClient := client.NewRetriableCloudEventClient(exponentialBackoff, initialRetryInterval, maxRetryTime)
+	ceClient := client.NewRetriableCloudEventClient(logger, exponentialBackoff, initialRetryInterval, maxRetryTime)
 
 	// Create The Dispatcher With Specified Configuration
 	dispatcherConfig := dispatch.DispatcherConfig{
+		Logger:                      logger,
 		Brokers:                     kafkaBrokers,
 		Topic:                       kafkaTopic,
 		Offset:                      DefaultKafkaConsumerOffset,

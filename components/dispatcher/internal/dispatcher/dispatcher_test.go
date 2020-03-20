@@ -6,10 +6,10 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/go-cmp/cmp"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	logtesting "knative.dev/pkg/logging/testing"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -46,11 +46,11 @@ var (
 	testValue        = map[string]string{"test": "value"}
 )
 
-// Need To Load TestLogger To Make It Default Logger
-var logger = log.TestLogger()
-
 // Test All The Dispatcher Functionality
 func TestDispatcher(t *testing.T) {
+
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Initialize The Test HTTP Server Instance & URL
 	callCount1 := 0
@@ -78,10 +78,11 @@ func TestDispatcher(t *testing.T) {
 	}
 	defer func() { kafkaconsumer.NewConsumerWrapper = newConsumerWrapperPlaceholder }()
 
-	cloudEventClient := client.NewRetriableCloudEventClient(false, 500, 5000)
+	cloudEventClient := client.NewRetriableCloudEventClient(logtesting.TestLogger(t).Desugar(), false, 500, 5000)
 
 	// Create A New Dispatcher
 	dispatcherConfig := DispatcherConfig{
+		Logger:                      logger,
 		Brokers:                     testBrokers,
 		Topic:                       testTopic,
 		Offset:                      testOffset,

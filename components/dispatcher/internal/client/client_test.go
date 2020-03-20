@@ -4,14 +4,13 @@ import (
 	"errors"
 	"fmt"
 	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	logtesting "knative.dev/pkg/logging/testing"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
-
-var logger = log.TestLogger()
 
 func TestHttpClient_Dispatch(t *testing.T) {
 	t.Parallel()
@@ -102,13 +101,14 @@ func TestHttpClient_Dispatch(t *testing.T) {
 			testCloudEvent.SetType("com.cloudevents.readme.sent")
 			testCloudEvent.SetSource("http://localhost:8080/")
 			testCloudEvent.SetDataContentType("application/json")
-			testCloudEvent.SetData(map[string]string{"test": "value"})
+			err := testCloudEvent.SetData(map[string]string{"test": "value"})
+			assert.Nil(t, err)
 
-			error := client.Dispatch(testCloudEvent, server.URL)
+			err = client.Dispatch(testCloudEvent, server.URL)
 
-			if tc.expectedSuccess && error != nil {
-				t.Error("Message failed to dispatch:", error)
-			} else if !tc.expectedSuccess && error == nil {
+			if tc.expectedSuccess && err != nil {
+				t.Error("Message failed to dispatch:", err)
+			} else if !tc.expectedSuccess && err == nil {
 				t.Error("Message should have failed to dispatch")
 			}
 
@@ -119,20 +119,11 @@ func TestHttpClient_Dispatch(t *testing.T) {
 	}
 }
 
-// Initialize The Logger - Fatal Exit Upon Error
-func getLogger(t *testing.T) *zap.Logger {
-	logger, err := zap.NewProduction() // For Now Just Use The Default Zap Production Logger
-	if err != nil {
-		t.Errorf("Failed to create new Zap production logger: %+v", err)
-	}
-	return logger
-}
-
 func setup(t *testing.T) (*retriableCloudEventClient, *httptest.Server, *http.ServeMux) {
 	// test server
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
-	client := NewRetriableCloudEventClient(true, 1000, 10000)
+	client := NewRetriableCloudEventClient(logtesting.TestLogger(t).Desugar(), true, 1000, 10000)
 
 	return &client, server, mux
 }
@@ -174,6 +165,9 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 }
 
 func Test_logResponse(t *testing.T) {
+
+	logger := logtesting.TestLogger(t).Desugar()
+
 	type args struct {
 		logger     *zap.Logger
 		statusCode int
@@ -187,7 +181,7 @@ func Test_logResponse(t *testing.T) {
 		{
 			name: "200",
 			args: args{
-				logger:     log.TestLogger(),
+				logger:     logger,
 				statusCode: 200,
 				err:        nil,
 			},
@@ -196,7 +190,7 @@ func Test_logResponse(t *testing.T) {
 		{
 			name: "429",
 			args: args{
-				logger:     log.TestLogger(),
+				logger:     logger,
 				statusCode: 429,
 				err:        nil,
 			},
@@ -205,7 +199,7 @@ func Test_logResponse(t *testing.T) {
 		{
 			name: "503",
 			args: args{
-				logger:     log.TestLogger(),
+				logger:     logger,
 				statusCode: 503,
 				err:        nil,
 			},
@@ -214,9 +208,9 @@ func Test_logResponse(t *testing.T) {
 		{
 			name: "Validation Error",
 			args: args{
-				logger:     log.TestLogger(),
+				logger:     logger,
 				statusCode: 0,
-				err:        errors.New("Validation Error"),
+				err:        errors.New("validation error"),
 			},
 			wantErr: true,
 		},
