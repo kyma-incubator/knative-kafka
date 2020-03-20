@@ -91,7 +91,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		Handler:    controller.HandleAll(controllerImpl.EnqueueLabelOfNamespaceScopedResource(constants.KafkaChannelNamespaceLabel, constants.KafkaChannelNameLabel)),
 	})
 	kafkaSecretInformer.Informer().AddEventHandler(
-		controller.HandleAll(r.resetKafkaAdminClient(kafkaAdminClientType)),
+		controller.HandleAll(r.resetKafkaAdminClient(ctx, kafkaAdminClientType)),
 	)
 
 	// Return The KafkaChannel Controller Impl
