@@ -2,6 +2,7 @@ package kafkasecret
 
 import (
 	"context"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinformer"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -10,7 +11,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/client/injection/kube/client"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 )
@@ -32,7 +32,7 @@ var (
 // the provided Interface and optional Finalizer methods.
 func NewImpl(ctx context.Context, r Interface) *controller.Impl {
 	logger := logging.FromContext(ctx)
-	secretInformer := secret.Get(ctx)
+	kafkaSecretInformer := kafkasecretinformer.Get(ctx)
 
 	recorder := controller.GetEventRecorder(ctx)
 	if recorder == nil {
@@ -55,7 +55,7 @@ func NewImpl(ctx context.Context, r Interface) *controller.Impl {
 
 	rec := &reconcilerImpl{
 		Client:     kubeclient.Get(ctx).CoreV1(),
-		Lister:     secretInformer.Lister(),
+		Lister:     kafkaSecretInformer.Lister(),
 		Recorder:   recorder,
 		reconciler: r,
 	}

@@ -9,13 +9,12 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/informers/knativekafka/v1alpha1/kafkachannel"
 	kafkachannelreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkachannel"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinformer"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
-	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -35,7 +34,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	kafkachannelInformer := kafkachannel.Get(ctx)
 	deploymentInformer := deployment.Get(ctx)
 	serviceInformer := service.Get(ctx)
-	secretInformer := secret.Get(ctx)
+	kafkaSecretInformer := kafkasecretinformer.Get(ctx)
 
 	// Load The Environment Variables
 	environment, err := env.GetEnvironment(logger)
@@ -91,10 +90,9 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		FilterFunc: controller.Filter(kafkachannelv1alpha1.SchemeGroupVersion.WithKind(constants.KafkaChannelKind)),
 		Handler:    controller.HandleAll(controllerImpl.EnqueueLabelOfNamespaceScopedResource(constants.KafkaChannelNamespaceLabel, constants.KafkaChannelNameLabel)),
 	})
-	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: util.FilterKafkaSecrets(),
-		Handler:    controller.HandleAll(r.resetKafkaAdminClient(ctx, kafkaAdminClientType)),
-	})
+	kafkaSecretInformer.Informer().AddEventHandler(
+		controller.HandleAll(r.resetKafkaAdminClient(kafkaAdminClientType)),
+	)
 
 	// Return The KafkaChannel Controller Impl
 	return controllerImpl
@@ -102,7 +100,9 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 
 // Graceful Shutdown Hook
 func Shutdown() {
-	adminClient.Close()
+	if adminClient != nil {
+		adminClient.Close()
+	}
 }
 
 // Recreate The Kafka AdminClient On The Reconciler (Useful To Reload Cache Which Is Not Yet Exposed)
