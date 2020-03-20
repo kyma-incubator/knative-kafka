@@ -190,6 +190,7 @@ func (d *Dispatcher) updateOffsets(consumer kafkaconsumer.ConsumerInterface, mes
 	// Store The Updated Offsets
 	offsets := []kafka.TopicPartition{message.TopicPartition}
 	offsets[0].Offset++
+	// TODO - Determine Whether These Errors Are Expected (or how to differentiate between expected ones) !
 	_, err := consumer.StoreOffsets(offsets)
 	if err != nil {
 		d.Logger.Error("Kafka Consumer Failed To Store Offsets", zap.Error(err))
