@@ -311,7 +311,7 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "remove-common-logger"
+  branch = "master"
   digest = "1:60ceccb5ddfaa8c14acde24e14999f099d50e77c34ff240cc5443140c1413f68"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
@@ -335,8 +335,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "00b02eac1196af1c7921b54ce4bbb6f0cafb36a4"
-  source = "github.com/travis-minke-sap/knative-kafka"
+  revision = "f933ca7b159d96b2af15dd35019a4dabed39526b"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
