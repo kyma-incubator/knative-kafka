@@ -34,7 +34,7 @@ func main() {
 	// Initialize A Knative Injection Lite Context (K8S Client & Logger)
 	ctx := commonk8s.LoggingContext(context.Background(), constants.Component, *masterURL, *kubeconfig)
 
-	// Get The Logger From The Context
+	// Get The Logger From The Context & Defer Flushing Any Buffered Log Entries On Exit
 	logger = logging.FromContext(ctx).Desugar()
 	defer func() { _ = logger.Sync() }()
 
