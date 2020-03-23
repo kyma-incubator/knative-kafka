@@ -30,11 +30,6 @@ type KafkaAdminClient struct {
 	adminClient ConfluentAdminClientInterface
 }
 
-//// GetKubernetesClient Wrapper To Facilitate Unit Testing
-//var GetKubernetesClientWrapper = func(logger *zap.Logger) kubernetes.Interface {
-//	return k8s.GetKubernetesClient(logger)
-//}
-
 // Confluent AdminClient Interface - Adding Our Own Wrapping Interface To Facilitate Testing
 type ConfluentAdminClientInterface interface {
 	CreateTopics(ctx context.Context, topicSpecifications []kafka.TopicSpecification, options ...kafka.CreateTopicsAdminOption) ([]kafka.TopicResult, error)

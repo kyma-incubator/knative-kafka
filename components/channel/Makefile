@@ -7,7 +7,7 @@
 # Project Directories
 BUILD_ROOT:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR:=$(BUILD_ROOT)/build
-BUILD_TESTS:=false
+BUILD_TESTS:=true
 
 # Application Names (Align With Knative Eventing Version)
 APP_NAME=knative-kafka-channel
