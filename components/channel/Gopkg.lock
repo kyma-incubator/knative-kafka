@@ -309,8 +309,8 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "remove-common-logger"
-  digest = "1:636895944566a5f940b16e7338bb94629aa352a02ad2e53930248db5d970819b"
+  branch = "master"
+  digest = "1:0ff0a7b02dd583e165e6f10970c15a272e185d0747ce720576bdae4898333b28"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/health",
@@ -334,8 +334,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "63496766eed24f72c8f03770dc7e4bcabf287a75"
-  source = "github.com/travis-minke-sap/knative-kafka"
+  revision = "f933ca7b159d96b2af15dd35019a4dabed39526b"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"

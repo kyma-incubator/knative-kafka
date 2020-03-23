@@ -379,8 +379,8 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  branch = "remove-common-logger"
-  digest = "1:95c22080ed68dfaf17aec39f0b0460d9244af30d89b77cc81ff90d0ed550a606"
+  branch = "master"
+  digest = "1:a7bc12541ddf1d52f1d082d1c3bc8fe906dc70f4095fc8fbc9ee36bd41e872d2"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/health",
@@ -392,8 +392,7 @@
     "components/common/pkg/kafka/util",
   ]
   pruneopts = "NUT"
-  revision = "00b02eac1196af1c7921b54ce4bbb6f0cafb36a4"
-  source = "github.com/travis-minke-sap/knative-kafka"
+  revision = "f933ca7b159d96b2af15dd35019a4dabed39526b"
 
 [[projects]]
   digest = "1:5985ef4caf91ece5d54817c11ea25f182697534f8ae6521eadcd628c142ac4b6"
@@ -1365,7 +1364,6 @@
     "client/injection/kube/client",
     "client/injection/kube/client/fake",
     "client/injection/kube/informers/apps/v1/deployment",
-    "client/injection/kube/informers/core/v1/secret",
     "client/injection/kube/informers/core/v1/service",
     "client/injection/kube/informers/factory",
     "codegen/cmd/injection-gen",
@@ -1449,6 +1447,8 @@
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
+    "k8s.io/client-go/informers",
+    "k8s.io/client-go/informers/core/v1",
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/kubernetes/typed/core/v1",
@@ -1480,7 +1480,6 @@
     "knative.dev/pkg/client/injection/kube/client",
     "knative.dev/pkg/client/injection/kube/client/fake",
     "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment",
-    "knative.dev/pkg/client/injection/kube/informers/core/v1/secret",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/service",
     "knative.dev/pkg/codegen/cmd/injection-gen",
     "knative.dev/pkg/configmap",
@@ -1493,6 +1492,7 @@
     "knative.dev/pkg/reconciler",
     "knative.dev/pkg/reconciler/testing",
     "knative.dev/pkg/system",
+    "knative.dev/pkg/system/testing",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

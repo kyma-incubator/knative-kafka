@@ -12,7 +12,6 @@ const (
 	SecretKind              = "Secret"
 	ServiceKind             = "Service"
 	DeploymentKind          = "Deployment"
-	KnativeChannelKind      = "Channel"
 	KnativeSubscriptionKind = "Subscription"
 	KafkaChannelKind        = "KafkaChannel"
 
@@ -34,11 +33,6 @@ const (
 
 	// Prometheus MetricsPort
 	MetricsPortName = "metrics"
-
-	// Logging Configuration
-	LoggingConfigVolumeName = "logging-config"
-	LoggingConfigMountPath  = "/etc/knative-kafka"
-	LoggingConfigMapName    = "knative-kafka-logging"
 
 	// Reconciliation Error Messages
 	ReconciliationFailedError = "reconciliation failed"
