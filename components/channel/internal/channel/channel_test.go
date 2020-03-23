@@ -26,7 +26,7 @@ func TestInitializeKafkaChannelLister(t *testing.T) {
 
 	// Perform The Test
 	healthServer := channelhealth.NewChannelHealthServer("12345")
-	err := InitializeKafkaChannelLister(ctx, "", "", healthServer) // TODO - what context to pass in for test ???
+	err := InitializeKafkaChannelLister(ctx, "", "", healthServer)
 
 	// Verify The Results
 	assert.Nil(t, err)
