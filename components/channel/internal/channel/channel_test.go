@@ -1,30 +1,32 @@
 package channel
 
 import (
+	"context"
 	channelhealth "github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	fakeclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/logging"
+	logtesting "knative.dev/pkg/logging/testing"
 	"testing"
 )
-
-// Package Variables
-var _ = log.TestLogger() // Force The Use Of The TestLogger!
 
 // Test The InitializeKafkaChannelLister() Functionality
 func TestInitializeKafkaChannelLister(t *testing.T) {
 
 	// Stub The K8S Client Creation Wrapper With Test Version Returning The Fake KafkaClient Clientset
-	getKnativeKafkaClient = func(masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
+	getKnativeKafkaClient = func(ctx context.Context, masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
 		return fakeclientset.NewSimpleClientset(), nil
 	}
 
+	// Create A Context With Test Logger
+	ctx := logging.WithLogger(context.TODO(), logtesting.TestLogger(t))
+
 	// Perform The Test
 	healthServer := channelhealth.NewChannelHealthServer("12345")
-	err := InitializeKafkaChannelLister("", "", healthServer)
+	err := InitializeKafkaChannelLister(ctx, "", "", healthServer)
 
 	// Verify The Results
 	assert.Nil(t, err)
@@ -34,9 +36,15 @@ func TestInitializeKafkaChannelLister(t *testing.T) {
 
 // Test All The ValidateKafkaChannel() Functionality
 func TestValidateKafkaChannel(t *testing.T) {
+
+	// Set The Package Level Logger To A Test Logger
+	logger = logtesting.TestLogger(t).Desugar()
+
+	// Test Data
 	channelName := "TestChannelName"
 	channelNamespace := "TestChannelNamespace"
 
+	// Test All Permutations Of KafkaChannel Validation
 	performValidateKafkaChannelTest(t, "", channelNamespace, false, corev1.ConditionFalse, true)
 	performValidateKafkaChannelTest(t, channelName, "", false, corev1.ConditionFalse, true)
 	performValidateKafkaChannelTest(t, channelName, channelNamespace, true, corev1.ConditionTrue, false)
@@ -63,6 +71,9 @@ func performValidateKafkaChannelTest(t *testing.T, channelName string, channelNa
 
 // Test The Close() Functionality
 func TestClose(t *testing.T) {
+
+	// Set The Package Level Logger To A Test Logger
+	logger = logtesting.TestLogger(t).Desugar()
 
 	// Test With Nil stopChan Instance
 	Close()

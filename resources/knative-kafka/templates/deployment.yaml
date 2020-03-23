@@ -31,6 +31,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
         - name: SERVICE_ACCOUNT
           valueFrom:
             fieldRef:
@@ -92,12 +94,3 @@ spec:
           limits:
             cpu: {{ .Values.controller.cpuLimit }}
             memory: {{ .Values.controller.memoryLimit }}
-        volumeMounts:
-        - mountPath: {{ .Values.logging.mountPath | quote }}
-          name: {{ .Values.logging.name | quote }}
-      volumes:
-      - name: {{ .Values.logging.name | quote }}
-        configMap:
-          defaultMode: 420
-          name: {{ .Values.logging.configMap | quote }}
-

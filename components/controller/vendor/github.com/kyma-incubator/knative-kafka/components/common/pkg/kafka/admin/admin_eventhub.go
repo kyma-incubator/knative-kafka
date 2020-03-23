@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin/eventhubcache"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 	"math"
 	"regexp"
 	"strconv"
@@ -37,15 +38,18 @@ type EventHubAdminClient struct {
 var eventHubErrorCodeRegexp = *regexp.MustCompile(`^.*error code: (\d+),.*$`)
 
 // EventHub NewCache Wrapper To Facilitate Unit Testing
-var NewCacheWrapper = func(logger *zap.Logger, k8sNamespace string) eventhubcache.CacheInterface {
-	return eventhubcache.NewCache(logger, k8sNamespace)
+var NewCacheWrapper = func(ctx context.Context, k8sNamespace string) eventhubcache.CacheInterface {
+	return eventhubcache.NewCache(ctx, k8sNamespace)
 }
 
 // Create A New Azure EventHub AdminClient Based On Kafka Secrets In The Specified K8S Namespace
-func NewEventHubAdminClient(logger *zap.Logger, k8sNamespace string) (AdminClientInterface, error) {
+func NewEventHubAdminClient(ctx context.Context, namespace string) (AdminClientInterface, error) {
+
+	// Get The Logger From The Context
+	logger := logging.FromContext(ctx).Desugar()
 
 	// Create A New Cache Via the Wrapper
-	cache := NewCacheWrapper(logger, k8sNamespace)
+	cache := NewCacheWrapper(ctx, namespace)
 
 	// Initialize The EventHub Namespace Cache
 	err := cache.Update(context.TODO())
@@ -57,7 +61,7 @@ func NewEventHubAdminClient(logger *zap.Logger, k8sNamespace string) (AdminClien
 	// Create And Return A New EventHub AdminClient With Namespace Cache
 	return &EventHubAdminClient{
 		logger:    logger,
-		namespace: k8sNamespace,
+		namespace: namespace,
 		cache:     cache,
 	}, nil
 }

@@ -2,7 +2,7 @@ package util
 
 import (
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	logtesting "knative.dev/pkg/logging/testing"
 	"syscall"
 	"testing"
 	"time"
@@ -12,7 +12,7 @@ import (
 func TestWaitForSignal(t *testing.T) {
 
 	// Logger Reference
-	var testLogger = getLogger(t)
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A Completion Channel
 	doneChan := make(chan struct{})
@@ -21,19 +21,19 @@ func TestWaitForSignal(t *testing.T) {
 	go func() {
 
 		// Perform The Test - Wait For SIGINT
-		testLogger.Info("Waiting For Signal")
-		WaitForSignal(testLogger, syscall.SIGINT)
+		logger.Info("Waiting For Signal")
+		WaitForSignal(logger, syscall.SIGINT)
 
 		// Close The Completion Channel
 		close(doneChan)
 	}()
 
 	// Wait A Short Bit To Let Async Function Start
-	testLogger.Info("Sleeping")
+	logger.Info("Sleeping")
 	time.Sleep(500 * time.Millisecond)
 
 	// Issue The Signal
-	testLogger.Info("Sending Signal")
+	logger.Info("Sending Signal")
 	err := syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 	assert.Nil(t, err)
 
@@ -41,13 +41,5 @@ func TestWaitForSignal(t *testing.T) {
 	<-doneChan
 
 	// Done!  (If The Test Completes (Doesn't Hang) Then It Was Successful)
-	testLogger.Info("Done!")
-}
-
-// Initialize The Logger - Fatal Exit Upon Error
-func getLogger(t *testing.T) *zap.Logger {
-	logger, err := zap.NewProduction() // For Now Just Use The Default Zap Production Logger
-	assert.Nil(t, err)
-	assert.NotNil(t, logger)
-	return logger
+	logger.Info("Done!")
 }

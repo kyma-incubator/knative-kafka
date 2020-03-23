@@ -35,7 +35,10 @@
 
 [[constraint]]
    name = "github.com/kyma-incubator/knative-kafka"
-   branch = "master"
+   # TODO - Revert Back To Master Once Dev Changes Are Updated
+   # branch = "master"
+   branch = "remove-common-logger"
+   source = "github.com/travis-minke-sap/knative-kafka"
 
 # Match Azure version in common component
 [[override]]

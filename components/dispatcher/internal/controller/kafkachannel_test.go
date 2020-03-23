@@ -3,7 +3,6 @@ package controller
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
@@ -16,6 +15,7 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/controller"
+	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 	reconcilertesting "knative.dev/pkg/reconciler/testing"
 	"sync"
@@ -129,17 +129,21 @@ func TestAllCases(t *testing.T) {
 
 	table.Test(t, reconciletesting.MakeFactory(func(listers *dispatchertesting.Listers, kafkaClient versioned.Interface, eventRecorder record.EventRecorder) controller.Reconciler {
 		return &Reconciler{
-			Logger:               log.TestLogger(),
+			Logger:               logtesting.TestLogger(t).Desugar(),
 			kafkachannelInformer: nil,
 			kafkachannelLister:   listers.GetKafkaChannelLister(),
-			dispatcher:           NewTestDispatcher(kcKey),
+			dispatcher:           NewTestDispatcher(t, kcKey),
 			Recorder:             eventRecorder,
 			KafkaClientSet:       kafkaClient,
 		}
 	}))
 }
 
-func NewTestDispatcher(channelKey string) *dispatcher.Dispatcher {
+func NewTestDispatcher(t *testing.T, channelKey string) *dispatcher.Dispatcher {
+
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Replace The NewClient Wrapper To Provide Mock Consumer & Defer Reset
 	newConsumerWrapperPlaceholder := kafkaconsumer.NewConsumerWrapper
 	kafkaconsumer.NewConsumerWrapper = func(configMap *kafka.ConfigMap) (kafkaconsumer.ConsumerInterface, error) {
@@ -147,10 +151,11 @@ func NewTestDispatcher(channelKey string) *dispatcher.Dispatcher {
 	}
 	defer func() { kafkaconsumer.NewConsumerWrapper = newConsumerWrapperPlaceholder }()
 
-	cloudEventClient := client.NewRetriableCloudEventClient(false, 500, 5000)
+	cloudEventClient := client.NewRetriableCloudEventClient(logger, false, 500, 5000)
 
 	// Create A New Dispatcher
 	dispatcherConfig := dispatcher.DispatcherConfig{
+		Logger:                      logger,
 		Brokers:                     testBrokers,
 		Topic:                       testTopic,
 		Offset:                      testOffset,

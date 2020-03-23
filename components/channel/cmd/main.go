@@ -5,15 +5,17 @@ import (
 	"flag"
 	"github.com/cloudevents/sdk-go"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
+	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/env"
 	channelhealth "github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/producer"
+	commonk8s "github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
 	"go.uber.org/zap"
 	eventingChannel "knative.dev/eventing/pkg/channel"
 	"knative.dev/eventing/pkg/kncloudevents"
+	"knative.dev/pkg/logging"
 )
 
 // Variables
@@ -26,14 +28,18 @@ var (
 // The Main Function (Go Command)
 func main() {
 
-	// Initialize The Logger
-	logger = log.Logger()
-
 	// Parse The Flags For Local Development Usage
 	flag.Parse()
 
+	// Initialize A Knative Injection Lite Context (K8S Client & Logger)
+	ctx := commonk8s.LoggingContext(context.Background(), constants.Component, *masterURL, *kubeconfig)
+
+	// Get The Logger From The Context & Defer Flushing Any Buffered Log Entries On Exit
+	logger = logging.FromContext(ctx).Desugar()
+	defer func() { _ = logger.Sync() }()
+
 	// Load Environment Variables
-	environment, err := env.GetEnvironment()
+	environment, err := env.GetEnvironment(logger)
 	if err != nil {
 		logger.Fatal("Invalid / Missing Environment Variables - Terminating")
 		return // Quiet The Compiler ; )
@@ -44,17 +50,17 @@ func main() {
 	healthServer.Start(logger)
 
 	// Start The Prometheus Metrics Server (Prometheus)
-	metricsServer := prometheus.NewMetricsServer(environment.MetricsPort, "/metrics")
+	metricsServer := prometheus.NewMetricsServer(logger, environment.MetricsPort, "/metrics")
 	metricsServer.Start()
 
 	// Initialize The KafkaChannel Lister Used To Validate Events
-	err = channel.InitializeKafkaChannelLister(*masterURL, *kubeconfig, healthServer)
+	err = channel.InitializeKafkaChannelLister(ctx, *masterURL, *kubeconfig, healthServer)
 	if err != nil {
 		logger.Fatal("Failed To Initialize KafkaChannel Lister", zap.Error(err))
 	}
 
 	// Initialize The Kafka Producer In Order To Start Processing Status Events
-	err = producer.InitializeProducer(environment.KafkaBrokers, environment.KafkaUsername, environment.KafkaPassword, metricsServer, healthServer)
+	err = producer.InitializeProducer(logger, environment.KafkaBrokers, environment.KafkaUsername, environment.KafkaPassword, metricsServer, healthServer)
 	if err != nil {
 		logger.Fatal("Failed To Initialize Kafka Producer", zap.Error(err))
 	}
@@ -81,7 +87,7 @@ func main() {
 	healthServer.SetAlive(true)
 
 	// Start Receiving Events (Blocking Call :)
-	err = knCloudEventClient.StartReceiver(context.Background(), eventReceiver.ServeHTTP)
+	err = knCloudEventClient.StartReceiver(ctx, eventReceiver.ServeHTTP)
 	if err != nil {
 		logger.Error("Failed To Start Event Receiver", zap.Error(err))
 	}
@@ -101,7 +107,9 @@ func main() {
 }
 
 // Handler For Receiving Cloud Events And Sending The Event To Kafka
-func handleEvent(ctx context.Context, channelReference eventingChannel.ChannelReference, cloudEvent cloudevents.Event) error {
+func handleEvent(_ context.Context, channelReference eventingChannel.ChannelReference, cloudEvent cloudevents.Event) error {
+
+	// Note - The context provided here is a different context from the one created in main() and does not have our logger instance.
 
 	logger.Debug("~~~~~~~~~~~~~~~~~~~~  Processing Request  ~~~~~~~~~~~~~~~~~~~~")
 	logger.Debug("Received Cloud Event", zap.Any("CloudEvent", cloudEvent), zap.Any("ChannelReference", channelReference))

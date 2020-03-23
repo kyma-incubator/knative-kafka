@@ -1,23 +1,13 @@
 package util
 
 import (
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 	"testing"
 )
-
-//package util
-//
-//import (
-//"github.com/confluentinc/confluent-kafka-go/kafka"
-//"github.com/stretchr/testify/assert"
-//"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
-//"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
-//"testing"
-//)
 
 // Test The GetKafkaSecrets() Functionality
 func TestGetKafkaSecrets(t *testing.T) {
@@ -35,7 +25,7 @@ func TestGetKafkaSecrets(t *testing.T) {
 	kafkaSecret3 := createKafkaSecret(kafkaSecretName3, k8sNamespace2)
 
 	// Get The Test K8S Client
-	k8sClient := k8s.GetTestKubernetesClient(kafkaSecret1, kafkaSecret2, kafkaSecret3)
+	k8sClient := fake.NewSimpleClientset(kafkaSecret1, kafkaSecret2, kafkaSecret3)
 
 	// Perform The Test
 	kafkaSecretList, err := GetKafkaSecrets(k8sClient, k8sNamespace1)

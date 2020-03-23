@@ -5,24 +5,23 @@ import (
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/types"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"go.uber.org/zap"
 	"strconv"
 	"time"
 )
 
 // Create A Kafka Message From The Specified CloudEvent / Topic
-func CreateKafkaMessage(event cloudevents.Event, kafkaTopic string) (*kafka.Message, error) {
+func CreateKafkaMessage(logger *zap.Logger, event cloudevents.Event, kafkaTopic string) (*kafka.Message, error) {
 
 	// Get The Event's Data Bytes
 	eventBytes, err := event.DataBytes()
 	if err != nil {
-		log.Logger().Error("Failed To Get CloudEvent's DataBytes", zap.Error(err))
+		logger.Error("Failed To Get CloudEvent's DataBytes", zap.Error(err))
 		return nil, err
 	}
 
 	// Get Kafka Message Headers From The Specified CloudEvent Context
-	kafkaHeaders := getKafkaHeaders(event.Context)
+	kafkaHeaders := getKafkaHeaders(logger, event.Context)
 
 	// Get The Partition Key From The CloudEvent
 	partitionKey := getPartitionKey(event)
@@ -43,7 +42,7 @@ func CreateKafkaMessage(event cloudevents.Event, kafkaTopic string) (*kafka.Mess
 }
 
 // Create Kafka Message Headers From The Specified CloudEvent Context
-func getKafkaHeaders(context cloudevents.EventContext) []kafka.Header {
+func getKafkaHeaders(logger *zap.Logger, context cloudevents.EventContext) []kafka.Header {
 
 	kafkaHeaders := []kafka.Header{
 		{Key: constants.CeKafkaHeaderKeySpecVersion, Value: []byte(context.GetSpecVersion())},
@@ -67,7 +66,7 @@ func getKafkaHeaders(context cloudevents.EventContext) []kafka.Header {
 
 	// Only Supports string, int, and float64 Extensions
 	for k, v := range context.GetExtensions() {
-		log.Logger().Debug("Add Event Extensions", zap.Any(k, v))
+		logger.Debug("Add Event Extensions", zap.Any(k, v))
 		if vs, ok := v.(string); ok {
 			kafkaHeaders = append(kafkaHeaders, kafka.Header{Key: "ce_" + k, Value: []byte(vs)})
 		} else if vi, ok := v.(int); ok {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"go.uber.org/zap"
+	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 )
 
 // Confluent Client Doesn't Code To Interfaces Or Provide Mocks So We're Wrapping Our Usage Of The AdminClient For Testing
@@ -48,26 +48,23 @@ const (
 //
 // * If no authorization is required (local dev instance) then specify username and password as the empty string ""
 //
-func CreateAdminClient(logger *zap.Logger, adminClientType AdminClientType, k8sNamespace string) (AdminClientInterface, error) {
-
-	// Validate Parameters
-	if len(k8sNamespace) <= 0 {
-		return nil, errors.New(fmt.Sprintf("required parameters not provided: k8sNamespace='%s'", k8sNamespace))
-	}
-
-	// Get A New Kafka AdminClient From ConfigMap & Return Results
-	return NewAdminClientWrapper(logger, adminClientType, k8sNamespace)
-}
-
-// Kafka Function Reference Variable To Facilitate Mocking In Unit Tests
-var NewAdminClientWrapper = func(logger *zap.Logger, adminClientType AdminClientType, k8sNamespace string) (AdminClientInterface, error) {
-
-	// Create The Appropriate Type Of AdminClient
-	if adminClientType == Kafka {
-		return NewKafkaAdminClient(logger, k8sNamespace)
-	} else if adminClientType == EventHub {
-		return NewEventHubAdminClient(logger, k8sNamespace)
-	} else {
+func CreateAdminClient(ctx context.Context, adminClientType AdminClientType) (AdminClientInterface, error) {
+	switch adminClientType {
+	case Kafka:
+		return NewKafkaAdminClientWrapper(ctx, constants.KnativeEventingNamespace)
+	case EventHub:
+		return NewEventHubAdminClientWrapper(ctx, constants.KnativeEventingNamespace)
+	default:
 		return nil, errors.New(fmt.Sprintf("received unsupported AdminClientType of %d", adminClientType))
 	}
+}
+
+// New Kafka AdminClient Wrapper To Facilitate Unit Testing
+var NewKafkaAdminClientWrapper = func(ctx context.Context, namespace string) (AdminClientInterface, error) {
+	return NewKafkaAdminClient(ctx, namespace)
+}
+
+// New EventHub AdminClient Wrapper To Facilitate Unit Testing
+var NewEventHubAdminClientWrapper = func(ctx context.Context, namespace string) (AdminClientInterface, error) {
+	return NewEventHubAdminClient(ctx, namespace)
 }

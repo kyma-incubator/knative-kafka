@@ -5,7 +5,7 @@ The files in this directory were NOT generated via
 is because we're creating a Controller / Reconciler for the K8S CoreV1 Secret
 instead of a CRD.  We do not want to generate Controllers / Reconcilers for the
 entire CoreV1 set of resources.  Therefore, we've manually copied the previously 
-generated code from `../kakfachannel` and modified it for CoreV1 Secrets.  This 
+generated code from `../kafkachannel` and modified it for CoreV1 Secrets.  This 
 means that whenever we re-generate or update the `../kafka/channel` 
 implementation, we should also perform a manual diff and uplift relevant changes 
 here. 

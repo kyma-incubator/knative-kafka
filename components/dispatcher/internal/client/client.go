@@ -4,7 +4,6 @@ import (
 	"context"
 	cloudevents "github.com/cloudevents/sdk-go"
 	cloudeventhttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/slok/goresilience/retry"
 	"go.uber.org/zap"
@@ -32,6 +31,7 @@ type RetriableClient interface {
 // kafka messages as cloud events and utilizes the cloud event library
 // and supports retries with exponential backoff
 type retriableCloudEventClient struct {
+	logger               *zap.Logger
 	exponentialBackoff   bool
 	initialRetryInterval int64
 	maxRetryTime         int64
@@ -40,7 +40,7 @@ type retriableCloudEventClient struct {
 
 var _ RetriableClient = &retriableCloudEventClient{}
 
-func NewRetriableCloudEventClient(exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
+func NewRetriableCloudEventClient(logger *zap.Logger, exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
 	tOpts := []cloudeventhttp.Option{
 		cloudevents.WithBinaryEncoding(),
 		cloudevents.WithMiddleware(tracing.HTTPSpanMiddleware),
@@ -59,6 +59,7 @@ func NewRetriableCloudEventClient(exponentialBackoff bool, initialRetryInterval 
 	}
 
 	return retriableCloudEventClient{
+		logger:               logger,
 		exponentialBackoff:   exponentialBackoff,
 		initialRetryInterval: initialRetryInterval,
 		maxRetryTime:         maxRetryTime,
@@ -67,12 +68,13 @@ func NewRetriableCloudEventClient(exponentialBackoff bool, initialRetryInterval 
 }
 
 func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event, uri string) error {
+
 	// Configure The Logger
 	var logger *zap.Logger
-	if log.Logger().Core().Enabled(zap.DebugLevel) {
-		logger = log.Logger().With(zap.String("Event", event.String()), zap.String("uri", uri))
+	if rcec.logger.Core().Enabled(zap.DebugLevel) {
+		logger = rcec.logger.With(zap.String("Event", event.String()), zap.String("uri", uri))
 	} else {
-		logger = log.Logger().With(zap.String("uri", uri))
+		logger = rcec.logger.With(zap.String("uri", uri))
 	}
 
 	// Build the runner for retry capabilities

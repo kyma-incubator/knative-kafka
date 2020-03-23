@@ -108,6 +108,14 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
+  name = "github.com/blang/semver"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ba2c2ddd89069b46a7011d4106f6868f17ee1705"
+  version = "v3.6.1"
+
+[[projects]]
   digest = "1:8f5acd4d4462b5136af644d25101f0968a7a94ee90fcb2059cec5b7cc42e0b20"
   name = "github.com/census-instrumentation/opencensus-proto"
   packages = [
@@ -166,14 +174,6 @@
   pruneopts = "UT"
   revision = "bf22ed9311622d93e213ba31e4ae7a5771e5d379"
   version = "v4.6.0"
-
-[[projects]]
-  digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
-  name = "github.com/fsnotify/fsnotify"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
-  version = "v1.4.7"
 
 [[projects]]
   digest = "1:582e25eccee928dc12416ea4c23b6dae8f3b5687730632aa1473ebebe80a2359"
@@ -311,15 +311,15 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:1ff3614a4d018aa46284adcd00e7e0e6ea2e8f30b224aab7c1b982225d0ea08c"
+  branch = "remove-common-logger"
+  digest = "1:60ceccb5ddfaa8c14acde24e14999f099d50e77c34ff240cc5443140c1413f68"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/health",
+    "components/common/pkg/k8s",
     "components/common/pkg/kafka/constants",
     "components/common/pkg/kafka/consumer",
     "components/common/pkg/kafka/util",
-    "components/common/pkg/log",
     "components/common/pkg/prometheus",
     "components/controller/pkg/apis/knativekafka",
     "components/controller/pkg/apis/knativekafka/v1alpha1",
@@ -335,7 +335,8 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "d0a701af27269fe85763fd34c746288ab8325ed0"
+  revision = "00b02eac1196af1c7921b54ce4bbb6f0cafb36a4"
+  source = "github.com/travis-minke-sap/knative-kafka"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -586,9 +587,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:382bb5a7fb4034db3b6a2d19e5a4a6bcf52f4750530603c01ca18a172fa3089b"
+  digest = "1:a2fc247e64b5dafd3251f12d396ec85f163d5bb38763c4997856addddf6e78d8"
   name = "golang.org/x/sync"
-  packages = ["semaphore"]
+  packages = [
+    "errgroup",
+    "semaphore",
+  ]
   pruneopts = "UT"
   revision = "cd5d95a43a6e21273425c7ae415d3df9ea832eeb"
 
@@ -835,9 +839,10 @@
   version = "2019.2.3"
 
 [[projects]]
-  digest = "1:274e6b4fd11a6a01212ee6af5ba488c7623f5eaa7339d3bb5642220d96ee8744"
+  digest = "1:41a8785ce0732e00b09a1a95f23c826e2864e6f6b2a5d305f412687f4f936c76"
   name = "k8s.io/api"
   packages = [
+    "admission/v1beta1",
     "admissionregistration/v1",
     "admissionregistration/v1beta1",
     "apps/v1",
@@ -880,6 +885,17 @@
   pruneopts = "UT"
   revision = "2a24ef1ce092b529249c747df24d66a55fe97ad0"
   version = "kubernetes-1.16.4"
+
+[[projects]]
+  digest = "1:ad57ea49823c0ab40848c591dae05093b2ebefe6167b28fd9be2b1f57d72f754"
+  name = "k8s.io/apiextensions-apiserver"
+  packages = [
+    "pkg/apis/apiextensions",
+    "pkg/apis/apiextensions/v1beta1",
+  ]
+  pruneopts = "UT"
+  revision = "2eb9534bc0ea40a8072fd0a7492d91d6989c726c"
+  version = "v0.17.4"
 
 [[projects]]
   digest = "1:7f65b557e164086c8c8fd2ca2179861b5b935501bda839a5087f87d020937646"
@@ -1159,11 +1175,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2d3f59daa4b479ff4e100a2e1d8fea6780040fdadc177869531fe4cc29407f55"
+  digest = "1:bb09c1841fd8100fe09b784fa13563ebffd9921d18012e72c8727ce9d4ea0144"
   name = "k8s.io/utils"
   packages = [
     "buffer",
     "integer",
+    "pointer",
     "trace",
   ]
   pruneopts = "UT"
@@ -1185,7 +1202,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4f331228dce5503e242fad178d4383cac9268c3be73720cb271335ff7b344276"
+  digest = "1:42bb201604a4cc4a3edd4bf864a0a35ebf1698702388bdec009bbb0149544997"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1194,9 +1211,12 @@
     "apis/duck/v1alpha1",
     "apis/duck/v1beta1",
     "changeset",
+    "client/injection/kube/client",
+    "client/injection/kube/informers/factory",
     "configmap",
     "controller",
     "injection",
+    "injection/sharedmain",
     "kmeta",
     "kmp",
     "logging",
@@ -1204,6 +1224,7 @@
     "logging/testing",
     "metrics",
     "metrics/metricskey",
+    "profiling",
     "reconciler",
     "reconciler/testing",
     "signals",
@@ -1212,6 +1233,9 @@
     "tracing",
     "tracing/config",
     "tracker",
+    "version",
+    "webhook",
+    "webhook/certificates/resources",
   ]
   pruneopts = "UT"
   revision = "5d8a01d12cc825688b14117af294139fee2270eb"
@@ -1233,8 +1257,8 @@
     "github.com/confluentinc/confluent-kafka-go/kafka",
     "github.com/google/go-cmp/cmp",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/health",
+    "github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer",
-    "github.com/kyma-incubator/knative-kafka/components/common/pkg/log",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1",
     "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned",
@@ -1271,6 +1295,7 @@
     "knative.dev/pkg/apis",
     "knative.dev/pkg/controller",
     "knative.dev/pkg/logging",
+    "knative.dev/pkg/logging/testing",
     "knative.dev/pkg/reconciler/testing",
     "knative.dev/pkg/signals",
     "knative.dev/pkg/tracing",

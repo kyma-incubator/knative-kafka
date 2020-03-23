@@ -2,7 +2,6 @@ package env
 
 import (
 	"errors"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"go.uber.org/zap"
 	"os"
 )
@@ -28,7 +27,7 @@ type Environment struct {
 }
 
 // Load & Return The Environment Variables
-func GetEnvironment() (Environment, error) {
+func GetEnvironment(logger *zap.Logger) (Environment, error) {
 
 	// Create The Environment With Current Values
 	environment := Environment{
@@ -45,21 +44,21 @@ func GetEnvironment() (Environment, error) {
 	if len(environment.KafkaPassword) > 0 {
 		safeEnvironment.KafkaPassword = "********"
 	}
-	log.Logger().Info("Environment Variables", zap.Any("Environment", safeEnvironment))
+	logger.Info("Environment Variables", zap.Any("Environment", safeEnvironment))
 
 	// Validate The Environment Variables
-	err := validateEnvironment(environment)
+	err := validateEnvironment(logger, environment)
 
 	// Return Results
 	return environment, err
 }
 
 // Validate The Specified Environment Variables
-func validateEnvironment(environment Environment) error {
+func validateEnvironment(logger *zap.Logger, environment Environment) error {
 
-	valid := validateRequiredEnvironmentVariable(MetricsPortEnvVarKey, environment.MetricsPort) &&
-		validateRequiredEnvironmentVariable(HealthPortEnvVarKey, environment.HealthPort) &&
-		validateRequiredEnvironmentVariable(KafkaBrokersEnvVarKey, environment.KafkaBrokers)
+	valid := validateRequiredEnvironmentVariable(logger, MetricsPortEnvVarKey, environment.MetricsPort) &&
+		validateRequiredEnvironmentVariable(logger, HealthPortEnvVarKey, environment.HealthPort) &&
+		validateRequiredEnvironmentVariable(logger, KafkaBrokersEnvVarKey, environment.KafkaBrokers)
 
 	if valid {
 		return nil
@@ -69,9 +68,9 @@ func validateEnvironment(environment Environment) error {
 }
 
 // Log The Missing Required Environment Variable With Specified Key
-func validateRequiredEnvironmentVariable(key string, value string) bool {
+func validateRequiredEnvironmentVariable(logger *zap.Logger, key string, value string) bool {
 	if len(value) <= 0 {
-		log.Logger().Error("Missing Required Environment Variable", zap.String("Key", key))
+		logger.Error("Missing Required Environment Variable", zap.String("Key", key))
 		return false
 	} else {
 		return true

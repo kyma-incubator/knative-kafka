@@ -13,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/system"
 	"strconv"
 )
 
@@ -295,12 +297,6 @@ func (r *Reconciler) newChannelDeployment(secret *corev1.Secret) (*appsv1.Deploy
 							},
 							Env:             channelEnvVars,
 							ImagePullPolicy: corev1.PullAlways,
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      constants.LoggingConfigVolumeName,
-									MountPath: constants.LoggingConfigMountPath,
-								},
-							},
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:    r.environment.ChannelCpuRequest,
@@ -309,18 +305,6 @@ func (r *Reconciler) newChannelDeployment(secret *corev1.Secret) (*appsv1.Deploy
 								Limits: corev1.ResourceList{
 									corev1.ResourceCPU:    r.environment.ChannelCpuLimit,
 									corev1.ResourceMemory: r.environment.ChannelMemoryLimit,
-								},
-							},
-						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: constants.LoggingConfigVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: constants.LoggingConfigMapName,
-									},
 								},
 							},
 						},
@@ -339,6 +323,14 @@ func (r *Reconciler) channelDeploymentEnvVars(secret *corev1.Secret) ([]corev1.E
 
 	// Create The Channel Deployment EnvVars
 	envVars := []corev1.EnvVar{
+		{
+			Name:  system.NamespaceEnvKey,
+			Value: constants.KnativeEventingNamespace,
+		},
+		{
+			Name:  logging.ConfigMapNameEnv,
+			Value: logging.ConfigMapName(),
+		},
 		{
 			Name:  env.MetricsPortEnvVarKey,
 			Value: strconv.Itoa(r.environment.MetricsPort),

@@ -3,7 +3,6 @@ package prometheus
 import (
 	"context"
 	"encoding/json"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
@@ -22,10 +21,11 @@ type MetricsServer struct {
 }
 
 // MetricsServer Constructor
-func NewMetricsServer(httpPort string, path string) *MetricsServer {
+func NewMetricsServer(logger *zap.Logger, httpPort string, path string) *MetricsServer {
 
 	// Create The MetricsServer Instance
 	metricsServer := &MetricsServer{
+		logger:   logger,
 		httpPort: httpPort,
 		path:     path,
 		producedMsgCountGauges: prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -36,11 +36,15 @@ func NewMetricsServer(httpPort string, path string) *MetricsServer {
 		}, []string{"consumer", "topic", "partition"}),
 	}
 
-	prometheus.Register(metricsServer.producedMsgCountGauges)
-	prometheus.Register(metricsServer.receivedMsgCountGauges)
-
-	// Initialize The Logger
-	metricsServer.initializeLogger()
+	// Register Produced/Received Message Count Gauges
+	producedErr := prometheus.Register(metricsServer.producedMsgCountGauges)
+	if producedErr != nil {
+		logger.Error("Failed To Register ProducedMsgCountGauges", zap.Error(producedErr))
+	}
+	receivedErr := prometheus.Register(metricsServer.receivedMsgCountGauges)
+	if receivedErr != nil {
+		logger.Error("Failed To Register ReceivedMsgCountGauges", zap.Error(receivedErr))
+	}
 
 	// Initialize The HTTP Server
 	metricsServer.initializeServer()
@@ -85,32 +89,16 @@ func (m *MetricsServer) initializeServer() {
 	m.server = server
 }
 
-// Initialize The MetricsServer's Logger
-func (m *MetricsServer) initializeLogger() {
-
-	// Create A New Zap Production Logger
-	logger, err := zap.NewProduction()
-	if err != nil {
-		log.Logger().Fatal("Failed To Create Zap Production Logger: %v", zap.Error(err))
-	}
-	if logger == nil {
-		log.Logger().Fatal("Created Nil Zap Production Logger")
-	}
-
-	// Set The Initialized Logger
-	m.logger = logger
-}
-
 // Observe librdkafka Metrics
 func (m *MetricsServer) Observe(stats string) {
 
-	log.Logger().Debug("New Producer Metrics Observed")
+	m.logger.Debug("New Producer Metrics Observed")
 	var statsMap map[string]interface{}
 	err := json.Unmarshal([]byte(stats), &statsMap)
 
 	// If Unable To Parse Log And Move On
 	if err != nil {
-		log.Logger().Error("Unable To Parse Kafka Metrics", zap.Error(err))
+		m.logger.Error("Unable To Parse Kafka Metrics", zap.Error(err))
 		return
 	}
 

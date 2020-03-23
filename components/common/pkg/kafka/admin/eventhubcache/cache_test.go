@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	eventhub "github.com/Azure/azure-event-hubs-go"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+	injectionclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/logging"
+	logtesting "knative.dev/pkg/logging/testing"
 	"strings"
 	"testing"
 )
@@ -22,18 +23,12 @@ func TestNewCache(t *testing.T) {
 	// Test Data
 	k8sNamespace := "TestK8SNamespace"
 
-	// Test Logger
-	logger := log.TestLogger()
-
-	// Replace The GetKubernetesClient Wrapper To Provide Mock Implementation & Defer Reset
-	getKubernetesClientWrapperPlaceholder := GetKubernetesClientWrapper
-	GetKubernetesClientWrapper = func(logger *zap.Logger) kubernetes.Interface {
-		return k8s.GetTestKubernetesClient()
-	}
-	defer func() { GetKubernetesClientWrapper = getKubernetesClientWrapperPlaceholder }()
+	// Create A Context With Test Logger & K8S Client
+	ctx := logging.WithLogger(context.TODO(), logtesting.TestLogger(t))
+	ctx = context.WithValue(ctx, injectionclient.Key{}, fake.NewSimpleClientset())
 
 	// Perform The Test
-	cache := NewCache(logger, k8sNamespace)
+	cache := NewCache(ctx, k8sNamespace)
 
 	// Verify The Results
 	assert.NotNil(t, cache)
@@ -79,12 +74,12 @@ func TestUpdate(t *testing.T) {
 	hubEntity3 := createEventHubEntity(HubEntityName3)
 
 	// Create A Test Logger
-	logger := log.TestLogger()
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A Cache To Test
 	cache := &Cache{
 		logger:       logger,
-		k8sClient:    k8s.GetTestKubernetesClient(kafkaSecret1, kafkaSecret2, kafkaSecret3),
+		k8sClient:    fake.NewSimpleClientset(kafkaSecret1, kafkaSecret2, kafkaSecret3),
 		k8sNamespace: k8sNamespace1,
 		namespaceMap: make(map[string]*Namespace),
 		eventhubMap:  make(map[string]*Namespace),
@@ -141,8 +136,11 @@ func TestAddEventHub(t *testing.T) {
 	}
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Create Test Namespaces
-	namespace1, err := createTestNamespaceWithCount(namespaceName1, 1)
+	namespace1, err := createTestNamespaceWithCount(logger, namespaceName1, 1)
 	assert.Nil(t, err)
 
 	// Create The Cache's EventHub Map
@@ -151,12 +149,12 @@ func TestAddEventHub(t *testing.T) {
 
 	// Create A Cache To Test
 	cache := &Cache{
-		logger:      log.TestLogger(),
+		logger:      logger,
 		eventhubMap: eventHubMap,
 	}
 
 	// Perform The Test
-	foo, _ := createTestNamespaceWithCount(namespaceName2, 0)
+	foo, _ := createTestNamespaceWithCount(logger, namespaceName2, 0)
 	cache.AddEventHub(context.TODO(), namespaceName2, foo)
 
 	// Verify The Results
@@ -185,11 +183,14 @@ func TestRemoveEventHub(t *testing.T) {
 	}
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Create Test Namespaces
-	namespace1, err := createTestNamespaceWithCount(namespaceName1, 1)
+	namespace1, err := createTestNamespaceWithCount(logger, namespaceName1, 1)
 	assert.NotNil(t, namespace1)
 	assert.Nil(t, err)
-	namespace2, err := createTestNamespaceWithCount(namespaceName2, 1)
+	namespace2, err := createTestNamespaceWithCount(logger, namespaceName2, 1)
 	assert.NotNil(t, namespace2)
 	assert.Nil(t, err)
 
@@ -200,7 +201,7 @@ func TestRemoveEventHub(t *testing.T) {
 
 	// Create A Cache To Test
 	cache := &Cache{
-		logger:      log.TestLogger(),
+		logger:      logger,
 		eventhubMap: eventhubMap,
 	}
 
@@ -235,19 +236,22 @@ func TestGetNamespace(t *testing.T) {
 	}
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Create The Cache's EventHub Map
 	var err error
 	eventHubMap := make(map[string]*Namespace)
-	eventHubMap[namespaceName1], err = createTestNamespaceWithSecret(namespaceName1, namespaceSecret1)
+	eventHubMap[namespaceName1], err = createTestNamespaceWithSecret(logger, namespaceName1, namespaceSecret1)
 	assert.NotNil(t, eventHubMap[namespaceName1])
 	assert.Nil(t, err)
-	eventHubMap[namespaceName2], err = createTestNamespaceWithSecret(namespaceName2, namespaceSecret2)
+	eventHubMap[namespaceName2], err = createTestNamespaceWithSecret(logger, namespaceName2, namespaceSecret2)
 	assert.NotNil(t, eventHubMap[namespaceName2])
 	assert.Nil(t, err)
 
 	// Create A Cache To Test
 	cache := &Cache{
-		logger:      log.TestLogger(),
+		logger:      logger,
 		eventhubMap: eventHubMap,
 	}
 
@@ -285,17 +289,20 @@ func TestGetLeastPopulatedNamespace(t *testing.T) {
 	}
 	defer func() { NewHubManagerFromConnectionStringWrapper = newHubManagerFromConnectionStringWrapperPlaceholder }()
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Create The Cache's Namespace Map
 	namespaceMap := make(map[string]*Namespace)
-	namespaceMap[namespaceName1], _ = createTestNamespaceWithCount(namespaceName1, namespaceCount1)
-	namespaceMap[namespaceName2], _ = createTestNamespaceWithCount(namespaceName2, namespaceCount2)
-	namespaceMap[namespaceName3], _ = createTestNamespaceWithCount(namespaceName3, namespaceCount3)
-	namespaceMap[namespaceName4], _ = createTestNamespaceWithCount(namespaceName4, namespaceCount4)
-	namespaceMap[namespaceName5], _ = createTestNamespaceWithCount(namespaceName5, namespaceCount5)
+	namespaceMap[namespaceName1], _ = createTestNamespaceWithCount(logger, namespaceName1, namespaceCount1)
+	namespaceMap[namespaceName2], _ = createTestNamespaceWithCount(logger, namespaceName2, namespaceCount2)
+	namespaceMap[namespaceName3], _ = createTestNamespaceWithCount(logger, namespaceName3, namespaceCount3)
+	namespaceMap[namespaceName4], _ = createTestNamespaceWithCount(logger, namespaceName4, namespaceCount4)
+	namespaceMap[namespaceName5], _ = createTestNamespaceWithCount(logger, namespaceName5, namespaceCount5)
 
 	// Create A Cache To Test
 	cache := &Cache{
-		logger:       log.TestLogger(),
+		logger:       logger,
 		namespaceMap: namespaceMap,
 	}
 
@@ -341,11 +348,11 @@ func createEventHubEntity(name string) *eventhub.HubEntity {
 }
 
 // Create Cache Namespace With Name & Secret Only For Convenience
-func createTestNamespaceWithSecret(name string, secret string) (*Namespace, error) {
-	return NewNamespace(name, name, name, secret, 0)
+func createTestNamespaceWithSecret(logger *zap.Logger, name string, secret string) (*Namespace, error) {
+	return NewNamespace(logger, name, name, name, secret, 0)
 }
 
 // Create Cache Namespace With Name & Count Only For Convenience
-func createTestNamespaceWithCount(name string, count int) (*Namespace, error) {
-	return NewNamespace(name, name, name, name, count)
+func createTestNamespaceWithCount(logger *zap.Logger, name string, count int) (*Namespace, error) {
+	return NewNamespace(logger, name, name, name, name, count)
 }

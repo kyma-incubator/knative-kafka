@@ -3,14 +3,9 @@ package message
 import (
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
+	logtesting "knative.dev/pkg/logging/testing"
 	"testing"
-)
-
-// Package Variables
-var (
-	_ = log.TestLogger() // Force The Use Of The TestLogger!
 )
 
 // Test All Permutations Of The CreateKafkaMessage() Functionality
@@ -19,8 +14,11 @@ func TestCreateKafkaMessage(t *testing.T) {
 	// Create The Test CloudEvent
 	cloudEvent := test.CreateCloudEvent(test.EventVersion)
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Perform The Test
-	kafkaMessage, err := CreateKafkaMessage(cloudEvent, test.TopicName)
+	kafkaMessage, err := CreateKafkaMessage(logger, cloudEvent, test.TopicName)
 
 	// Verify The Results
 	assert.Nil(t, err)

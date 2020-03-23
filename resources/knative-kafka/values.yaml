@@ -23,12 +23,6 @@ kafka:
     service:
       metricsPort: 8081 # Port exposed by service for metrics
 
-# Logging ConfigMap VolumeMount
-logging:
-  name: logging-config
-  configMap: knative-kafka-logging
-  mountPath: /etc/knative-kafka
-
 environment:
   # Valid values: local, confluent, azure
   kafkaProvider: local

@@ -7,10 +7,9 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin/eventhubcache"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.uber.org/zap"
+	logtesting "knative.dev/pkg/logging/testing"
 	"strconv"
 	"testing"
 )
@@ -19,10 +18,8 @@ import (
 func TestNewEventHubAdminClientSuccess(t *testing.T) {
 
 	// Test Data
+	ctx := context.TODO()
 	namespace := "TestNamespace"
-
-	// Test Logger
-	logger := log.TestLogger()
 
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
@@ -30,13 +27,15 @@ func TestNewEventHubAdminClientSuccess(t *testing.T) {
 
 	// Replace The NewCache Wrapper To Provide Mock Implementation & Defer Reset
 	newCacheWrapperPlaceholder := NewCacheWrapper
-	NewCacheWrapper = func(logger *zap.Logger, k8sNamespace string) eventhubcache.CacheInterface {
+	NewCacheWrapper = func(ctxArg context.Context, namespaceArg string) eventhubcache.CacheInterface {
+		assert.Equal(t, ctx, ctxArg)
+		assert.Equal(t, namespace, namespaceArg)
 		return mockCache
 	}
 	defer func() { NewCacheWrapper = newCacheWrapperPlaceholder }()
 
 	// Perform The Test
-	adminClient, err := NewEventHubAdminClient(logger, namespace)
+	adminClient, err := NewEventHubAdminClient(ctx, namespace)
 
 	// Verify The Results
 	assert.Nil(t, err)
@@ -48,24 +47,24 @@ func TestNewEventHubAdminClientSuccess(t *testing.T) {
 func TestNewEventHubAdminClientError(t *testing.T) {
 
 	// Test Data
+	ctx := context.TODO()
 	namespace := "TestNamespace"
-
-	// Test Logger
-	logger := log.TestLogger()
-
+	
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
 	mockCache.On("Update", context.TODO()).Return(fmt.Errorf("expected test error"))
 
 	// Replace The NewCache Wrapper To Provide Mock Implementation & Defer Reset
 	newCacheWrapperPlaceholder := NewCacheWrapper
-	NewCacheWrapper = func(logger *zap.Logger, k8sNamespace string) eventhubcache.CacheInterface {
+	NewCacheWrapper = func(ctxArg context.Context, namespaceArg string) eventhubcache.CacheInterface {
+		assert.Equal(t, ctx, ctxArg)
+		assert.Equal(t, namespace, namespaceArg)
 		return mockCache
 	}
 	defer func() { NewCacheWrapper = newCacheWrapperPlaceholder }()
 
 	// Perform The Test
-	adminClient, err := NewEventHubAdminClient(logger, namespace)
+	adminClient, err := NewEventHubAdminClient(ctx, namespace)
 
 	// Verify The Results
 	assert.NotNil(t, err)
@@ -103,8 +102,8 @@ func TestEventHubAdminClientCreateTopicsSuccess(t *testing.T) {
 		Config:        map[string]string{constants.TopicSpecificationConfigRetentionMs: strconv.FormatInt(topicRetentionMillis, 10)},
 	}}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New EventHub AdminClient With Mock Cache To Test
 	adminClient := &EventHubAdminClient{logger: logger, cache: mockCache}
@@ -137,8 +136,8 @@ func TestEventHubAdminClientCreateTopicsInvalidConfig(t *testing.T) {
 		Config:        map[string]string{constants.TopicSpecificationConfigRetentionMs: "InvalidConfig"},
 	}}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New EventHub AdminClient With Mock Cache To Test
 	adminClient := &EventHubAdminClient{logger: logger}
@@ -176,8 +175,8 @@ func TestEventHubAdminClientCreateTopicsNoNamespace(t *testing.T) {
 		Config:        map[string]string{constants.TopicSpecificationConfigRetentionMs: strconv.FormatInt(topicRetentionMillis, 10)},
 	}}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New EventHub AdminClient With Mock Cache To Test
 	adminClient := &EventHubAdminClient{logger: logger, cache: mockCache}
@@ -219,8 +218,8 @@ func TestEventHubAdminClientCreateTopicsNoHubManager(t *testing.T) {
 		Config:        map[string]string{constants.TopicSpecificationConfigRetentionMs: strconv.FormatInt(topicRetentionMillis, 10)},
 	}}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New EventHub AdminClient With Mock Cache To Test
 	adminClient := &EventHubAdminClient{logger: logger, cache: mockCache}
@@ -267,8 +266,8 @@ func TestEventHubAdminClientCreateTopicsAlreadyExists(t *testing.T) {
 		Config:        map[string]string{constants.TopicSpecificationConfigRetentionMs: strconv.FormatInt(topicRetentionMillis, 10)},
 	}}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New EventHub AdminClient With Mock Cache To Test
 	adminClient := &EventHubAdminClient{logger: logger, cache: mockCache}
@@ -316,8 +315,8 @@ func TestEventHubAdminClientCreateTopicsCapacityLimit(t *testing.T) {
 		Config:        map[string]string{constants.TopicSpecificationConfigRetentionMs: strconv.FormatInt(topicRetentionMillis, 10)},
 	}}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New EventHub AdminClient With Mock Cache To Test
 	adminClient := &EventHubAdminClient{logger: logger, cache: mockCache}
@@ -365,8 +364,8 @@ func TestEventHubAdminClientCreateTopicsError(t *testing.T) {
 		Config:        map[string]string{constants.TopicSpecificationConfigRetentionMs: strconv.FormatInt(topicRetentionMillis, 10)},
 	}}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New EventHub AdminClient With Mock Cache To Test
 	adminClient := &EventHubAdminClient{logger: logger, cache: mockCache}
@@ -398,8 +397,8 @@ func TestEventHubAdminClientDeleteTopicsSuccess(t *testing.T) {
 	// Create A Namespace With The Mock HubManager
 	namespace := &eventhubcache.Namespace{HubManager: mockHubManager}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
@@ -429,8 +428,8 @@ func TestEventHubAdminClientDeleteTopicsNoNamespace(t *testing.T) {
 	ctx := context.TODO()
 	topicName := "TestTopicName"
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
@@ -461,8 +460,8 @@ func TestEventHubAdminClientDeleteTopicsNoHubManager(t *testing.T) {
 	// Create A Namespace With The Mock HubManager
 	namespace := &eventhubcache.Namespace{}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
@@ -497,8 +496,8 @@ func TestEventHubAdminClientDeleteTopicsError(t *testing.T) {
 	// Create A Namespace With The Mock HubManager
 	namespace := &eventhubcache.Namespace{HubManager: mockHubManager}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
@@ -528,8 +527,8 @@ func TestEventHubAdminClientGetKafkaSecretName(t *testing.T) {
 	secretName := "TestSecretName"
 	namespace := &eventhubcache.Namespace{Secret: secretName}
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A Mock EventHub Cache
 	mockCache := &MockCache{}
@@ -552,8 +551,8 @@ func TestEventHubAdminClientClose(t *testing.T) {
 	// Test Data
 	namespace := "TestNamespace"
 
-	// Test Logger
-	logger := log.TestLogger()
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
 
 	// Create A New EventHub AdminClient To Test
 	adminClient := &EventHubAdminClient{logger: logger, namespace: namespace}

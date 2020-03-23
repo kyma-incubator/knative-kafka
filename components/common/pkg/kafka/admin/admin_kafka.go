@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	util2 "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin/util"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/constants"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/logging"
 )
 
 //
@@ -30,11 +30,6 @@ type KafkaAdminClient struct {
 	adminClient ConfluentAdminClientInterface
 }
 
-// GetKubernetesClient Wrapper To Facilitate Unit Testing
-var GetKubernetesClientWrapper = func(logger *zap.Logger) kubernetes.Interface {
-	return k8s.GetKubernetesClient(logger)
-}
-
 // Confluent AdminClient Interface - Adding Our Own Wrapping Interface To Facilitate Testing
 type ConfluentAdminClientInterface interface {
 	CreateTopics(ctx context.Context, topicSpecifications []kafka.TopicSpecification, options ...kafka.CreateTopicsAdminOption) ([]kafka.TopicResult, error)
@@ -46,13 +41,18 @@ type ConfluentAdminClientInterface interface {
 var _ ConfluentAdminClientInterface = &kafka.AdminClient{}
 
 // Create A New Kafka (Confluent, etc...) AdminClient Based On The Kafka Secret In The Specified K8S Namespace
-func NewKafkaAdminClient(logger *zap.Logger, k8sNamespace string) (AdminClientInterface, error) {
+func NewKafkaAdminClient(ctx context.Context, namespace string) (AdminClientInterface, error) {
 
-	// Get A List Of The Kafka Secrets From The K8S Namespace
-	k8sClient := GetKubernetesClientWrapper(logger)
-	kafkaSecrets, err := util2.GetKafkaSecrets(k8sClient, k8sNamespace)
+	// Get The Logger From The Context
+	logger := logging.FromContext(ctx).Desugar()
+
+	// Get The K8S Client From The Context
+	k8sClient := kubeclient.Get(ctx)
+
+	// Get A List Of The Kafka Secrets
+	kafkaSecrets, err := util2.GetKafkaSecrets(k8sClient, namespace)
 	if err != nil {
-		logger.Error("Failed To Get Kafka Secrets", zap.String("Namespace", k8sNamespace), zap.Error(err))
+		logger.Error("Failed To Get Kafka Authentication Secrets", zap.Error(err))
 		return nil, err
 	}
 
@@ -93,7 +93,7 @@ func NewKafkaAdminClient(logger *zap.Logger, k8sNamespace string) (AdminClientIn
 	// Create And Return A New Kafka AdminClient With Admin Client
 	return &KafkaAdminClient{
 		logger:      logger,
-		namespace:   k8sNamespace,
+		namespace:   namespace,
 		kafkaSecret: kafkaSecret.Name,
 		adminClient: adminClient,
 	}, nil

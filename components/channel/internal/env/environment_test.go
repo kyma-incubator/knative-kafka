@@ -2,8 +2,8 @@ package env
 
 import (
 	"errors"
-	"github.com/kyma-incubator/knative-kafka/components/common/pkg/log"
 	"github.com/stretchr/testify/assert"
+	logtesting "knative.dev/pkg/logging/testing"
 	"os"
 	"testing"
 )
@@ -16,9 +16,6 @@ const (
 	kafkaUsername = "TestKafkaUsername"
 	kafkaPassword = "TestKafkaPassword"
 )
-
-// Package Variables
-var _ = log.TestLogger() // Force The Use Of The TestLogger!
 
 // Define The TestCase Struct
 type TestCase struct {
@@ -54,6 +51,9 @@ func TestGetEnvironment(t *testing.T) {
 	testCase.expectError = true
 	testCases = append(testCases, testCase)
 
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
 	// Loop Over All The TestCases
 	for _, testCase := range testCases {
 
@@ -66,7 +66,7 @@ func TestGetEnvironment(t *testing.T) {
 		assert.Nil(t, os.Setenv(KafkaPasswordEnvVarKey, testCase.kafkaPassword))
 
 		// Perform The Test
-		environment, err := GetEnvironment()
+		environment, err := GetEnvironment(logger)
 
 		// Verify The Results
 		if testCase.expectError {

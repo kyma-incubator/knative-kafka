@@ -2,7 +2,10 @@ package constants
 
 // Global Constants
 const (
-	ExtensionKeyPartitionKey        = "partitionkey"
+	Component = "KnativeKafkaChannel"
+
+	ExtensionKeyPartitionKey = "partitionkey"
+
 	CeKafkaHeaderKeySpecVersion     = "ce_specversion"
 	CeKafkaHeaderKeyType            = "ce_type"
 	CeKafkaHeaderKeySource          = "ce_source"
