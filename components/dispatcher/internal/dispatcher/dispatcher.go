@@ -187,13 +187,11 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 
 // Store Updated Offsets For The Partition If Consumer Still Has It Assigned
 func (d *Dispatcher) updateOffsets(consumer kafkaconsumer.ConsumerInterface, message *kafka.Message) {
-	// Store The Updated Offsets
 	offsets := []kafka.TopicPartition{message.TopicPartition}
 	offsets[0].Offset++
-	// TODO - Determine Whether These Errors Are Expected (or how to differentiate between expected ones) !
-	_, err := consumer.StoreOffsets(offsets)
+	topicPartitions, err := consumer.StoreOffsets(offsets)
 	if err != nil {
-		d.Logger.Error("Kafka Consumer Failed To Store Offsets", zap.Error(err))
+		d.Logger.Error("Kafka Consumer Failed To Store Offsets", zap.Any("TopicPartitions", topicPartitions), zap.Error(err))
 	}
 }
 
