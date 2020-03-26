@@ -137,6 +137,9 @@ func TestAllCases(t *testing.T) {
 			KafkaClientSet:       kafkaClient,
 		}
 	}))
+
+	// Pause to let async go processes finish logging :(
+	time.Sleep(1 * time.Second)
 }
 
 func NewTestDispatcher(t *testing.T, channelKey string) *dispatcher.Dispatcher {

@@ -24,7 +24,7 @@ const (
 	testTopic                   = "TestTopic"
 	testPartition               = 33
 	testOffset                  = "latest"
-	testGroupId                 = "TestGroupId"
+	testGroupId1                = "TestGroupId1"
 	testGroupId2                = "TestGroupId2"
 	testGroupId3                = "TestGroupId3"
 	testKey                     = "TestKey"
@@ -113,7 +113,7 @@ func TestDispatcher(t *testing.T) {
 	subscriptionResults := testDispatcher.UpdateSubscriptions([]Subscription{
 		{
 			URI:     testSubscriberUri1,
-			GroupId: testGroupId,
+			GroupId: testGroupId1,
 		},
 	})
 
@@ -131,7 +131,7 @@ func TestDispatcher(t *testing.T) {
 	subscriptionResults = testDispatcher.UpdateSubscriptions([]Subscription{
 		{
 			URI:     testSubscriberUri1,
-			GroupId: testGroupId,
+			GroupId: testGroupId1,
 		},
 		{
 			URI:     testSubscriberUri2,
@@ -153,7 +153,7 @@ func TestDispatcher(t *testing.T) {
 	sendMessagesToConsumers(t, testDispatcher.consumers, testMessagesToSend)
 
 	// Wait For Consumers To Process Messages
-	waitForConsumersToProcessEvents(t, testDispatcher.consumers)
+	waitForConsumersToProcessEvents(t, testDispatcher.consumers, testMessagesToSend)
 
 	// Verify The Consumer Offset Commit Messages
 	verifyConsumerCommits(t, testDispatcher.consumers, 3)
@@ -162,7 +162,7 @@ func TestDispatcher(t *testing.T) {
 	subscriptionResults = testDispatcher.UpdateSubscriptions([]Subscription{
 		{
 			URI:     testSubscriberUri1,
-			GroupId: testGroupId,
+			GroupId: testGroupId1,
 		},
 	})
 	verifyConsumersCount(t, testDispatcher.consumers, 1)
@@ -393,21 +393,34 @@ func createMessageHeaders(context cloudevents.EventContext) []kafka.Header {
 }
 
 // Wait For The Consumers To Process All The Events
-func waitForConsumersToProcessEvents(t *testing.T, consumers map[Subscription]*ConsumerOffset) {
+func waitForConsumersToProcessEvents(t *testing.T, consumers map[Subscription]*ConsumerOffset, expectedOffset kafka.Offset) {
+
+	// Track Wait Start Time
 	startTime := time.Now()
+
+	// Loop Over All The Specified Consumers
 	for _, consumer := range consumers {
+
+		// Verified Cast Of Consumer As MockConsumer
 		mockConsumer, ok := consumer.consumer.(*MockConsumer)
 		assert.True(t, ok)
+
+		// Infinite Loop - Broken By Internal Timeout Failure
 		for {
+
+			// Get The Partition's Committed Offset (Minimal Synchronization To Avoid Deadlocking The Commit Updates!)
 			mockConsumer.offsetsMutex.Lock()
-			if mockConsumer.getCommits()[testPartition] >= testMessagesToSend+1 {
+			commitOffset := mockConsumer.getCommits()[testPartition]
+			mockConsumer.offsetsMutex.Unlock()
+
+			// Process Committed Offset - Either Stop Looking, Wait, Or Timeout
+			if commitOffset >= expectedOffset+1 {
 				break
-			} else if time.Now().Sub(startTime) > (4 * time.Second) {
+			} else if time.Now().Sub(startTime) > (5 * time.Second) {
 				assert.FailNow(t, "Timed-out Waiting For Consumers To Process Events")
 			} else {
 				time.Sleep(100 * time.Millisecond)
 			}
-			mockConsumer.offsetsMutex.Unlock()
 		}
 	}
 }
