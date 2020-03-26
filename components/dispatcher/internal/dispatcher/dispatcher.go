@@ -40,6 +40,7 @@ type ConsumerOffset struct {
 	lastOffsetCommit time.Time
 	offsets          map[int32]kafka.Offset
 	stopCh           chan bool
+	stoppedCh        chan bool
 }
 
 // Define a Dispatcher Struct to hold Dispatcher Config and dispatcher implementation details
@@ -62,17 +63,19 @@ func NewDispatcher(dispatcherConfig DispatcherConfig) *Dispatcher {
 	return dispatcher
 }
 
-// Close The Running Consumers Connections
+// Stop All Consumers
 func (d *Dispatcher) StopConsumers() {
 	for subscription, _ := range d.consumers {
 		d.stopConsumer(subscription)
 	}
 }
 
+// Stop An Individual Consumer
 func (d *Dispatcher) stopConsumer(subscription Subscription) {
 	d.Logger.Info("Stopping Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
-
-	d.consumers[subscription].stopCh <- true
+	consumerOffset := d.consumers[subscription]
+	consumerOffset.stopCh <- true // Send Stop Signal
+	<-consumerOffset.stoppedCh    // Wait Until Stop Completes
 	delete(d.consumers, subscription)
 }
 
@@ -94,8 +97,14 @@ func (d *Dispatcher) initConsumer(subscription Subscription) (*ConsumerOffset, e
 		return nil, err
 	}
 
-	stopCh := make(chan bool)
-	consumerOffset := ConsumerOffset{consumer: consumer, lastOffsetCommit: time.Now(), offsets: make(map[int32]kafka.Offset), stopCh: stopCh}
+	// Create The ConsumerOffset For Tracking State
+	consumerOffset := ConsumerOffset{
+		consumer:         consumer,
+		lastOffsetCommit: time.Now(),
+		offsets:          make(map[int32]kafka.Offset),
+		stopCh:           make(chan bool),
+		stoppedCh:        make(chan bool),
+	}
 
 	// Start Consuming Messages From Topic (Async)
 	go d.handleKafkaMessages(consumerOffset, subscription)
@@ -110,23 +119,26 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 	// Configure The Logger
 	logger := d.Logger.With(zap.String("GroupID", subscription.GroupId))
 
-	stopped := false
 	// Message Processing Loop
+	stopped := false
 	for !stopped {
 
 		// Poll For A New Event Message Until We Get One (Timeout is how long to wait before requesting again)
 		event := consumerOffset.consumer.Poll(d.PollTimeoutMillis)
 
 		select {
-		// Handle Shutdown Case
+
+		// Non-Blocking Channel Check
 		case <-consumerOffset.stopCh:
-			stopped = true
+			stopped = true // Handle Shutdown Case - Break Out Of Loop
+
 		default:
 
+			// No Events To Process At The Moment
 			if event == nil {
+
 				// Commit Offsets If The Amount Of Time Since Last Commit Is "OffsetCommitDuration" Or More
 				currentTimeDuration := time.Now().Sub(consumerOffset.lastOffsetCommit)
-
 				if currentTimeDuration > d.OffsetCommitDurationMinimum && currentTimeDuration >= d.OffsetCommitDuration {
 					d.commitOffsets(logger, &consumerOffset)
 				}
@@ -177,12 +189,17 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 		}
 	}
 
+	// Commit Offsets One Last Time
+	logger.Debug("Final Offset Commit")
+	d.commitOffsets(logger, &consumerOffset)
+
 	// Safe To Shutdown The Consumer
 	logger.Debug("Shutting Down Consumer")
 	err := consumerOffset.consumer.Close()
 	if err != nil {
 		logger.Error("Unable To Stop Consumer", zap.Error(err))
 	}
+	consumerOffset.stoppedCh <- true
 }
 
 // Store Updated Offsets For The Partition If Consumer Still Has It Assigned
@@ -213,6 +230,7 @@ func (d *Dispatcher) commitOffsets(logger *zap.Logger, consumerOffset *ConsumerO
 	consumerOffset.lastOffsetCommit = time.Now()
 }
 
+// Update The Dispatcher's Subscriptions
 func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) map[Subscription]error {
 
 	failedSubscriptions := make(map[Subscription]error)

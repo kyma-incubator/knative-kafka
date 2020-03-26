@@ -172,9 +172,11 @@ func main() {
 	healthServer.SetAlive(true)
 	healthServer.SetDispatcherReady(true)
 
+	// Start The Controllers
 	logger.Info("Starting controllers.")
 	kncontroller.StartAll(stopCh, controllers[:]...)
 
+	// Block On Signal Handler Stop Channel
 	<-stopCh
 
 	// Reset The Liveness and Readiness Flags In Preparation For Shutdown
