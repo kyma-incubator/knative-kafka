@@ -113,6 +113,8 @@ docker-push: docker-build
 
 ci-master: docker-push
 
+ci-release: docker-push
+
 ci-pr: docker-build
 
 .PHONY: ci-release ci-pr

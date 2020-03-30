@@ -59,6 +59,8 @@ docker-build:
 
 ci-master: docker-build
 
+ci-release: docker-build
+
 ci-pr: docker-build
 
 .PHONY: ci-release ci-pr
