@@ -11,7 +11,7 @@ BUILD_TESTS:=true
 
 # Application Names (Align With Knative Eventing Version)
 APP_NAME=knative-kafka-dispatcher
-APP_VERSION=v0.12.0
+APP_VERSION=v0.12.1
 
 # Build / Packaging / Deployment Configuration
 APP_PATH=eu.gcr.io/kyma-project/incubator
@@ -95,6 +95,8 @@ docker-push: docker-build
 #
 
 ci-master: docker-push
+
+ci-release: docker-push
 
 ci-pr: docker-build
 
