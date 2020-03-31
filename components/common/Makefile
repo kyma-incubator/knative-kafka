@@ -63,4 +63,4 @@ ci-release: docker-build
 
 ci-pr: docker-build
 
-.PHONY: ci-release ci-pr
+.PHONY: ci-master ci-release ci-pr

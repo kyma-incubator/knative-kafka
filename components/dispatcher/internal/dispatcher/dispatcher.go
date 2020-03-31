@@ -155,7 +155,7 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 				_ = d.Client.Dispatch(*cloudEvent, subscription.URI) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
 
 				// Update Stored Offsets Based On The Processed Message
-				d.updateOffsets(consumerOffset.consumer, e)
+				d.updateOffsets(logger, consumerOffset.consumer, e)
 				currentTimeDuration := time.Now().Sub(consumerOffset.lastOffsetCommit)
 
 				// If "OffsetCommitCount" Number Of Messages Have Been Processed Since Last Offset Commit, Then Do One Now
@@ -186,11 +186,14 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 }
 
 // Store Updated Offsets For The Partition If Consumer Still Has It Assigned
-func (d *Dispatcher) updateOffsets(consumer kafkaconsumer.ConsumerInterface, message *kafka.Message) {
+func (d *Dispatcher) updateOffsets(logger *zap.Logger, consumer kafkaconsumer.ConsumerInterface, message *kafka.Message) {
 	// Store The Updated Offsets
 	offsets := []kafka.TopicPartition{message.TopicPartition}
 	offsets[0].Offset++
-	consumer.StoreOffsets(offsets)
+	topicPartitions, err := consumer.StoreOffsets(offsets)
+	if err != nil {
+		logger.Error("Kafka Consumer Failed To Store Offsets", zap.Any("TopicPartitions", topicPartitions), zap.Error(err))
+	}
 }
 
 // Commit The Stored Offsets For Partitions Still Assigned To This Consumer

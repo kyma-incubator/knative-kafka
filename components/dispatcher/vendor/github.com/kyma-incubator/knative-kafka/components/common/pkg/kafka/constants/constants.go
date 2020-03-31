@@ -44,8 +44,10 @@ const (
 	ConfigPropertyBrokerAddressFamily          = "broker.address.family"
 	ConfigPropertyBrokerAddressFamilyValue     = "v4"
 	ConfigPropertyGroupId                      = "group.id"
-	ConfigPropertyEnableAutoOffset             = "enable.auto.commit"
-	ConfigPropertyEnableAutoOffsetValue        = false // Event loss is possible with auto-commit enabled so we will manually commit offsets!
+	ConfigPropertyEnableAutoOffsetStore        = "enable.auto.offset.store"
+	ConfigPropertyEnableAutoOffsetStoreValue   = false
+	ConfigPropertyEnableAutoOffsetCommit       = "enable.auto.commit"
+	ConfigPropertyEnableAutoOffsetCommitValue  = false // Event loss is possible with auto-commit enabled so we will manually commit offsets!
 	ConfigPropertyAutoOffsetReset              = "auto.offset.reset"
 	ConfigPropertyQueuedMaxMessagesKbytes      = "queued.max.messages.kbytes" // Controls the amount of pre-fetched messages the consumer will pull down per partition
 	ConfigPropertyQueuedMaxMessagesKbytesValue = "7000"
