@@ -288,8 +288,8 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  branch = "master"
-  digest = "1:2bd8ee3efb4bfc80e4349c59c16d0fc0230fae7f1d939f596eb2a4c10d447663"
+  branch = "release-0.12"
+  digest = "1:61269baeef134be5c56b057f2ec6eec017d9935d78953b5178972b7dbd282314"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/health",
@@ -304,7 +304,7 @@
     "components/common/pkg/prometheus",
   ]
   pruneopts = "NUT"
-  revision = "1b46adc331d27f26def07c125c5f1187dd0ced6c"
+  revision = "1585b5cb135f03c5ec837cea27db47376cb82aae"
 
 [[projects]]
   branch = "master"
