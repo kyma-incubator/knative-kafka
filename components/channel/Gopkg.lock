@@ -310,8 +310,8 @@
   version = "v1.1.9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e87cf068c0edb607f26310e527bd287d3f9faab2e95f226705fa18ab67fe3298"
+  branch = "release-0.12"
+  digest = "1:13f9a178b5cd99ade54809c054a66e11041124c83ff24610391fa07794aa4fdf"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/health",
@@ -334,7 +334,7 @@
     "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "1b46adc331d27f26def07c125c5f1187dd0ced6c"
+  revision = "1585b5cb135f03c5ec837cea27db47376cb82aae"
 
 [[projects]]
   branch = "master"
