@@ -66,10 +66,14 @@ required = [
   name = "gopkg.in/yaml.v2"
   version = "v2.2.4"
 
+[[override]]
+  name = "knative.dev/pkg"
+  branch = "release-0.13"
+
 # Align With Knative Eventing
 [[constraint]]
   name = "knative.dev/eventing"
-  branch = "master"
+  version = "v0.13.5"
 
 # Knative-Kafka Dependency Only!
 [[constraint]]

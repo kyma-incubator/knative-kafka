@@ -2,21 +2,20 @@ package test
 
 import (
 	"context"
-	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
-	fakelegacyclient "knative.dev/eventing/pkg/legacyclient/injection/client/fake"
-	"testing"
-
 	fakeknativekafkaclient "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client/fake"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
+	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
+	fakelegacyclient "knative.dev/eventing/pkg/legacyclient/injection/client/fake"
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	"knative.dev/pkg/logging"
 	. "knative.dev/pkg/reconciler/testing"
+	"testing"
 )
 
 const (
@@ -30,7 +29,7 @@ type Ctor func(context.Context, *Listers, configmap.Watcher) controller.Reconcil
 
 // MakeFactory creates a reconciler factory with fake clients and controller created by `ctor`.
 func MakeFactory(ctor Ctor, logger *zap.Logger) Factory {
-	return func(t *testing.T, r *TableRow) (controller.Reconciler, ActionRecorderList, EventList, *FakeStatsReporter) {
+	return func(t *testing.T, r *TableRow) (controller.Reconciler, ActionRecorderList, EventList) {
 		ls := NewListers(r.Objects)
 
 		ctx := context.Background()
@@ -43,14 +42,13 @@ func MakeFactory(ctor Ctor, logger *zap.Logger) Factory {
 
 		dynamicScheme := runtime.NewScheme()
 		for _, addTo := range clientSetSchemes {
-			addTo(dynamicScheme)
+			_ = addTo(dynamicScheme)
 		}
 
 		ctx, dynamicClient := fakedynamicclient.With(ctx, dynamicScheme, ls.GetAllObjects()...)
 
 		eventRecorder := record.NewFakeRecorder(maxEventBufferSize)
 		ctx = controller.WithEventRecorder(ctx, eventRecorder)
-		statsReporter := &FakeStatsReporter{}
 
 		// Set up our Controller from the fakes.
 		c := ctor(ctx, &ls, configmap.NewStaticWatcher())
@@ -79,9 +77,9 @@ func MakeFactory(ctor Ctor, logger *zap.Logger) Factory {
 			return ValidateUpdates(ctx, action)
 		})
 
-		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient, legacy}
+		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient}
 		eventList := EventList{Recorder: eventRecorder}
 
-		return c, actionRecorderList, eventList, statsReporter
+		return c, actionRecorderList, eventList
 	}
 }
