@@ -1195,8 +1195,8 @@
     "pkg/tracing",
   ]
   pruneopts = "UT"
-  revision = "09a74f1fe06f14e533d3d0bbd032340259536331"
-  version = "v0.13.4"
+  revision = "133ec838f2706b18dab87c7f1b2cb6cccd9409f1"
+  version = "v0.13.5"
 
 [[projects]]
   branch = "master"

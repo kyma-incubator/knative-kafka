@@ -40,9 +40,9 @@
 # Align With Knative Eventing
 [[constraint]]
   name = "knative.dev/eventing"
-  version = "v0.13.4"
+  version = "v0.13.5"
 
-# Align With Knative-Eventing v0.13.4
+# Align With Knative-Eventing v0.13.5
 [[override]]
   name = "github.com/cloudevents/sdk-go"
   revision = "427e8cf75237fdc7d4bb6c496398d7288efb8921"
