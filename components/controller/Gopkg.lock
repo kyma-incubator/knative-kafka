@@ -184,7 +184,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:865b286da6b65d96df6b6858f282931cb2ccf1032df7f1874510a301e0b3a71d"
+  digest = "1:feb3e7a6adfc42c33118c9389aeb1db6a240b5d0986ae24cb4aec43cc7b57f72"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -201,8 +201,7 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "3673e23532dccb38196f600eec7e8b7090ecfb12"
-  version = "v1.0.0"
+  revision = "427e8cf75237fdc7d4bb6c496398d7288efb8921"
 
 [[projects]]
   digest = "1:a608126722b85a26268c20c9f355b839aa2c9d6236890bf0f7dda21227782f83"
@@ -235,6 +234,14 @@
   pruneopts = "NUT"
   revision = "026c730a0dcc5d11f93f1cf1cc65b01247ea7b6f"
   version = "v4.5.0"
+
+[[projects]]
+  digest = "1:81466b4218bf6adddac2572a30ac733a9255919bc2f470b4827a317bd4ee1756"
+  name = "github.com/ghodss/yaml"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:2b0e6c0bea11257c646616ebd6a62be0ef2b6a0fd8210ac3caeaf57ee136123b"
@@ -955,7 +962,7 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:e00f750d45d512f0e7bf9c2c566e3cb13233b0c035a2b89d8c096dfc98e2e1c7"
+  digest = "1:2247b6bb5eee69c002300061a6b3456388e7fbef0c4ad7c219e9775af3b4646f"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -996,6 +1003,7 @@
     "pkg/util/sets",
     "pkg/util/sets/types",
     "pkg/util/strategicpatch",
+    "pkg/util/uuid",
     "pkg/util/validation",
     "pkg/util/validation/field",
     "pkg/util/wait",
@@ -1010,7 +1018,7 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:9542c06182fde4ed856e83aabbe5c8f7d61ae05fa4045b3907d4b7aefd79b18c"
+  digest = "1:364aa5bd7fbb75ef29a472cd7b36ebfa8d288017a3d59bb57bb0fd855adfbc13"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1198,6 +1206,8 @@
     "tools/clientcmd/api",
     "tools/clientcmd/api/latest",
     "tools/clientcmd/api/v1",
+    "tools/leaderelection",
+    "tools/leaderelection/resourcelock",
     "tools/metrics",
     "tools/pager",
     "tools/record",
@@ -1292,10 +1302,10 @@
   revision = "f07c713de88362aef7545072487d6118bd4a3d4a"
 
 [[projects]]
-  branch = "master"
-  digest = "1:8e0bf84bac0417f2af34fa9a31ea99533a0f657172517cd46673d7f428a0890a"
+  digest = "1:32002826d0256edacfb4570d3fcb903a90df1b78b0bbd4de03d6f3644302e6eb"
   name = "knative.dev/eventing"
   packages = [
+    "pkg/apis/config",
     "pkg/apis/configs",
     "pkg/apis/configs/v1alpha1",
     "pkg/apis/duck",
@@ -1310,10 +1320,12 @@
     "pkg/apis/legacysources",
     "pkg/apis/legacysources/v1alpha1",
     "pkg/apis/messaging",
+    "pkg/apis/messaging/config",
     "pkg/apis/messaging/v1alpha1",
     "pkg/apis/messaging/v1beta1",
     "pkg/apis/sources",
     "pkg/apis/sources/v1alpha1",
+    "pkg/apis/sources/v1alpha2",
     "pkg/client/clientset/versioned",
     "pkg/client/clientset/versioned/fake",
     "pkg/client/clientset/versioned/scheme",
@@ -1333,6 +1345,8 @@
     "pkg/client/clientset/versioned/typed/messaging/v1beta1/fake",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/sources/v1alpha2",
+    "pkg/client/clientset/versioned/typed/sources/v1alpha2/fake",
     "pkg/client/injection/client",
     "pkg/client/injection/client/fake",
     "pkg/legacyclient/clientset/versioned",
@@ -1348,11 +1362,12 @@
     "pkg/utils",
   ]
   pruneopts = "NUT"
-  revision = "ede10baa2ba67f8f50b5e4c511d2d7a61b5b1a9a"
+  revision = "133ec838f2706b18dab87c7f1b2cb6cccd9409f1"
+  version = "v0.13.5"
 
 [[projects]]
-  branch = "master"
-  digest = "1:f468e8be3d4c02d15d381362d27ce578f695f57389104abf615189963fdadf6e"
+  branch = "release-0.13"
+  digest = "1:333539485c96ddf9d1ac20c5141a27044890c7d5b7f5de85f28a9267120acb4c"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1377,12 +1392,14 @@
     "injection/sharedmain",
     "kmeta",
     "kmp",
+    "leaderelection",
     "logging",
     "logging/logkey",
     "logging/testing",
     "metrics",
     "metrics/metricskey",
     "profiling",
+    "ptr",
     "reconciler",
     "reconciler/testing",
     "signals",
@@ -1394,7 +1411,7 @@
     "webhook/certificates/resources",
   ]
   pruneopts = "T"
-  revision = "1cc3c3e8523ca2c579eeabbc04280a85bc77e6d7"
+  revision = "a56a6ea3fa56b9c9c2482a5bda0005dd2364d183"
 
 [[projects]]
   digest = "1:f578d00d9b0110d22ad74912bf1e33d3a0524e079edb9a534498e09d82cab217"

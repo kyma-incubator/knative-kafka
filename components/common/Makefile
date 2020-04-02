@@ -10,7 +10,7 @@ BUILD_DIR:=$(BUILD_ROOT)/build
 
 # Application Names (Align With Knative Eventing Version)
 APP_NAME=knative-kafka-common
-APP_VERSION=latest
+APP_VERSION=v0.13.0
 
 # Build / Packaging / Deployment Configuration
 APP_TAG=$(APP_NAME):$(APP_VERSION)
@@ -59,6 +59,8 @@ docker-build:
 
 ci-master: docker-build
 
+ci-release: docker-push
+
 ci-pr: docker-build
 
-.PHONY: ci-release ci-pr
+.PHONY: ci-master ci-release ci-pr

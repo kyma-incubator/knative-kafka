@@ -45,7 +45,7 @@
 # Align With Knative Eventing
 [[constraint]]
   name = "knative.dev/eventing"
-  branch = "master"
+  version = "v0.13.5"
 
 [prune]
   go-tests = true
