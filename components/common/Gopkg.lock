@@ -209,14 +209,6 @@
   version = "v4.6.0"
 
 [[projects]]
-  digest = "1:80057945464ffb5b0da1f026beb8df0e8dbd098eaf771a349291bed2cd29a83e"
-  name = "github.com/fsnotify/fsnotify"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "45d7d09e39ef4ac08d493309fa031790c15bfe8a"
-  version = "v1.4.9"
-
-[[projects]]
   digest = "1:8a85f428bc6ebfa87f53216b6e43b52b30eccbcffcbd6b057a69ee16718a2248"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -357,21 +349,6 @@
   pruneopts = "UT"
   revision = "27518f6661eba504be5a7a9a9f6d9460d892ade3"
   version = "v1.1.7"
-
-[[projects]]
-  branch = "master"
-  digest = "1:929cb01a99b2b77d460b7ce523fb39d5f9bd257e81d312139c5327b5b2f2f1a9"
-  name = "github.com/kyma-incubator/knative-kafka"
-  packages = [
-    "components/controller/pkg/apis/knativekafka",
-    "components/controller/pkg/apis/knativekafka/v1alpha1",
-    "components/controller/pkg/client/clientset/versioned",
-    "components/controller/pkg/client/clientset/versioned/scheme",
-    "components/controller/pkg/client/clientset/versioned/typed/knativekafka/v1alpha1",
-    "components/controller/pkg/client/injection/client",
-  ]
-  pruneopts = "UT"
-  revision = "54f27af1b6c5721a48393db84f0d6a2f3d9779d7"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -653,14 +630,6 @@
   revision = "c4c64cad1fd0a1a8dab2523e04e61d35308e131e"
 
 [[projects]]
-  digest = "1:a4e6161ffbea6b872a122961fff978f81af9c064f1757c559e21d2d322f13958"
-  name = "gomodules.xyz/jsonpatch"
-  packages = ["v2"]
-  pruneopts = "UT"
-  revision = "1c2a0262323edc27502942d9727c95646b1c3cbe"
-  version = "v2.1.0"
-
-[[projects]]
   digest = "1:0ad0d6252a07813a9a12fee0ffca6df06fef08c5a03bbcaa0271dc59b88f97e5"
   name = "google.golang.org/api"
   packages = [
@@ -856,18 +825,16 @@
   version = "v0.17.4"
 
 [[projects]]
-  digest = "1:3a9ab6c5d474b7b09208e4638d898e172186b82a8672ba52bd8105eb7ce09e3e"
+  digest = "1:be351cc502067780105d5f692a4cfb0275c6f68e3accae569c64bb8d2dafe33c"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
-    "pkg/api/validation",
     "pkg/apis/meta/internalversion",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
-    "pkg/apis/meta/v1/validation",
     "pkg/apis/meta/v1beta1",
     "pkg/conversion",
     "pkg/conversion/queryparams",
@@ -911,12 +878,11 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:460393b089e4d0e941d63687ed056b0469091fc5ecf0d226f700541b517ea1dd"
+  digest = "1:dfe11d7070831ec9859a02526f0bbb462352840f3c4055df51dd418684160884"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
     "discovery/fake",
-    "dynamic",
     "informers",
     "informers/admissionregistration",
     "informers/admissionregistration/v1",
@@ -1089,11 +1055,9 @@
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
     "plugin/pkg/client/auth/exec",
-    "plugin/pkg/client/auth/gcp",
     "rest",
     "rest/watch",
     "testing",
-    "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -1112,7 +1076,6 @@
     "util/connrotation",
     "util/flowcontrol",
     "util/homedir",
-    "util/jsonpath",
     "util/keyutil",
     "util/retry",
     "util/workqueue",
@@ -1151,26 +1114,10 @@
   revision = "94aeca20bf0991bf33922a5938174b9147ab8ca7"
 
 [[projects]]
-  digest = "1:88aed993ba66762a5d235171f6f4dffb7cf952ceb22d793c5887f085ab862626"
-  name = "knative.dev/eventing"
-  packages = [
-    "pkg/apis/duck/v1alpha1",
-    "pkg/apis/duck/v1beta1",
-  ]
-  pruneopts = "UT"
-  revision = "dc66780c43b9b642ae779c100f8a2c61b092c180"
-  version = "v0.13.3"
-
-[[projects]]
   branch = "master"
-  digest = "1:8c132d085b9319a510e21dc0b8c689ce3b5e0c5f2a064a8af700442e2ab58c94"
+  digest = "1:18c093670a4f7b663f62804890996e3539bffb1b65dc13d64ea8c3cb1e05f083"
   name = "knative.dev/pkg"
   packages = [
-    "apis",
-    "apis/duck",
-    "apis/duck/v1",
-    "apis/duck/v1alpha1",
-    "apis/duck/v1beta1",
     "changeset",
     "client/injection/kube/client",
     "client/injection/kube/informers/factory",
@@ -1179,7 +1126,6 @@
     "injection",
     "injection/sharedmain",
     "kmeta",
-    "kmp",
     "leaderelection",
     "logging",
     "logging/logkey",
@@ -1190,7 +1136,6 @@
     "reconciler",
     "signals",
     "system",
-    "tracker",
     "version",
     "webhook",
     "webhook/certificates/resources",
@@ -1223,8 +1168,6 @@
   input-imports = [
     "github.com/Azure/azure-event-hubs-go",
     "github.com/confluentinc/confluent-kafka-go/kafka",
-    "github.com/fsnotify/fsnotify",
-    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/prometheus/client_model/go",
@@ -1234,12 +1177,10 @@
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
-    "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
-    "k8s.io/client-go/plugin/pkg/client/auth/gcp",
-    "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",
+    "knative.dev/pkg/client/injection/kube/client",
     "knative.dev/pkg/configmap",
     "knative.dev/pkg/injection/sharedmain",
     "knative.dev/pkg/logging",
