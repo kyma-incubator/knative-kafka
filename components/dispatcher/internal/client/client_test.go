@@ -3,7 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v1"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	logtesting "knative.dev/pkg/logging/testing"

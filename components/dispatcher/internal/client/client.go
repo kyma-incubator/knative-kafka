@@ -2,19 +2,23 @@ package client
 
 import (
 	"context"
-	cloudevents "github.com/cloudevents/sdk-go"
-	cloudeventhttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
+	cloudevents "github.com/cloudevents/sdk-go/v1"
+	cloudeventhttp "github.com/cloudevents/sdk-go/v1/cloudevents/transport/http"
 	"github.com/pkg/errors"
 	"github.com/slok/goresilience/retry"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/kncloudevents"
-	knativeeventingtracing "knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/tracing"
 	"math"
 	"net/http"
 	"strconv"
 	"time"
 )
+
+/* TODO - these were removed  when we switched below...
+knativeeventingtracing "knative.dev/eventing/pkg/tracing"
+"knative.dev/pkg/tracing"
+*/
 
 // Create a shared go http client with a timeout
 var httpClient = &http.Client{
@@ -41,19 +45,30 @@ type retriableCloudEventClient struct {
 var _ RetriableClient = &retriableCloudEventClient{}
 
 func NewRetriableCloudEventClient(logger *zap.Logger, exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
+
+	// TODO - This setup was used to add the cloudevents middleware for tracing.
+	//        The hope is that this is now unnecessary and is part of the cloudevents sdk.
+	//        If not then we cold try the following...
+	//          - Use the NewDefaultHTTPClient() function with bits of this (maybe using their NewDefaultHTTPTransport() function?)
+	//        ...or...
+	//          - Keep all this and copy/paste in the removed knative function NewDefaultClientGivenHttpTransport() and create another issue to sort it all out ;) PUNT
+
+	// TODO - omg - also had to build all this to support retry ?
+
 	tOpts := []cloudeventhttp.Option{
 		cloudevents.WithBinaryEncoding(),
 		cloudevents.WithMiddleware(tracing.HTTPSpanMiddleware),
 	}
 
 	// Make an http transport for the CloudEvents client.
-	transport, err := cloudevents.NewHTTPTransport(tOpts...)
+	transport, err := cloudevents.NewHTTPTransport(tOpts...) // TODO - call the new knative NewDefaultHTTPTransport() ??
 	if err != nil {
 		panic("Failed To Create Transport, " + err.Error())
 	}
 	transport.Client = httpClient
 
-	ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(transport, nil)
+	// TODO - ORIG         ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(transport, nil)
+	ceClient, err := kncloudevents.NewDefaultHTTPClient(transport)
 	if err != nil {
 		panic("Unable To Create KnativeCloudEvent Client: " + err.Error())
 	}
@@ -83,12 +98,16 @@ func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event, uri stri
 	// Build the sending context for the event
 	sendingCtx := cloudevents.ContextWithTarget(context.Background(), uri)
 
-	sendingCtx, err := knativeeventingtracing.AddSpanFromTraceparentAttribute(sendingCtx, uri, event)
-	if err != nil {
-		logger.Error("Unable to connect outgoing span", zap.Error(err))
-	}
+	// TODO - Previously we had to manually add the tracing information to the HTTP context from the event.
+	//      - It is now hoped that the cloudevents client will do by taking the tracing info from the event itself.
+	//      - This is necessary since the AddSpanFromTraceparentAttribute() has been removed from knative after release-0.13
 
-	err = runner.Run(sendingCtx, func(ctx context.Context) error {
+	//sendingCtx, err := knativeeventingtracing.AddSpanFromTraceparentAttribute(sendingCtx, uri, event)
+	//if err != nil {
+	//	logger.Error("Unable to connect outgoing span", zap.Error(err))
+	//}
+
+	err := runner.Run(sendingCtx, func(ctx context.Context) error {
 		responseContext, _, err := rcec.cloudEventClient.Send(sendingCtx, event)
 		transportContext := cloudevents.HTTPTransportContextFrom(responseContext)
 		return logResponse(logger, transportContext.StatusCode, err)

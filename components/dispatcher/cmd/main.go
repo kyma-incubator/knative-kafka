@@ -5,8 +5,6 @@ import (
 	"flag"
 	commonk8s "github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/controller"
 	dispatch "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
@@ -15,6 +13,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/informers/externalversions"
 	kncontroller "knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
@@ -25,7 +25,7 @@ import (
 
 // Constants
 const (
-	Component                                      = "KnativeKafkaDispatcher"
+	Component                                      = "KafkaDispatcher"
 	DefaultKafkaConsumerOffset                     = "latest"
 	DefaultKafkaConsumerPollTimeoutMillis          = 500 // Timeout Millis When Polling For Events
 	MinimumKafkaConsumerOffsetCommitDurationMillis = 250 // Azure EventHubs Restrict To 250ms Between Offset Commits
@@ -146,7 +146,7 @@ func main() {
 	kafkaInformerFactory := externalversions.NewSharedInformerFactory(kafkaClientSet, kncontroller.DefaultResyncPeriod)
 
 	// Create KafkaChannel Informer
-	kafkaChannelInformer := kafkaInformerFactory.Knativekafka().V1alpha1().KafkaChannels()
+	kafkaChannelInformer := kafkaInformerFactory.Messaging().V1alpha1().KafkaChannels()
 
 	// Construct Array Of Controllers, In Our Case Just the One
 	controllers := [...]*kncontroller.Impl{

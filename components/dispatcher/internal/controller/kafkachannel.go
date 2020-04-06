@@ -3,11 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/scheme"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions/knativekafka/v1alpha1"
-	listers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +12,11 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned/scheme"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/informers/externalversions/messaging/v1alpha1"
+	listers "knative.dev/eventing-contrib/kafka/channel/pkg/client/listers/messaging/v1alpha1"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
@@ -202,6 +202,6 @@ func (r *Reconciler) updateStatus(desired *kafkav1alpha1.KafkaChannel) (*kafkav1
 	// Don't modify the informers copy.
 	existing := kc.DeepCopy()
 	existing.Status = desired.Status
-	updated, err := r.KafkaClientSet.KnativekafkaV1alpha1().KafkaChannels(desired.Namespace).UpdateStatus(existing)
+	updated, err := r.KafkaClientSet.MessagingV1alpha1().KafkaChannels(desired.Namespace).UpdateStatus(existing)
 	return updated, err
 }

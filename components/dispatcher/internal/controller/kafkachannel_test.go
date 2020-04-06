@@ -3,8 +3,6 @@ package controller
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/client"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
 	dispatchertesting "github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/testing"
@@ -14,6 +12,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"

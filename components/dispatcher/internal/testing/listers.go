@@ -1,10 +1,6 @@
 package testing
 
 import (
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	fakemessagingclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/fake"
-	versionedscheme "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/scheme"
-	messaginglisters "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,6 +8,10 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
+	fakemessagingclientset "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned/fake"
+	versionedscheme "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned/scheme"
+	messaginglisters "knative.dev/eventing-contrib/kafka/channel/pkg/client/listers/messaging/v1alpha1"
 	"knative.dev/pkg/reconciler/testing"
 )
 
@@ -29,7 +29,7 @@ func NewListers(objs []runtime.Object) Listers {
 	scheme := runtime.NewScheme()
 
 	for _, addTo := range clientSetSchemes {
-		addTo(scheme)
+		_ = addTo(scheme)
 	}
 
 	ls := Listers{

@@ -1,13 +1,13 @@
 package testing
 
 import (
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
-	"time"
 )
 
 // KafkaChannelOption enables further configuration of a KafkaChannel.
@@ -34,15 +34,23 @@ func WithInitKafkaChannelConditions(nc *v1alpha1.KafkaChannel) {
 
 func WithKafkaChannelReady(nc *v1alpha1.KafkaChannel) {
 	nc.Status.MarkTopicTrue()
-	nc.Status.MarkKafkaChannelServiceTrue()
+	// TODO nc.Status.MarkKafkaChannelServiceTrue()
 	nc.Status.MarkChannelServiceTrue()
-	nc.Status.MarkChannelDeploymentTrue()
-	nc.Status.MarkDispatcherDeploymentTrue()
-}
+	// TODO nc.Status.MarkChannelDeploymentTrue()
+	// TODO nc.Status.MarkDispatcherDeploymentTrue()
 
-func WithKafkaChannelDeleted(nc *v1alpha1.KafkaChannel) {
-	deleteTime := metav1.NewTime(time.Unix(1e9, 0))
-	nc.ObjectMeta.SetDeletionTimestamp(&deleteTime)
+	// TODO - added to fix test
+	nc.Status.MarkConfigTrue()
+	nc.Status.MarkServiceTrue()
+	nc.Status.MarkEndpointsTrue()
+	nc.Status.PropagateDispatcherStatus(&appsv1.DeploymentStatus{
+		Conditions: []appsv1.DeploymentCondition{
+			{
+				Type:   appsv1.DeploymentAvailable,
+				Status: corev1.ConditionTrue,
+			},
+		},
+	})
 }
 
 func WithKafkaChannelAddress(a string) KafkaChannelOption {
@@ -77,7 +85,7 @@ func WithSubscriberReady(uid types.UID) KafkaChannelOption {
 		}
 
 		nc.Status.SubscribableStatus.Subscribers = append(nc.Status.SubscribableStatus.Subscribers, eventingduck.SubscriberStatus{
-			Ready: v1.ConditionTrue,
+			Ready: corev1.ConditionTrue,
 			UID:   uid,
 		})
 	}
