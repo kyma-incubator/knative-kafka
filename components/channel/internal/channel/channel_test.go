@@ -6,7 +6,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/test"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	knativekafkaclientset "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
+	kafkaclientset "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
 	fakeclientset "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned/fake"
 	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
@@ -17,7 +17,7 @@ import (
 func TestInitializeKafkaChannelLister(t *testing.T) {
 
 	// Stub The K8S Client Creation Wrapper With Test Version Returning The Fake KafkaClient Clientset
-	getKafkaClient = func(ctx context.Context, masterUrl string, kubeconfigPath string) (knativekafkaclientset.Interface, error) {
+	getKafkaClient = func(ctx context.Context, masterUrl string, kubeconfigPath string) (kafkaclientset.Interface, error) {
 		return fakeclientset.NewSimpleClientset(), nil
 	}
 
