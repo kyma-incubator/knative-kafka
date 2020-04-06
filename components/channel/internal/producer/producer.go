@@ -2,7 +2,7 @@ package producer
 
 import (
 	"errors"
-	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go/v1/cloudevents"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/health"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/message"

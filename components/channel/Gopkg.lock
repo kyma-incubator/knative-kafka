@@ -131,24 +131,43 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:c0c494a7854a012b8fbcb931aa1258ad27478d29bbaa9a013112dd59861eaf5e"
+  digest = "1:90f92270f9f207bd05f8dd42dab33a8089e78a8b27af0b208a6d216c3aeba879"
   name = "github.com/cloudevents/sdk-go"
   packages = [
-    ".",
-    "pkg/cloudevents",
-    "pkg/cloudevents/client",
-    "pkg/cloudevents/context",
-    "pkg/cloudevents/datacodec",
-    "pkg/cloudevents/datacodec/json",
-    "pkg/cloudevents/datacodec/text",
-    "pkg/cloudevents/datacodec/xml",
-    "pkg/cloudevents/observability",
-    "pkg/cloudevents/transport",
-    "pkg/cloudevents/transport/http",
-    "pkg/cloudevents/types",
+    "v1",
+    "v1/cloudevents",
+    "v1/cloudevents/client",
+    "v1/cloudevents/context",
+    "v1/cloudevents/datacodec",
+    "v1/cloudevents/datacodec/json",
+    "v1/cloudevents/datacodec/text",
+    "v1/cloudevents/datacodec/xml",
+    "v1/cloudevents/extensions",
+    "v1/cloudevents/observability",
+    "v1/cloudevents/transport",
+    "v1/cloudevents/transport/http",
+    "v1/cloudevents/types",
+    "v2",
+    "v2/binding",
+    "v2/binding/format",
+    "v2/binding/spec",
+    "v2/binding/transformer",
+    "v2/client",
+    "v2/context",
+    "v2/event",
+    "v2/event/datacodec",
+    "v2/event/datacodec/json",
+    "v2/event/datacodec/text",
+    "v2/event/datacodec/xml",
+    "v2/extensions",
+    "v2/observability",
+    "v2/protocol",
+    "v2/protocol/http",
+    "v2/types",
   ]
   pruneopts = "UT"
-  revision = "427e8cf75237fdc7d4bb6c496398d7288efb8921"
+  revision = "6dc020a8df7f3ee38d729e53cde2193ea7edf12a"
+  version = "v2.0.0-preview8"
 
 [[projects]]
   digest = "1:160ab0a25b5cc8c8741882b75db882e18806bb1dba87680ef87604aca763bdae"
@@ -173,6 +192,14 @@
   pruneopts = "UT"
   revision = "bf22ed9311622d93e213ba31e4ae7a5771e5d379"
   version = "v4.6.0"
+
+[[projects]]
+  digest = "1:2cd7915ab26ede7d95b8749e6b1f933f1c6d5398030684e6505940a10f31cfda"
+  name = "github.com/ghodss/yaml"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:582e25eccee928dc12416ea4c23b6dae8f3b5687730632aa1473ebebe80a2359"
@@ -214,7 +241,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:bf40199583e5143d1472fc34d10d6f4b69d97572142acf343b3e43136da40823"
+  digest = "1:0aeda02073125667ac6c9df50c7921cb22c08a4accdc54589c697a7e76be65c2"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
@@ -224,7 +251,8 @@
     "cmp/internal/value",
   ]
   pruneopts = "UT"
-  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
+  revision = "5a6f75716e1203a923a78c9efb94089d857df0f6"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:a6181aca1fd5e27103f9a920876f29ac72854df7345a39f3b01e61c8c94cc8af"
@@ -310,7 +338,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d04ea25ea42388af624e98213012e26618daa94f3787a2da4b47ac1e04049d70"
+  digest = "1:c1c428e7a72592d27a1547446b431aacfef652cb8275188cf12322f890e7b7be"
   name = "github.com/kyma-incubator/knative-kafka"
   packages = [
     "components/common/pkg/health",
@@ -319,22 +347,20 @@
     "components/common/pkg/kafka/producer",
     "components/common/pkg/kafka/util",
     "components/common/pkg/prometheus",
-    "components/controller/constants",
-    "components/controller/pkg/apis/knativekafka",
-    "components/controller/pkg/apis/knativekafka/v1alpha1",
-    "components/controller/pkg/client/clientset/versioned",
-    "components/controller/pkg/client/clientset/versioned/fake",
-    "components/controller/pkg/client/clientset/versioned/scheme",
-    "components/controller/pkg/client/clientset/versioned/typed/knativekafka/v1alpha1",
-    "components/controller/pkg/client/clientset/versioned/typed/knativekafka/v1alpha1/fake",
-    "components/controller/pkg/client/informers/externalversions",
-    "components/controller/pkg/client/informers/externalversions/internalinterfaces",
-    "components/controller/pkg/client/informers/externalversions/knativekafka",
-    "components/controller/pkg/client/informers/externalversions/knativekafka/v1alpha1",
-    "components/controller/pkg/client/listers/knativekafka/v1alpha1",
   ]
   pruneopts = "UT"
   revision = "6ac8083e04c66a1ac5a16226cbd6d1e3962d3d05"
+
+[[projects]]
+  branch = "master"
+  digest = "1:a12508addb76a16593d8a3cee41d782fdf738f727d421f0bcc2dd2ee76821c01"
+  name = "github.com/lightstep/tracecontext.go"
+  packages = [
+    "traceparent",
+    "tracestate",
+  ]
+  pruneopts = "UT"
+  revision = "1757c391b1acf4147823503f13e003115ea4e5df"
 
 [[projects]]
   digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
@@ -452,7 +478,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:c55d24b98f9e95041acea0a45d8cc5bee600c87bd3cbdced7c48ad3a00dfe069"
+  digest = "1:e85567a658e538cf990fc4394a55fa1d57e78e29f3c5d75df2b09bf7f5547c3b"
   name = "go.opencensus.io"
   packages = [
     ".",
@@ -464,6 +490,7 @@
     "plugin/ocgrpc",
     "plugin/ochttp",
     "plugin/ochttp/propagation/b3",
+    "plugin/ochttp/propagation/tracecontext",
     "resource",
     "resource/resourcekeys",
     "stats",
@@ -884,7 +911,7 @@
   version = "v0.17.4"
 
 [[projects]]
-  digest = "1:7f65b557e164086c8c8fd2ca2179861b5b935501bda839a5087f87d020937646"
+  digest = "1:3a9ab6c5d474b7b09208e4638d898e172186b82a8672ba52bd8105eb7ce09e3e"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -924,6 +951,7 @@
     "pkg/util/runtime",
     "pkg/util/sets",
     "pkg/util/strategicpatch",
+    "pkg/util/uuid",
     "pkg/util/validation",
     "pkg/util/validation/field",
     "pkg/util/wait",
@@ -938,7 +966,7 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:edea8a1532ea7f10a65455b852ee0cd87b7d420a645fc47035e9f4960ade4000"
+  digest = "1:07a44e36b343b7f6c932fd011fa3113712641e12360e932a357037e82ef2f4c3"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1086,6 +1114,8 @@
     "tools/clientcmd/api",
     "tools/clientcmd/api/latest",
     "tools/clientcmd/api/v1",
+    "tools/leaderelection",
+    "tools/leaderelection/resourcelock",
     "tools/metrics",
     "tools/pager",
     "tools/record",
@@ -1134,11 +1164,14 @@
   revision = "94aeca20bf0991bf33922a5938174b9147ab8ca7"
 
 [[projects]]
-  digest = "1:09261c816caf91f34c9695cd6059c4512ec3f61f6b672a0d0252b1d1c49b07cb"
+  branch = "master"
+  digest = "1:47d82fd981a72faffe4141903b2ebc25d5fec28f311b7bc27cab23752ad5809e"
   name = "knative.dev/eventing"
   packages = [
+    "pkg/apis/config",
     "pkg/apis/duck/v1alpha1",
     "pkg/apis/duck/v1beta1",
+    "pkg/apis/eventing",
     "pkg/channel",
     "pkg/configmap",
     "pkg/kncloudevents",
@@ -1146,12 +1179,33 @@
     "pkg/utils",
   ]
   pruneopts = "UT"
-  revision = "133ec838f2706b18dab87c7f1b2cb6cccd9409f1"
-  version = "v0.13.5"
+  revision = "d5ddc0b44c9b1c3e62ba20ff53374b08e96f79a2"
 
 [[projects]]
   branch = "master"
-  digest = "1:156f80349a2ce628d2e0a55c12076f043e4ee75d8e42f1173b5c57cb7a4d6313"
+  digest = "1:3ea0a94034c6a70c5aa620fb6d686669fd6bda275b6228f04bd9b3317518826d"
+  name = "knative.dev/eventing-contrib"
+  packages = [
+    "kafka/channel/pkg/apis/messaging",
+    "kafka/channel/pkg/apis/messaging/v1alpha1",
+    "kafka/channel/pkg/client/clientset/versioned",
+    "kafka/channel/pkg/client/clientset/versioned/fake",
+    "kafka/channel/pkg/client/clientset/versioned/scheme",
+    "kafka/channel/pkg/client/clientset/versioned/typed/messaging/v1alpha1",
+    "kafka/channel/pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake",
+    "kafka/channel/pkg/client/informers/externalversions",
+    "kafka/channel/pkg/client/informers/externalversions/internalinterfaces",
+    "kafka/channel/pkg/client/informers/externalversions/messaging",
+    "kafka/channel/pkg/client/informers/externalversions/messaging/v1alpha1",
+    "kafka/channel/pkg/client/listers/messaging/v1alpha1",
+    "kafka/channel/pkg/utils",
+  ]
+  pruneopts = "UT"
+  revision = "3e94a36c9163d8518cbec5d9e23d447817db9258"
+
+[[projects]]
+  branch = "master"
+  digest = "1:b9c89e6243487cfb183a9d634de172a2b9eb277e9c85de8f1b4423848b5919d7"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1161,13 +1215,14 @@
     "apis/duck/v1beta1",
     "changeset",
     "client/injection/kube/client",
-    "client/injection/kube/informers/factory",
     "configmap",
     "controller",
     "injection",
+    "injection/clients/namespacedkube/informers/factory",
     "injection/sharedmain",
     "kmeta",
     "kmp",
+    "leaderelection",
     "logging",
     "logging/logkey",
     "logging/testing",
@@ -1185,7 +1240,7 @@
     "webhook/certificates/resources",
   ]
   pruneopts = "UT"
-  revision = "5d8a01d12cc825688b14117af294139fee2270eb"
+  revision = "55250e6aab62f767b8680a12ddeb771c519d78fe"
 
 [[projects]]
   digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
@@ -1199,21 +1254,15 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/cloudevents/sdk-go",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/types",
+    "github.com/cloudevents/sdk-go/v1",
+    "github.com/cloudevents/sdk-go/v1/cloudevents",
+    "github.com/cloudevents/sdk-go/v1/cloudevents/types",
     "github.com/confluentinc/confluent-kafka-go/kafka",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/health",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/k8s",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util",
     "github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus",
-    "github.com/kyma-incubator/knative-kafka/components/controller/constants",
-    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1",
-    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned",
-    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/fake",
-    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions",
-    "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1",
     "github.com/stretchr/testify/assert",
     "go.uber.org/zap",
     "k8s.io/api/core/v1",
@@ -1221,10 +1270,15 @@
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/client-go/tools/clientcmd",
+    "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1",
+    "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned",
+    "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned/fake",
+    "knative.dev/eventing-contrib/kafka/channel/pkg/client/informers/externalversions",
+    "knative.dev/eventing-contrib/kafka/channel/pkg/client/listers/messaging/v1alpha1",
     "knative.dev/eventing/pkg/channel",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/pkg/apis",
-    "knative.dev/pkg/apis/duck/v1",
+    "knative.dev/pkg/apis/duck/v1beta1",
     "knative.dev/pkg/controller",
     "knative.dev/pkg/logging",
     "knative.dev/pkg/logging/testing",

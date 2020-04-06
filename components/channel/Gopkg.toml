@@ -38,14 +38,19 @@
    branch = "master"
 
 # Match Azure version in common component
-[[override]]
+[[constraint]]
   name = "github.com/Azure/azure-event-hubs-go"
   version = "v1.3.1"
 
-# Align With Knative Eventing
+# Align With Knative Eventing-Contrib
 [[constraint]]
-  name = "knative.dev/eventing"
-  version = "v0.13.5"
+  name = "knative.dev/eventing-contrib"
+  branch = "master"
+
+# Align With Knative Eventing-Contrib
+[[constraint]]
+  name = "github.com/cloudevents/sdk-go"
+  version = "v2.0.0-preview8"
 
 [prune]
   go-tests = true

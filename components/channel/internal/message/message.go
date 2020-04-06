@@ -1,8 +1,8 @@
 package message
 
 import (
-	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/types"
+	"github.com/cloudevents/sdk-go/v1/cloudevents"
+	"github.com/cloudevents/sdk-go/v1/cloudevents/types"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
 	"go.uber.org/zap"

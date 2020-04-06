@@ -4,11 +4,11 @@ import (
 	"errors"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaproducer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/producer"
-	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	knativekafkalisters "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
+	kafkalisters "knative.dev/eventing-contrib/kafka/channel/pkg/client/listers/messaging/v1alpha1"
 )
 
 //
@@ -91,7 +91,7 @@ func (p *MockProducer) Closed() bool {
 // Mock KafkaChannel Lister
 //
 
-var _ knativekafkalisters.KafkaChannelLister = &MockKafkaChannelLister{}
+var _ kafkalisters.KafkaChannelLister = &MockKafkaChannelLister{}
 
 type MockKafkaChannelLister struct {
 	name      string
@@ -111,11 +111,11 @@ func NewMockKafkaChannelLister(name string, namespace string, exists bool, ready
 	}
 }
 
-func (m MockKafkaChannelLister) List(selector labels.Selector) (ret []*knativekafkav1alpha1.KafkaChannel, err error) {
+func (m MockKafkaChannelLister) List(selector labels.Selector) (ret []*kafkav1alpha1.KafkaChannel, err error) {
 	panic("implement me")
 }
 
-func (m MockKafkaChannelLister) KafkaChannels(namespace string) knativekafkalisters.KafkaChannelNamespaceLister {
+func (m MockKafkaChannelLister) KafkaChannels(namespace string) kafkalisters.KafkaChannelNamespaceLister {
 	return NewMockKafkaChannelNamespaceLister(m.name, namespace, m.exists, m.ready, m.err)
 }
 
@@ -123,7 +123,7 @@ func (m MockKafkaChannelLister) KafkaChannels(namespace string) knativekafkalist
 // Mock KafkaChannel NamespaceLister
 //
 
-var _ knativekafkalisters.KafkaChannelNamespaceLister = &MockKafkaChannelNamespaceLister{}
+var _ kafkalisters.KafkaChannelNamespaceLister = &MockKafkaChannelNamespaceLister{}
 
 type MockKafkaChannelNamespaceLister struct {
 	name      string
@@ -143,16 +143,16 @@ func NewMockKafkaChannelNamespaceLister(name string, namespace string, exists bo
 	}
 }
 
-func (m MockKafkaChannelNamespaceLister) List(selector labels.Selector) (ret []*knativekafkav1alpha1.KafkaChannel, err error) {
+func (m MockKafkaChannelNamespaceLister) List(selector labels.Selector) (ret []*kafkav1alpha1.KafkaChannel, err error) {
 	panic("implement me")
 }
 
-func (m MockKafkaChannelNamespaceLister) Get(name string) (*knativekafkav1alpha1.KafkaChannel, error) {
+func (m MockKafkaChannelNamespaceLister) Get(name string) (*kafkav1alpha1.KafkaChannel, error) {
 	if m.err {
 		return nil, k8serrors.NewInternalError(errors.New("expected Unit Test error from MockKafkaChannelNamespaceLister"))
 	} else if m.exists {
 		return CreateKafkaChannel(m.name, m.namespace, m.ready), nil
 	} else {
-		return nil, k8serrors.NewNotFound(knativekafkav1alpha1.Resource("KafkaChannel"), name)
+		return nil, k8serrors.NewNotFound(kafkav1alpha1.Resource("KafkaChannel"), name)
 	}
 }

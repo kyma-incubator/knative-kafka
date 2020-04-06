@@ -1,7 +1,7 @@
 package producer
 
 import (
-	"github.com/cloudevents/sdk-go/pkg/cloudevents"
+	"github.com/cloudevents/sdk-go/v1/cloudevents"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
 	channelhealth "github.com/kyma-incubator/knative-kafka/components/channel/internal/health"

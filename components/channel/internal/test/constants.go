@@ -1,6 +1,6 @@
 package test
 
-import cloudevents "github.com/cloudevents/sdk-go"
+import cloudevents "github.com/cloudevents/sdk-go/v1"
 
 // Test Data
 const (
