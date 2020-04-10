@@ -9,17 +9,18 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinjection"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
 	kafkalisters "knative.dev/eventing-contrib/kafka/channel/pkg/client/listers/messaging/v1alpha1"
-	eventingreconciler "knative.dev/eventing/pkg/reconciler"
 	"knative.dev/pkg/reconciler"
 )
 
 // Reconciler Implements controller.Reconciler for K8S Secrets Containing Kafka Auth (Labelled)
 type Reconciler struct {
-	*eventingreconciler.Base
+	logger             *zap.Logger
+	kubeClientset      kubernetes.Interface
 	environment        *env.Environment
 	kafkaChannelClient versioned.Interface
 	kafkachannelLister kafkalisters.KafkaChannelLister
@@ -36,8 +37,8 @@ var (
 func (r *Reconciler) ReconcileKind(ctx context.Context, secret *corev1.Secret) reconciler.Event {
 
 	// Setup Logger & Debug Log Separator
-	r.Logger.Debug("<==========  START KAFKA-SECRET RECONCILIATION  ==========>")
-	logger := r.Logger.With(zap.String("Secret", secret.Name))
+	r.logger.Debug("<==========  START KAFKA-SECRET RECONCILIATION  ==========>")
+	logger := r.logger.With(zap.String("Secret", secret.Name))
 
 	// Perform The Secret Reconciliation & Handle Error Response
 	logger.Info("Secret Owned By Controller - Reconciling", zap.String("Secret", secret.Name))
@@ -56,8 +57,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, secret *corev1.Secret) r
 func (r *Reconciler) FinalizeKind(_ context.Context, secret *corev1.Secret) reconciler.Event {
 
 	// Setup Logger & Debug Log Separator
-	r.Logger.Debug("<==========  START KAFKA-SECRET FINALIZATION  ==========>")
-	logger := r.Logger.With(zap.String("Secret", secret.Name))
+	r.logger.Debug("<==========  START KAFKA-SECRET FINALIZATION  ==========>")
+	logger := r.logger.With(zap.String("Secret", secret.Name))
 
 	// Reconcile The Affected KafkaChannel Status To Indicate The Channel Service/Deployment Are Not Longer Available
 	err := r.reconcileKafkaChannelStatus(secret,
@@ -74,10 +75,10 @@ func (r *Reconciler) FinalizeKind(_ context.Context, secret *corev1.Secret) reco
 }
 
 // Perform The Actual Secret Reconciliation
-func (r *Reconciler) reconcile(_ context.Context, secret *corev1.Secret) error {
+func (r *Reconciler) reconcile(ctx context.Context, secret *corev1.Secret) error {
 
 	// Perform The Kafka Secret Reconciliation
-	err := r.reconcileChannel(secret)
+	err := r.reconcileChannel(ctx, secret)
 	if err != nil {
 		return fmt.Errorf(constants.ReconciliationFailedError)
 	}

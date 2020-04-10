@@ -2,7 +2,6 @@ package kafkachannel
 
 import (
 	"context"
-	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/test"
 	corev1 "k8s.io/api/core/v1"
@@ -12,8 +11,9 @@ import (
 	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
 	fakekafkaclient "knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/client/fake"
 	kafkachannelreconciler "knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/reconciler/messaging/v1alpha1/kafkachannel"
-	"knative.dev/eventing/pkg/reconciler"
+	"knative.dev/eventing/pkg/logging"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
@@ -323,7 +323,8 @@ func TestReconcile(t *testing.T) {
 	logger := logtesting.TestLogger(t)
 	tableTest.Test(t, test.MakeFactory(func(ctx context.Context, listers *test.Listers, cmw configmap.Watcher) controller.Reconciler {
 		r := &Reconciler{
-			Base:                 reconciler.NewBase(ctx, constants.KafkaChannelControllerAgentName, cmw),
+			logger:               logging.FromContext(ctx),
+			kubeClientset:        kubeclient.Get(ctx),
 			adminClient:          &test.MockAdminClient{},
 			environment:          test.NewEnvironment(),
 			kafkachannelLister:   listers.GetKafkaChannelLister(),
@@ -332,6 +333,6 @@ func TestReconcile(t *testing.T) {
 			serviceLister:        listers.GetServiceLister(),
 			kafkaClientSet:       fakekafkaclient.Get(ctx),
 		}
-		return kafkachannelreconciler.NewReconciler(ctx, r.Logger, r.kafkaClientSet, listers.GetKafkaChannelLister(), r.Recorder, r)
+		return kafkachannelreconciler.NewReconciler(ctx, r.logger.Sugar(), r.kafkaClientSet, listers.GetKafkaChannelLister(), controller.GetEventRecorder(ctx), r)
 	}, logger.Desugar()))
 }

@@ -62,7 +62,7 @@ type reconcilerImpl struct {
 // Check that our Reconciler implements controller.Reconciler
 var _ controller.Reconciler = (*reconcilerImpl)(nil)
 
-func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client corev1client.CoreV1Interface, lister corev1listers.SecretLister, recorder record.EventRecorder, r Interface) controller.Reconciler {
+func NewReconciler(_ context.Context, _ *zap.SugaredLogger, client corev1client.CoreV1Interface, lister corev1listers.SecretLister, recorder record.EventRecorder, r Interface) controller.Reconciler {
 	return &reconcilerImpl{
 		Client:     client,
 		Lister:     lister,
@@ -76,6 +76,9 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 
 	// Get Logger From Context
 	logger := logging.FromContext(ctx)
+
+	// Add the recorder to context.
+	ctx = controller.WithEventRecorder(ctx, r.Recorder)
 
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
@@ -134,7 +137,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 
 // updateFinalizersFiltered will update the Finalizers of the resource.
 // TODO: this method could be generic and sync all finalizers. For now it only updates defaultFinalizerName.
-func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource *corev1.Secret) error {
+func (r *reconcilerImpl) updateFinalizersFiltered(_ context.Context, resource *corev1.Secret) error {
 	finalizerName := defaultFinalizerName
 
 	actual, err := r.Lister.Secrets(resource.Namespace).Get(resource.Name)

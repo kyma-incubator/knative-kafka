@@ -1,6 +1,7 @@
 package kafkachannel
 
 import (
+	"context"
 	"fmt"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
@@ -14,18 +15,19 @@ import (
 	eventingNames "knative.dev/eventing/pkg/reconciler/names"
 	eventingUtils "knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/controller"
 )
 
 // Reconcile The "Channel" Inbound For The Specified Channel
-func (r *Reconciler) reconcileChannel(channel *kafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileChannel(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) error {
 
 	// Get Channel Specific Logger
-	logger := util.ChannelLogger(r.Logger.Desugar(), channel)
+	logger := util.ChannelLogger(r.logger, channel)
 
 	// Reconcile The KafkaChannel's Service
 	err := r.reconcileKafkaChannelService(channel)
 	if err != nil {
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service: %v", err)
+		controller.GetEventRecorder(ctx).Eventf(channel, corev1.EventTypeWarning, event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service: %v", err)
 		logger.Error("Failed To Reconcile KafkaChannel Service", zap.Error(err))
 		return fmt.Errorf("failed to reconcile channel resources")
 	} else {
@@ -51,24 +53,24 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *kafkav1alpha1.KafkaCh
 
 		// If The Service Was Not Found - Then Create A New One For The Channel
 		if errors.IsNotFound(err) {
-			r.Logger.Info("KafkaChannel Service Not Found - Creating New One")
+			r.logger.Info("KafkaChannel Service Not Found - Creating New One")
 			service = r.newKafkaChannelService(channel)
-			service, err = r.KubeClientSet.CoreV1().Services(service.Namespace).Create(service)
+			service, err = r.kubeClientset.CoreV1().Services(service.Namespace).Create(service)
 			if err != nil {
-				r.Logger.Error("Failed To Create KafkaChannel Service", zap.Error(err))
+				r.logger.Error("Failed To Create KafkaChannel Service", zap.Error(err))
 				channel.Status.MarkChannelServiceFailed(event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Create KafkaChannel Service: %v", err)
 				return err
 			} else {
-				r.Logger.Info("Successfully Created KafkaChannel Service")
+				r.logger.Info("Successfully Created KafkaChannel Service")
 				// Continue To Update Channel Status
 			}
 		} else {
-			r.Logger.Error("Failed To Get KafkaChannel Service", zap.Error(err))
+			r.logger.Error("Failed To Get KafkaChannel Service", zap.Error(err))
 			channel.Status.MarkChannelServiceFailed(event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Get KafkaChannel Service: %v", err)
 			return err
 		}
 	} else {
-		r.Logger.Info("Successfully Verified KafkaChannel Service")
+		r.logger.Info("Successfully Verified KafkaChannel Service")
 		// Continue To Update Channel Status
 	}
 

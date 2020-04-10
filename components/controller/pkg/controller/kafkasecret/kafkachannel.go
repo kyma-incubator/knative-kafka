@@ -23,7 +23,7 @@ func (r *Reconciler) reconcileKafkaChannelStatus(secret *corev1.Secret,
 	deploymentValid bool, deploymentReason string, deploymentMessage string) error {
 
 	// Get A Secret Logger (With The Valid Service/Deployment State
-	logger := util.SecretLogger(r.Logger.Desugar(), secret).With(zap.Bool("Service", serviceValid), zap.Bool("Deployment", deploymentValid))
+	logger := util.SecretLogger(r.logger, secret).With(zap.Bool("Service", serviceValid), zap.Bool("Deployment", deploymentValid))
 
 	// Create Selector With Requirement For KafkaSecret Labels With Value Of Specified Secret Name
 	selector := labels.NewSelector()
@@ -67,7 +67,7 @@ func (r *Reconciler) updateKafkaChannelStatus(originalChannel *kafkav1alpha1.Kaf
 	deploymentValid bool, deploymentReason string, deploymentMessage string) error {
 
 	// Get A KafkaChannel Logger
-	logger := util.ChannelLogger(r.Logger.Desugar(), originalChannel)
+	logger := util.ChannelLogger(r.logger, originalChannel)
 
 	// Update The KafkaChannel (Retry On Conflict - KafkaChannel Controller Will Also Be Updating KafkaChannel Status)
 	return reconciler.RetryUpdateConflicts(func(attempts int) error {

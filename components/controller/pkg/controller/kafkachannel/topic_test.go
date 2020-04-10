@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
-	"knative.dev/eventing/pkg/reconciler"
+	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 	"strconv"
 	"testing"
@@ -188,18 +188,16 @@ func TestReconcileTopic(t *testing.T) {
 func topicTestCaseFactory(tc TopicTestCase) func(t *testing.T) {
 	return func(t *testing.T) {
 
-		// Create A New Recorder & Logger For Testing
+		// Setup Context With New Recorder For Testing
 		recorder := record.NewBroadcaster().NewRecorder(scheme.Scheme, corev1.EventSource{Component: constants.KafkaChannelControllerAgentName})
+		ctx := controller.WithEventRecorder(context.TODO(), recorder)
 
 		// Create A Mock Kafka AdminClient For Current TopicTestCase
 		mockAdminClient := createMockAdminClientForTestCase(t, tc)
 
 		// Initialize The Reconciler For The Current TopicTestCase
 		r := &Reconciler{
-			Base: &reconciler.Base{
-				Logger:   logtesting.TestLogger(t),
-				Recorder: recorder,
-			},
+			logger:      logtesting.TestLogger(t).Desugar(),
 			adminClient: mockAdminClient,
 			environment: test.NewEnvironment(),
 		}
@@ -209,7 +207,7 @@ func topicTestCaseFactory(tc TopicTestCase) func(t *testing.T) {
 
 		// Perform The Test (Create) - Normal Topic Reconciliation Called Indirectly From ReconcileKind()
 		if tc.WantCreate {
-			err = r.reconcileTopic(context.TODO(), tc.Channel)
+			err = r.reconcileTopic(ctx, tc.Channel)
 			if !mockAdminClient.CreateTopicsCalled() {
 				t.Errorf("expected CreateTopics() called to be %t", tc.WantCreate)
 			}
@@ -217,7 +215,7 @@ func topicTestCaseFactory(tc TopicTestCase) func(t *testing.T) {
 
 		// Perform The Test (Delete) - Called By Knative FinalizeKind() Directly
 		if tc.WantDelete {
-			err = r.deleteTopic(context.TODO(), test.TopicName)
+			err = r.deleteTopic(ctx, test.TopicName)
 			if !mockAdminClient.DeleteTopicsCalled() {
 				t.Errorf("expected DeleteTopics() called to be %t", tc.WantCreate)
 			}

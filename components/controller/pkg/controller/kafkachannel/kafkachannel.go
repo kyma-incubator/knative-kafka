@@ -1,6 +1,7 @@
 package kafkachannel
 
 import (
+	"context"
 	"fmt"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
@@ -9,10 +10,10 @@ import (
 )
 
 // Reconcile The KafkaChannel Itself (Add Labels, etc.)
-func (r *Reconciler) reconcileKafkaChannel(channel *kafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileKafkaChannel(_ context.Context, channel *kafkav1alpha1.KafkaChannel) error {
 
 	// Get Channel Specific Logger
-	logger := util.ChannelLogger(r.Logger.Desugar(), channel)
+	logger := util.ChannelLogger(r.logger, channel)
 
 	// Reconcile The KafkaChannel's Labels
 	err := r.reconcileLabels(channel)
@@ -60,16 +61,16 @@ func (r *Reconciler) reconcileLabels(channel *kafkav1alpha1.KafkaChannel) error 
 		channel.Labels = labels
 		_, err := r.kafkaClientSet.MessagingV1alpha1().KafkaChannels(channel.Namespace).Update(channel)
 		if err != nil {
-			r.Logger.Error("Failed To Update KafkaChannel Labels", zap.Error(err))
+			r.logger.Error("Failed To Update KafkaChannel Labels", zap.Error(err))
 			return err
 		} else {
-			r.Logger.Info("Successfully Updated KafkaChannel Labels")
+			r.logger.Info("Successfully Updated KafkaChannel Labels")
 			return nil
 		}
 	} else {
 
 		// Otherwise Nothing To Do
-		r.Logger.Info("Successfully Verified KafkaChannel Labels")
+		r.logger.Info("Successfully Verified KafkaChannel Labels")
 		return nil
 	}
 }
