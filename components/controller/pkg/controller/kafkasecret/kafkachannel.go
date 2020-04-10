@@ -3,13 +3,13 @@ package kafkasecret
 import (
 	"fmt"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
 	"knative.dev/pkg/reconciler"
 )
 
@@ -62,7 +62,7 @@ func (r *Reconciler) reconcileKafkaChannelStatus(secret *corev1.Secret,
 }
 
 // Update A Single KafkaChannel's Status To Reflect The Specified Channel Service/Deployment State
-func (r *Reconciler) updateKafkaChannelStatus(originalChannel *knativekafkav1alpha1.KafkaChannel,
+func (r *Reconciler) updateKafkaChannelStatus(originalChannel *kafkav1alpha1.KafkaChannel,
 	serviceValid bool, serviceReason string, serviceMessage string,
 	deploymentValid bool, deploymentReason string, deploymentMessage string) error {
 
@@ -88,23 +88,29 @@ func (r *Reconciler) updateKafkaChannelStatus(originalChannel *knativekafkav1alp
 
 		// Update Service Status Based On Specified State
 		if serviceValid {
-			updatedChannel.Status.MarkChannelServiceTrue()
+			updatedChannel.Status.MarkServiceTrue()
 		} else {
-			updatedChannel.Status.MarkChannelServiceFailed(serviceReason, serviceMessage)
+			updatedChannel.Status.MarkServiceFailed(serviceReason, serviceMessage)
 		}
 
+		//
 		// Update Deployment Status Based On Specified State
+		//
+		// TODO - As part of the conversion to the eventing-contrib KafkaChannel CRD, and the associated
+		//        Status, we've not yet implemented Endpoint tracking.  Until this is done we'll track
+		//        the Deployments As Endpoints (since they will result in the Endpoints being up anyway).
+		//
 		if deploymentValid {
-			updatedChannel.Status.MarkChannelDeploymentTrue()
+			updatedChannel.Status.MarkEndpointsTrue()
 		} else {
-			updatedChannel.Status.MarkChannelDeploymentFailed(deploymentReason, deploymentMessage)
+			updatedChannel.Status.MarkEndpointsFailed(deploymentReason, deploymentMessage)
 		}
 
 		// If The KafkaChannel Status Changed
 		if !equality.Semantic.DeepEqual(originalChannel.Status, updatedChannel.Status) {
 
 			// Then Attempt To Update The KafkaChannel Status
-			_, err = r.kafkaChannelClient.KnativekafkaV1alpha1().KafkaChannels(updatedChannel.Namespace).UpdateStatus(updatedChannel)
+			_, err = r.kafkaChannelClient.MessagingV1alpha1().KafkaChannels(updatedChannel.Namespace).UpdateStatus(updatedChannel)
 			if err != nil {
 				logger.Error("Failed To Update KafkaChannel Status", zap.Error(err))
 				return err

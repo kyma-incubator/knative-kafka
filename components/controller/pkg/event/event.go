@@ -13,6 +13,9 @@ const (
 	ClusterChannelProvisionerReconciliationFailed
 	ClusterChannelProvisionerUpdateStatusFailed
 
+	// KafkaChannel Service (In User Namespace)
+	KafkaChannelServiceReconciliationFailed
+
 	// Channel Updates (Finalizers, Status)
 	ChannelUpdateFailed
 
@@ -49,6 +52,8 @@ func (et CoreV1EventType) String() string {
 		eventTypeString = "ClusterChannelProvisionerReconciliationFailed"
 	case ClusterChannelProvisionerUpdateStatusFailed:
 		eventTypeString = "ClusterChannelProvisionerUpdateStatusFailed"
+	case KafkaChannelServiceReconciliationFailed:
+		eventTypeString = "KafkaChannelServiceReconciliationFailed"
 	case ChannelUpdateFailed:
 		eventTypeString = "ChannelUpdateFailed"
 	case ChannelServiceReconciliationFailed:

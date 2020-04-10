@@ -3,16 +3,16 @@ package kafkasecret
 import (
 	"context"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	injectionclient "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/informers/knativekafka/v1alpha1/kafkachannel"
-	kafkasecretreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkasecret"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinformer"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinjection"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+	injectionclient "knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/client"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/informers/messaging/v1alpha1/kafkachannel"
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
@@ -52,7 +52,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	}
 
 	// Create A New KafkaSecret Controller Impl With The Reconciler
-	controllerImpl := kafkasecretreconciler.NewImpl(ctx, r)
+	controllerImpl := kafkasecretinjection.NewImpl(ctx, r)
 
 	// Configure The Informers' EventHandlers
 	r.Logger.Info("Setting Up EventHandlers")

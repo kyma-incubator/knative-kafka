@@ -3,30 +3,30 @@ package util
 import (
 	"fmt"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
 	"knative.dev/eventing/pkg/utils"
 )
 
 // Get A Logger With Channel Info
-func ChannelLogger(logger *zap.Logger, channel *knativekafkav1alpha1.KafkaChannel) *zap.Logger {
+func ChannelLogger(logger *zap.Logger, channel *kafkav1alpha1.KafkaChannel) *zap.Logger {
 	return logger.With(zap.String("Namespace", channel.Namespace), zap.String("Name", channel.Name))
 }
 
 // Create A Knative Reconciler "Key" Formatted Representation Of The Specified Channel
-func ChannelKey(channel *knativekafkav1alpha1.KafkaChannel) string {
+func ChannelKey(channel *kafkav1alpha1.KafkaChannel) string {
 	return fmt.Sprintf("%s/%s", channel.Namespace, channel.Name)
 }
 
 // Create A New OwnerReference For The Specified KafkaChannel (Controller)
-func NewChannelOwnerReference(channel *knativekafkav1alpha1.KafkaChannel) metav1.OwnerReference {
+func NewChannelOwnerReference(channel *kafkav1alpha1.KafkaChannel) metav1.OwnerReference {
 
 	kafkaChannelGroupVersion := schema.GroupVersion{
-		Group:   knativekafkav1alpha1.SchemeGroupVersion.Group,
-		Version: knativekafkav1alpha1.SchemeGroupVersion.Version,
+		Group:   kafkav1alpha1.SchemeGroupVersion.Group,
+		Version: kafkav1alpha1.SchemeGroupVersion.Version,
 	}
 
 	blockOwnerDeletion := true
@@ -63,8 +63,8 @@ func ChannelHostName(channelName, channelNamespace string) string {
 }
 
 // Utility Function To Get The NumPartitions - First From Channel Spec And Then From Environment
-func NumPartitions(channel *knativekafkav1alpha1.KafkaChannel, environment *env.Environment, logger *zap.Logger) int {
-	value := channel.Spec.NumPartitions
+func NumPartitions(channel *kafkav1alpha1.KafkaChannel, environment *env.Environment, logger *zap.Logger) int {
+	value := int(channel.Spec.NumPartitions)
 	if value <= 0 {
 		logger.Debug("Kafka Channel Spec 'NumPartitions' Not Specified - Using Default", zap.Int("Value", environment.DefaultNumPartitions))
 		value = environment.DefaultNumPartitions
@@ -73,8 +73,8 @@ func NumPartitions(channel *knativekafkav1alpha1.KafkaChannel, environment *env.
 }
 
 // Utility Function To Get The ReplicationFactor - First From Channel Spec And Then From Environment
-func ReplicationFactor(channel *knativekafkav1alpha1.KafkaChannel, environment *env.Environment, logger *zap.Logger) int {
-	value := channel.Spec.ReplicationFactor
+func ReplicationFactor(channel *kafkav1alpha1.KafkaChannel, environment *env.Environment, logger *zap.Logger) int {
+	value := int(channel.Spec.ReplicationFactor)
 	if value <= 0 {
 		logger.Debug("Kafka Channel Spec 'ReplicationFactor' Not Specified - Using Default", zap.Int("Value", environment.DefaultReplicationFactor))
 		value = environment.DefaultReplicationFactor
@@ -83,11 +83,16 @@ func ReplicationFactor(channel *knativekafkav1alpha1.KafkaChannel, environment *
 }
 
 // Utility Function To Get The RetentionMillis - First From Channel Spec And Then From Environment
-func RetentionMillis(channel *knativekafkav1alpha1.KafkaChannel, environment *env.Environment, logger *zap.Logger) int64 {
-	value := channel.Spec.RetentionMillis
-	if value <= 0 {
-		logger.Debug("Kafka Channel Spec 'RetentionMillis' Not Specified - Using Default", zap.Int64("Value", environment.DefaultRetentionMillis))
-		value = environment.DefaultRetentionMillis
-	}
-	return value
+func RetentionMillis(channel *kafkav1alpha1.KafkaChannel, environment *env.Environment, logger *zap.Logger) int64 {
+	//
+	// TODO - The eventing-contrib KafkaChannel CRD does not include RetentionMillis so we're
+	//        currently just using the default value specified in Controller Environment Variables.
+	//
+	//value := channel.Spec.RetentionMillis
+	//if value <= 0 {
+	//	logger.Debug("Kafka Channel Spec 'RetentionMillis' Not Specified - Using Default", zap.Int64("Value", environment.DefaultRetentionMillis))
+	//	value = environment.DefaultRetentionMillis
+	//}
+	//return value
+	return environment.DefaultRetentionMillis
 }

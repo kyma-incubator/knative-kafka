@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
 	"strconv"
 )
 

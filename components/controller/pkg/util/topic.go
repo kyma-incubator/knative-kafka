@@ -2,10 +2,10 @@ package util
 
 import (
 	commonkafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
-	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
 )
 
-// Get The TopicName For Specified Channel (ChannelNamespace.ChannelName)
+// Get The TopicName For Specified KafkaChannel (ChannelNamespace.ChannelName)
 func TopicName(channel *kafkav1alpha1.KafkaChannel) string {
 	return commonkafkautil.TopicName(channel.Namespace, channel.Name)
 }

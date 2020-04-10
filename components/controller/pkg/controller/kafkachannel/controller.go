@@ -4,14 +4,14 @@ import (
 	"context"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	kafkachannelv1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	knativekafkaclientsetinjection "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/informers/knativekafka/v1alpha1/kafkachannel"
-	kafkachannelreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkachannel"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinformer"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
+	kafkachannelv1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
+	kafkaclientsetinjection "knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/client"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/informers/messaging/v1alpha1/kafkachannel"
+	kafkachannelreconciler "knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/reconciler/messaging/v1alpha1/kafkachannel"
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
@@ -57,14 +57,14 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 
 	// Create A KafkaChannel Reconciler
 	r := &Reconciler{
-		Base:                  reconciler.NewBase(ctx, constants.KafkaChannelControllerAgentName, cmw),
-		environment:           environment,
-		knativekafkaClientSet: knativekafkaclientsetinjection.Get(ctx),
-		kafkachannelLister:    kafkachannelInformer.Lister(),
-		kafkachannelInformer:  kafkachannelInformer.Informer(),
-		deploymentLister:      deploymentInformer.Lister(),
-		serviceLister:         serviceInformer.Lister(),
-		adminClient:           adminClient,
+		Base:                 reconciler.NewBase(ctx, constants.KafkaChannelControllerAgentName, cmw),
+		environment:          environment,
+		kafkaClientSet:       kafkaclientsetinjection.Get(ctx),
+		kafkachannelLister:   kafkachannelInformer.Lister(),
+		kafkachannelInformer: kafkachannelInformer.Informer(),
+		deploymentLister:     deploymentInformer.Lister(),
+		serviceLister:        serviceInformer.Lister(),
+		adminClient:          adminClient,
 	}
 
 	// Create A New KafkaChannel Controller Impl With The Reconciler

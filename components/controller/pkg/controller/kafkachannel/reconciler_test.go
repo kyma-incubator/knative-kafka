@@ -3,15 +3,15 @@ package kafkachannel
 import (
 	"context"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	fakeknativekafkaclient "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client/fake"
-	kafkachannelreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkachannel"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/test"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
+	fakekafkaclient "knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/client/fake"
+	kafkachannelreconciler "knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/reconciler/messaging/v1alpha1/kafkachannel"
 	"knative.dev/eventing/pkg/reconciler"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/configmap"
@@ -23,7 +23,7 @@ import (
 
 // Initialization - Add types to scheme
 func init() {
-	_ = knativekafkav1alpha1.AddToScheme(scheme.Scheme)
+	_ = kafkav1alpha1.AddToScheme(scheme.Scheme)
 	_ = duckv1alpha1.AddToScheme(scheme.Scheme)
 }
 
@@ -66,7 +66,7 @@ func TestReconcile(t *testing.T) {
 			SkipNamespaceValidation: true,
 			Key:                     test.KafkaChannelKey,
 			Objects: []runtime.Object{
-				test.NewKnativeKafkaChannel(test.WithInitKafkaChannelConditions),
+				test.NewKafkaChannel(test.WithInitializedConditions),
 			},
 			WantCreates: []runtime.Object{
 				test.NewKafkaChannelService(),
@@ -75,25 +75,25 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{
-					Object: test.NewKnativeKafkaChannel(
-						test.WithKafkaChannelAddress,
-						test.WithInitKafkaChannelConditions,
+					Object: test.NewKafkaChannel(
+						test.WithAddress,
+						test.WithInitializedConditions,
 						test.WithKafkaChannelServiceReady,
-						test.WithKafkaChannelDispatcherDeploymentReady,
-						test.WithKafkaChannelTopicReady,
+						test.WithDispatcherDeploymentReady,
+						test.WithTopicReady,
 					),
 				},
 			},
 			WantUpdates: []clientgotesting.UpdateActionImpl{
 				test.NewKafkaChannelLabelUpdate(
-					test.NewKnativeKafkaChannel(
-						test.WithKafkaChannelFinalizer,
-						test.WithKafkaChannelLabels,
-						test.WithKafkaChannelAddress,
-						test.WithInitKafkaChannelConditions,
+					test.NewKafkaChannel(
+						test.WithFinalizer,
+						test.WithLabels,
+						test.WithAddress,
+						test.WithInitializedConditions,
 						test.WithKafkaChannelServiceReady,
-						test.WithKafkaChannelDispatcherDeploymentReady,
-						test.WithKafkaChannelTopicReady,
+						test.WithDispatcherDeploymentReady,
+						test.WithTopicReady,
 					),
 				),
 			},
@@ -112,10 +112,10 @@ func TestReconcile(t *testing.T) {
 			Name: "Finalize Deleted KafkaChannel",
 			Key:  test.KafkaChannelKey,
 			Objects: []runtime.Object{
-				test.NewKnativeKafkaChannel(
-					test.WithInitKafkaChannelConditions,
-					test.WithKafkaChannelLabels,
-					test.WithKafkaChannelDeleted,
+				test.NewKafkaChannel(
+					test.WithInitializedConditions,
+					test.WithLabels,
+					test.WithDeletionTimestamp,
 				),
 			},
 			WantEvents: []string{
@@ -132,14 +132,14 @@ func TestReconcile(t *testing.T) {
 			SkipNamespaceValidation: true,
 			Key:                     test.KafkaChannelKey,
 			Objects: []runtime.Object{
-				test.NewKnativeKafkaChannel(
-					test.WithKafkaChannelFinalizer,
-					test.WithKafkaChannelLabels,
-					test.WithKafkaChannelAddress,
-					test.WithInitKafkaChannelConditions,
+				test.NewKafkaChannel(
+					test.WithFinalizer,
+					test.WithLabels,
+					test.WithAddress,
+					test.WithInitializedConditions,
 					test.WithKafkaChannelServiceReady,
-					test.WithKafkaChannelDispatcherDeploymentReady,
-					test.WithKafkaChannelTopicReady,
+					test.WithDispatcherDeploymentReady,
+					test.WithTopicReady,
 				),
 				test.NewKafkaChannelDispatcherService(),
 				test.NewKafkaChannelDispatcherDeployment(),
@@ -152,13 +152,13 @@ func TestReconcile(t *testing.T) {
 			SkipNamespaceValidation: true,
 			Key:                     test.KafkaChannelKey,
 			Objects: []runtime.Object{
-				test.NewKnativeKafkaChannel(
-					test.WithKafkaChannelFinalizer,
-					test.WithKafkaChannelAddress,
-					test.WithInitKafkaChannelConditions,
+				test.NewKafkaChannel(
+					test.WithFinalizer,
+					test.WithAddress,
+					test.WithInitializedConditions,
 					test.WithKafkaChannelServiceReady,
-					test.WithKafkaChannelDispatcherDeploymentReady,
-					test.WithKafkaChannelTopicReady,
+					test.WithDispatcherDeploymentReady,
+					test.WithTopicReady,
 				),
 				test.NewKafkaChannelDispatcherService(),
 				test.NewKafkaChannelDispatcherDeployment(),
@@ -168,18 +168,18 @@ func TestReconcile(t *testing.T) {
 			WantCreates:  []runtime.Object{test.NewKafkaChannelService()},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{
-					Object: test.NewKnativeKafkaChannel(
-						test.WithKafkaChannelFinalizer,
-						test.WithKafkaChannelAddress,
-						test.WithInitKafkaChannelConditions,
+					Object: test.NewKafkaChannel(
+						test.WithFinalizer,
+						test.WithAddress,
+						test.WithInitializedConditions,
 						test.WithKafkaChannelServiceFailed,
-						test.WithKafkaChannelDispatcherDeploymentReady,
-						test.WithKafkaChannelTopicReady,
+						test.WithDispatcherDeploymentReady,
+						test.WithTopicReady,
 					),
 				},
 			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service: inducing failure for create services"),
+				Eventf(corev1.EventTypeWarning, event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service: inducing failure for create services"),
 				test.NewKafkaChannelFailedReconciliationEvent(),
 			},
 		},
@@ -193,16 +193,16 @@ func TestReconcile(t *testing.T) {
 			SkipNamespaceValidation: true,
 			Key:                     test.KafkaChannelKey,
 			Objects: []runtime.Object{
-				test.NewKnativeKafkaChannel(
-					test.WithKafkaChannelFinalizer,
-					test.WithKafkaChannelLabels,
-					test.WithKafkaChannelAddress,
-					test.WithInitKafkaChannelConditions,
+				test.NewKafkaChannel(
+					test.WithFinalizer,
+					test.WithLabels,
+					test.WithAddress,
+					test.WithInitializedConditions,
 					test.WithKafkaChannelServiceReady,
-					test.WithKafkaChannelChannelServiceReady,
-					test.WithKafkaChannelChannelDeploymentReady,
-					test.WithKafkaChannelDispatcherDeploymentReady,
-					test.WithKafkaChannelTopicReady,
+					test.WithChannelServiceReady,
+					test.WithChannelDeploymentReady,
+					test.WithDispatcherDeploymentReady,
+					test.WithTopicReady,
 				),
 				test.NewKafkaChannelService(),
 				test.NewKafkaChannelChannelService(),
@@ -217,16 +217,16 @@ func TestReconcile(t *testing.T) {
 			SkipNamespaceValidation: true,
 			Key:                     test.KafkaChannelKey,
 			Objects: []runtime.Object{
-				test.NewKnativeKafkaChannel(
-					test.WithKafkaChannelFinalizer,
-					test.WithKafkaChannelLabels,
-					test.WithKafkaChannelAddress,
-					test.WithInitKafkaChannelConditions,
+				test.NewKafkaChannel(
+					test.WithFinalizer,
+					test.WithLabels,
+					test.WithAddress,
+					test.WithInitializedConditions,
 					test.WithKafkaChannelServiceReady,
-					test.WithKafkaChannelChannelServiceReady,
-					test.WithKafkaChannelChannelDeploymentReady,
-					test.WithKafkaChannelDispatcherDeploymentReady,
-					test.WithKafkaChannelTopicReady,
+					test.WithChannelServiceReady,
+					test.WithChannelDeploymentReady,
+					test.WithDispatcherDeploymentReady,
+					test.WithTopicReady,
 				),
 				test.NewKafkaChannelService(),
 				test.NewKafkaChannelChannelService(),
@@ -254,16 +254,16 @@ func TestReconcile(t *testing.T) {
 			SkipNamespaceValidation: true,
 			Key:                     test.KafkaChannelKey,
 			Objects: []runtime.Object{
-				test.NewKnativeKafkaChannel(
-					test.WithKafkaChannelFinalizer,
-					test.WithKafkaChannelLabels,
-					test.WithKafkaChannelAddress,
-					test.WithInitKafkaChannelConditions,
+				test.NewKafkaChannel(
+					test.WithFinalizer,
+					test.WithLabels,
+					test.WithAddress,
+					test.WithInitializedConditions,
 					test.WithKafkaChannelServiceReady,
-					test.WithKafkaChannelChannelServiceReady,
-					test.WithKafkaChannelChannelDeploymentReady,
-					test.WithKafkaChannelDispatcherDeploymentReady,
-					test.WithKafkaChannelTopicReady,
+					test.WithChannelServiceReady,
+					test.WithChannelDeploymentReady,
+					test.WithDispatcherDeploymentReady,
+					test.WithTopicReady,
 				),
 				test.NewKafkaChannelService(),
 				test.NewKafkaChannelChannelService(),
@@ -278,16 +278,16 @@ func TestReconcile(t *testing.T) {
 			SkipNamespaceValidation: true,
 			Key:                     test.KafkaChannelKey,
 			Objects: []runtime.Object{
-				test.NewKnativeKafkaChannel(
-					test.WithKafkaChannelFinalizer,
-					test.WithKafkaChannelLabels,
-					test.WithKafkaChannelAddress,
-					test.WithInitKafkaChannelConditions,
+				test.NewKafkaChannel(
+					test.WithFinalizer,
+					test.WithLabels,
+					test.WithAddress,
+					test.WithInitializedConditions,
 					test.WithKafkaChannelServiceReady,
-					test.WithKafkaChannelChannelServiceReady,
-					test.WithKafkaChannelChannelDeploymentReady,
-					test.WithKafkaChannelDispatcherDeploymentReady,
-					test.WithKafkaChannelTopicReady,
+					test.WithChannelServiceReady,
+					test.WithChannelDeploymentReady,
+					test.WithDispatcherDeploymentReady,
+					test.WithTopicReady,
 				),
 				test.NewKafkaChannelService(),
 				test.NewKafkaChannelChannelService(),
@@ -299,16 +299,16 @@ func TestReconcile(t *testing.T) {
 			WantCreates:  []runtime.Object{test.NewKafkaChannelDispatcherDeployment()},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{
-					Object: test.NewKnativeKafkaChannel(
-						test.WithKafkaChannelFinalizer,
-						test.WithKafkaChannelLabels,
-						test.WithKafkaChannelAddress,
-						test.WithInitKafkaChannelConditions,
+					Object: test.NewKafkaChannel(
+						test.WithFinalizer,
+						test.WithLabels,
+						test.WithAddress,
+						test.WithInitializedConditions,
 						test.WithKafkaChannelServiceReady,
-						test.WithKafkaChannelChannelServiceReady,
-						test.WithKafkaChannelChannelDeploymentReady,
-						test.WithKafkaChannelDispatcherDeploymentFailed,
-						test.WithKafkaChannelTopicReady,
+						test.WithChannelServiceReady,
+						test.WithChannelDeploymentReady,
+						test.WithDispatcherFailed,
+						test.WithTopicReady,
 					),
 				},
 			},
@@ -323,15 +323,15 @@ func TestReconcile(t *testing.T) {
 	logger := logtesting.TestLogger(t)
 	tableTest.Test(t, test.MakeFactory(func(ctx context.Context, listers *test.Listers, cmw configmap.Watcher) controller.Reconciler {
 		r := &Reconciler{
-			Base:                  reconciler.NewBase(ctx, constants.KafkaChannelControllerAgentName, cmw),
-			adminClient:           &test.MockAdminClient{},
-			environment:           test.NewEnvironment(),
-			kafkachannelLister:    listers.GetKafkaChannelLister(),
-			kafkachannelInformer:  nil,
-			deploymentLister:      listers.GetDeploymentLister(),
-			serviceLister:         listers.GetServiceLister(),
-			knativekafkaClientSet: fakeknativekafkaclient.Get(ctx),
+			Base:                 reconciler.NewBase(ctx, constants.KafkaChannelControllerAgentName, cmw),
+			adminClient:          &test.MockAdminClient{},
+			environment:          test.NewEnvironment(),
+			kafkachannelLister:   listers.GetKafkaChannelLister(),
+			kafkachannelInformer: nil,
+			deploymentLister:     listers.GetDeploymentLister(),
+			serviceLister:        listers.GetServiceLister(),
+			kafkaClientSet:       fakekafkaclient.Get(ctx),
 		}
-		return kafkachannelreconciler.NewReconciler(ctx, r.Logger, r.knativekafkaClientSet, listers.GetKafkaChannelLister(), r.Recorder, r)
+		return kafkachannelreconciler.NewReconciler(ctx, r.Logger, r.kafkaClientSet, listers.GetKafkaChannelLister(), r.Recorder, r)
 	}, logger.Desugar()))
 }

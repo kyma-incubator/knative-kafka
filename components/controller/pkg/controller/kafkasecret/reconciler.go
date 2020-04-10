@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkasecret"
-	knativekafkalisters "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinjection"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
+	kafkalisters "knative.dev/eventing-contrib/kafka/channel/pkg/client/listers/messaging/v1alpha1"
 	eventingreconciler "knative.dev/eventing/pkg/reconciler"
 	"knative.dev/pkg/reconciler"
 )
@@ -22,14 +22,14 @@ type Reconciler struct {
 	*eventingreconciler.Base
 	environment        *env.Environment
 	kafkaChannelClient versioned.Interface
-	kafkachannelLister knativekafkalisters.KafkaChannelLister
+	kafkachannelLister kafkalisters.KafkaChannelLister
 	deploymentLister   appsv1listers.DeploymentLister
 	serviceLister      corev1listers.ServiceLister
 }
 
 var (
-	_ kafkasecret.Interface = (*Reconciler)(nil) // Verify Reconciler Implements Interface
-	_ kafkasecret.Finalizer = (*Reconciler)(nil) // Verify Reconciler Implements Finalizer
+	_ kafkasecretinjection.Interface = (*Reconciler)(nil) // Verify Reconciler Implements Interface
+	_ kafkasecretinjection.Finalizer = (*Reconciler)(nil) // Verify Reconciler Implements Finalizer
 )
 
 // ReconcileKind Implements The Reconciler Interface & Is Responsible For Performing The Reconciliation (Creation)
@@ -53,7 +53,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, secret *corev1.Secret) r
 }
 
 // ReconcileKind Implements The Finalizer Interface & Is Responsible For Performing The Finalization (KafkaChannel Status)
-func (r *Reconciler) FinalizeKind(ctx context.Context, secret *corev1.Secret) reconciler.Event {
+func (r *Reconciler) FinalizeKind(_ context.Context, secret *corev1.Secret) reconciler.Event {
 
 	// Setup Logger & Debug Log Separator
 	r.Logger.Debug("<==========  START KAFKA-SECRET FINALIZATION  ==========>")
@@ -74,7 +74,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, secret *corev1.Secret) re
 }
 
 // Perform The Actual Secret Reconciliation
-func (r *Reconciler) reconcile(ctx context.Context, secret *corev1.Secret) error {
+func (r *Reconciler) reconcile(_ context.Context, secret *corev1.Secret) error {
 
 	// Perform The Kafka Secret Reconciliation
 	err := r.reconcileChannel(secret)

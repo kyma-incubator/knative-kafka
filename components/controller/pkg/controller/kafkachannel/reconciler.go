@@ -5,10 +5,6 @@ import (
 	"fmt"
 	kafkaadmin "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/admin"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
-	knativekafkaclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkachannel"
-	knativekafkalisters "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
@@ -17,6 +13,10 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
+	kafkaclientset "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/reconciler/messaging/v1alpha1/kafkachannel"
+	kafkalisters "knative.dev/eventing-contrib/kafka/channel/pkg/client/listers/messaging/v1alpha1"
 	eventingreconciler "knative.dev/eventing/pkg/reconciler"
 	"knative.dev/pkg/reconciler"
 )
@@ -24,13 +24,13 @@ import (
 // Reconciler Implements controller.Reconciler for KafkaChannel Resources
 type Reconciler struct {
 	*eventingreconciler.Base
-	knativekafkaClientSet knativekafkaclientset.Interface
-	adminClient           kafkaadmin.AdminClientInterface
-	environment           *env.Environment
-	kafkachannelLister    knativekafkalisters.KafkaChannelLister
-	kafkachannelInformer  cache.SharedIndexInformer
-	deploymentLister      appsv1listers.DeploymentLister
-	serviceLister         corev1listers.ServiceLister
+	kafkaClientSet       kafkaclientset.Interface
+	adminClient          kafkaadmin.AdminClientInterface
+	environment          *env.Environment
+	kafkachannelLister   kafkalisters.KafkaChannelLister
+	kafkachannelInformer cache.SharedIndexInformer
+	deploymentLister     appsv1listers.DeploymentLister
+	serviceLister        corev1listers.ServiceLister
 }
 
 var (
@@ -39,7 +39,7 @@ var (
 )
 
 // ReconcileKind Implements The Reconciler Interface & Is Responsible For Performing The Reconciliation (Creation)
-func (r *Reconciler) ReconcileKind(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) reconciler.Event {
 
 	r.Logger.Debug("<==========  START KAFKA-CHANNEL RECONCILIATION  ==========>")
 
@@ -61,7 +61,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *knativekafkav1a
 }
 
 // ReconcileKind Implements The Finalizer Interface & Is Responsible For Performing The Finalization (Topic Deletion)
-func (r *Reconciler) FinalizeKind(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) reconciler.Event {
 
 	r.Logger.Debug("<==========  START KAFKA-CHANNEL FINALIZATION  ==========>")
 
@@ -81,7 +81,20 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, channel *knativekafkav1al
 }
 
 // Perform The Actual Channel Reconciliation
-func (r *Reconciler) reconcile(ctx context.Context, channel *knativekafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) error {
+
+	//
+	// This implementation is based on the eventing-contrib KafkaChannel, and thus we're using
+	// their Status tracking even though it does not align with our architecture.  We get our
+	// Kafka configuration from the "Kafka Secrets" and not a ConfigMap.  Therefore, we will
+	// instead check the Kafka Secret associated with the KafkaChannel here.
+	//
+	if len(r.adminClient.GetKafkaSecretName(util.TopicName(channel))) > 0 {
+		channel.Status.MarkConfigTrue()
+	} else {
+		channel.Status.MarkConfigFailed(event.KafkaSecretReconciled.String(), "No Kafka Secret For KafkaChannel: %v/%v", channel.Namespace, channel.Name)
+		return fmt.Errorf(constants.ReconciliationFailedError)
+	}
 
 	// NOTE - The sequential order of reconciliation must be "Topic" then "Channel / Dispatcher" in order for the
 	//        EventHub Cache to know the dynamically determined EventHub Namespace / Kafka Secret selected for the topic.

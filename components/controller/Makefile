@@ -60,31 +60,6 @@ test:
 
 
 #
-# Code / YAML Generation
-#
-
-clients:
-	@echo 'Generating DeepCopy, Clients, Informers, & Listers'
-	vendor/k8s.io/code-generator/generate-groups.sh "deepcopy,client,informer,lister" \
-		github.com/kyma-incubator/knative-kafka/components/controller/pkg/client \
-		github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis  \
-		knativekafka:v1alpha1
-
-knative-gen:
-	@echo 'Generating Knative Injection and Reconcilers'
-	vendor/knative.dev/pkg/hack/generate-knative.sh "injection" \
-		github.com/kyma-incubator/knative-kafka/components/controller/pkg/client \
-		github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis  \
-		knativekafka:v1alpha1
-	@echo ''
-	@echo '***    Manually Update kafkasecrets Controller / Reconciler Injected Implementation     ***'
-	@echo '     (See pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkasecret/README.md)'
-	@echo ''
-
-.PHONY: clients knative-gen
-
-
-#
 # Build The Binaries
 #
 

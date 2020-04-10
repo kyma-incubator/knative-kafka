@@ -5,7 +5,6 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/health"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
@@ -16,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clientgotesting "k8s.io/client-go/testing"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 	reconcilertesting "knative.dev/pkg/reconciler/testing"
@@ -63,7 +63,6 @@ const (
 	// ChannelSpec Test Data
 	NumPartitions     = 123
 	ReplicationFactor = 456
-	RetentionMillis   = 999999999
 
 	// Test MetaData
 	ErrorString = "Expected Mock Test Error"
@@ -203,25 +202,25 @@ func NewKafkaSecretFinalizerUpdateEvent() string {
 //
 
 // KafkaChannelOption Enables Customization Of A KafkaChannel
-type KafkaChannelOption func(*knativekafkav1alpha1.KafkaChannel)
+type KafkaChannelOption func(*kafkav1alpha1.KafkaChannel)
 
 // Utility Function For Creating A Custom KafkaChannel For Testing
-func NewKnativeKafkaChannel(options ...KafkaChannelOption) *knativekafkav1alpha1.KafkaChannel {
+func NewKafkaChannel(options ...KafkaChannelOption) *kafkav1alpha1.KafkaChannel {
 
 	// Create The Specified KafkaChannel
-	kafkachannel := &knativekafkav1alpha1.KafkaChannel{
+	kafkachannel := &kafkav1alpha1.KafkaChannel{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: knativekafkav1alpha1.SchemeGroupVersion.String(),
+			APIVersion: kafkav1alpha1.SchemeGroupVersion.String(),
 			Kind:       constants.KafkaChannelKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: KafkaChannelNamespace,
 			Name:      KafkaChannelName,
 		},
-		Spec: knativekafkav1alpha1.KafkaChannelSpec{
+		Spec: kafkav1alpha1.KafkaChannelSpec{
 			NumPartitions:     NumPartitions,
 			ReplicationFactor: ReplicationFactor,
-			RetentionMillis:   RetentionMillis,
+			// TODO RetentionMillis:   RetentionMillis,
 		},
 	}
 
@@ -235,23 +234,24 @@ func NewKnativeKafkaChannel(options ...KafkaChannelOption) *knativekafkav1alpha1
 }
 
 // Set The KafkaChannel's Status To Initialized State
-func WithInitKafkaChannelConditions(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+func WithInitializedConditions(kafkachannel *kafkav1alpha1.KafkaChannel) {
 	kafkachannel.Status.InitializeConditions()
+	kafkachannel.Status.MarkConfigTrue()
 }
 
 // Set The KafkaChannel's DeletionTimestamp To Current Time
-func WithKafkaChannelDeleted(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+func WithDeletionTimestamp(kafkachannel *kafkav1alpha1.KafkaChannel) {
 	deleteTime := metav1.NewTime(time.Unix(1e9, 0))
 	kafkachannel.ObjectMeta.SetDeletionTimestamp(&deleteTime)
 }
 
 // Set The KafkaChannel's Finalizer
-func WithKafkaChannelFinalizer(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.ObjectMeta.Finalizers = []string{"kafkachannels.knativekafka.kyma-project.io"}
+func WithFinalizer(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	kafkachannel.ObjectMeta.Finalizers = []string{"kafkachannels.messaging.knative.dev"}
 }
 
 // Set The KafkaChannel's Labels
-func WithKafkaChannelLabels(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+func WithLabels(kafkachannel *kafkav1alpha1.KafkaChannel) {
 	kafkachannel.ObjectMeta.Labels = map[string]string{
 		constants.KafkaTopicLabel:  fmt.Sprintf("%s.%s", KafkaChannelNamespace, KafkaChannelName),
 		constants.KafkaSecretLabel: KafkaSecretName,
@@ -259,7 +259,7 @@ func WithKafkaChannelLabels(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
 }
 
 // Set The KafkaChannel's Address
-func WithKafkaChannelAddress(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+func WithAddress(kafkachannel *kafkav1alpha1.KafkaChannel) {
 	kafkachannel.Status.SetAddress(&apis.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("%s-kafkachannel.%s.svc.cluster.local", KafkaChannelName, KafkaChannelNamespace),
@@ -267,57 +267,59 @@ func WithKafkaChannelAddress(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
 }
 
 // Set The KafkaChannel's Service As READY
-func WithKafkaChannelServiceReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkKafkaChannelServiceTrue()
-}
-
-// Set The KafkaChannel's Services As Failed
-func WithKafkaChannelServiceFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkKafkaChannelServiceFailed("KafkaChannelServiceFailed", fmt.Sprintf("Channel Service Failed: inducing failure for create services"))
-}
-
-// Set The KafkaChannel's Channel Service As READY
-func WithKafkaChannelChannelServiceReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+func WithKafkaChannelServiceReady(kafkachannel *kafkav1alpha1.KafkaChannel) {
 	kafkachannel.Status.MarkChannelServiceTrue()
 }
 
+// Set The KafkaChannel's Services As Failed
+func WithKafkaChannelServiceFailed(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkChannelServiceFailed(event.KafkaChannelServiceReconciliationFailed.String(), fmt.Sprintf("Failed To Create KafkaChannel Service: inducing failure for create services"))
+}
+
+// Set The KafkaChannel's Channel Service As READY
+func WithChannelServiceReady(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkServiceTrue()
+}
+
 // Set The KafkaChannel's Channel Service As Failed
-func WithKafkaChannelChannelServiceFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelServiceFailed("ChannelServiceFailed", "Channel Service Failed: inducing failure for create services")
+func WithChannelServiceFailed(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkServiceFailed(event.ChannelServiceReconciliationFailed.String(), "Channel Service Failed: inducing failure for create services")
 }
 
 // Set The KafkaChannel's Channel Service As Finalized
-func WithKafkaChannelChannelServiceFinalized(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelServiceFailed("ChannelServiceUnavailable", "Kafka Auth Secret Finalized")
+func WithChannelServiceFinalized(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkServiceFailed("ChannelServiceUnavailable", "Kafka Auth Secret Finalized")
 }
 
 // Set The KafkaChannel's Channel Deployment As READY
-func WithKafkaChannelChannelDeploymentReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelDeploymentTrue()
+func WithChannelDeploymentReady(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkEndpointsTrue()
 }
 
 // Set The KafkaChannel's Channel Deployment As Failed
-func WithKafkaChannelChannelDeploymentFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelDeploymentFailed("ChannelDeploymentFailed", "Channel Deployment Failed: inducing failure for create deployments")
+func WithChannelDeploymentFailed(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkEndpointsFailed(event.ChannelDeploymentReconciliationFailed.String(), "Channel Deployment Failed: inducing failure for create deployments")
 }
 
 // Set The KafkaChannel's Channel Deployment As Finalized
-func WithKafkaChannelChannelDeploymentFinalized(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkChannelDeploymentFailed("ChannelDeploymentUnavailable", "Kafka Auth Secret Finalized")
+func WithChannelDeploymentFinalized(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkEndpointsFailed("ChannelDeploymentUnavailable", "Kafka Auth Secret Finalized")
 }
 
 // Set The KafkaChannel's Dispatcher Deployment As READY
-func WithKafkaChannelDispatcherDeploymentReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkDispatcherDeploymentTrue()
+func WithDispatcherDeploymentReady(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	// TODO - This is unnecessary since the testing framework doesn't return any Status Conditions from the K8S commands (Create, Get)
+	//        which means the propagate function doesn't do anything.  This is a testing gap with the framework and propagateDispatcherStatus()
+	// kafkachannel.Status.PropagateDispatcherStatus()
 }
 
 // Set The KafkaChannel's Dispatcher Deployment As Failed
-func WithKafkaChannelDispatcherDeploymentFailed(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
-	kafkachannel.Status.MarkDispatcherDeploymentFailed("DispatcherDeploymentFailed", "Dispatcher Deployment Failed: inducing failure for create deployments")
+func WithDispatcherFailed(kafkachannel *kafkav1alpha1.KafkaChannel) {
+	kafkachannel.Status.MarkDispatcherFailed(event.DispatcherDeploymentReconciliationFailed.String(), "Failed To Create Dispatcher Deployment: inducing failure for create deployments")
 }
 
 // Set The KafkaChannel's Topic READY
-func WithKafkaChannelTopicReady(kafkachannel *knativekafkav1alpha1.KafkaChannel) {
+func WithTopicReady(kafkachannel *kafkav1alpha1.KafkaChannel) {
 	kafkachannel.Status.MarkTopicTrue()
 }
 
@@ -518,7 +520,7 @@ func NewKafkaChannelChannelDeployment() *appsv1.Deployment {
 func NewKafkaChannelDispatcherService() *corev1.Service {
 
 	// Get The Expected Service Name For The Test KafkaChannel
-	serviceName := util.DispatcherDnsSafeName(&knativekafkav1alpha1.KafkaChannel{
+	serviceName := util.DispatcherDnsSafeName(&kafkav1alpha1.KafkaChannel{
 		ObjectMeta: metav1.ObjectMeta{Namespace: KafkaChannelNamespace, Name: KafkaChannelName},
 	})
 
@@ -559,7 +561,7 @@ func NewKafkaChannelDispatcherService() *corev1.Service {
 func NewKafkaChannelDispatcherDeployment() *appsv1.Deployment {
 
 	// Get The Expected Dispatcher & Topic Names For The Test KafkaChannel
-	sparseKafkaChannel := &knativekafkav1alpha1.KafkaChannel{ObjectMeta: metav1.ObjectMeta{Namespace: KafkaChannelNamespace, Name: KafkaChannelName}}
+	sparseKafkaChannel := &kafkav1alpha1.KafkaChannel{ObjectMeta: metav1.ObjectMeta{Namespace: KafkaChannelNamespace, Name: KafkaChannelName}}
 	dispatcherName := util.DispatcherDnsSafeName(sparseKafkaChannel)
 	topicName := util.TopicName(sparseKafkaChannel)
 
@@ -734,7 +736,7 @@ func NewChannelOwnerRef() metav1.OwnerReference {
 	blockOwnerDeletion := true
 	controller := true
 	return metav1.OwnerReference{
-		APIVersion:         "knativekafka.kyma-project.io/v1alpha1",
+		APIVersion:         kafkav1alpha1.SchemeGroupVersion.String(),
 		Kind:               constants.KafkaChannelKind,
 		Name:               KafkaChannelName,
 		UID:                "",
@@ -744,12 +746,12 @@ func NewChannelOwnerRef() metav1.OwnerReference {
 }
 
 // Utility Function For Creating A UpdateActionImpl For The KafkaChannel Labels Update Command
-func NewKafkaChannelLabelUpdate(kafkachannel *knativekafkav1alpha1.KafkaChannel) clientgotesting.UpdateActionImpl {
+func NewKafkaChannelLabelUpdate(kafkachannel *kafkav1alpha1.KafkaChannel) clientgotesting.UpdateActionImpl {
 	return clientgotesting.UpdateActionImpl{
 		ActionImpl: clientgotesting.ActionImpl{
 			Namespace:   "KafkaChannelNamespace",
 			Verb:        "update",
-			Resource:    schema.GroupVersionResource{Group: knativekafkav1alpha1.SchemeGroupVersion.Group, Version: knativekafkav1alpha1.SchemeGroupVersion.Version, Resource: "kafkachannels"},
+			Resource:    schema.GroupVersionResource{Group: kafkav1alpha1.SchemeGroupVersion.Group, Version: kafkav1alpha1.SchemeGroupVersion.Version, Resource: "kafkachannels"},
 			Subresource: "",
 		},
 		Object: kafkachannel,
@@ -762,12 +764,12 @@ func NewFinalizerPatchActionImpl() clientgotesting.PatchActionImpl {
 		ActionImpl: clientgotesting.ActionImpl{
 			Namespace:   KafkaChannelNamespace,
 			Verb:        "patch",
-			Resource:    schema.GroupVersionResource{Group: knativekafkav1alpha1.SchemeGroupVersion.Group, Version: knativekafkav1alpha1.SchemeGroupVersion.Version, Resource: "kafkachannels"},
+			Resource:    schema.GroupVersionResource{Group: kafkav1alpha1.SchemeGroupVersion.Group, Version: kafkav1alpha1.SchemeGroupVersion.Version, Resource: "kafkachannels"},
 			Subresource: "",
 		},
 		Name:      KafkaChannelName,
 		PatchType: "application/merge-patch+json",
-		Patch:     []byte(`{"metadata":{"finalizers":["kafkachannels.knativekafka.kyma-project.io"],"resourceVersion":""}}`),
+		Patch:     []byte(`{"metadata":{"finalizers":["kafkachannels.messaging.knative.dev"],"resourceVersion":""}}`),
 		// Above finalizer name matches package private "defaultFinalizerName" constant in injection/reconciler/knativekafka/v1alpha1/kafkachannel ;)
 	}
 }

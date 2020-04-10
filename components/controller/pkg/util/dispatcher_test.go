@@ -2,9 +2,9 @@ package util
 
 import (
 	"fmt"
-	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
 	messagingv1alpha1 "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"testing"
 )
@@ -29,7 +29,7 @@ func TestNewControllerRef(t *testing.T) {
 func TestDispatcherDnsSafeName(t *testing.T) {
 
 	// Test Data
-	channel := &knativekafkav1alpha1.KafkaChannel{ObjectMeta: metav1.ObjectMeta{Name: channelName, Namespace: channelNamespace}}
+	channel := &kafkav1alpha1.KafkaChannel{ObjectMeta: metav1.ObjectMeta{Name: channelName, Namespace: channelNamespace}}
 
 	// Perform The Test
 	actualResult := DispatcherDnsSafeName(channel)

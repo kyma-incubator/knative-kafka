@@ -44,8 +44,8 @@ func (r *Reconciler) reconcileChannel(secret *corev1.Secret) error {
 
 	// Reconcile Channel's KafkaChannel Status
 	statusErr := r.reconcileKafkaChannelStatus(secret,
-		serviceErr == nil, "ChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %v", serviceErr),
-		deploymentErr == nil, "ChannelDeploymentFailed", fmt.Sprintf("Channel Deployment Failed: %v", deploymentErr))
+		serviceErr == nil, event.ChannelServiceReconciliationFailed.String(), fmt.Sprintf("Channel Service Failed: %v", serviceErr),
+		deploymentErr == nil, event.ChannelDeploymentReconciliationFailed.String(), fmt.Sprintf("Channel Deployment Failed: %v", deploymentErr))
 	if statusErr != nil {
 		r.Recorder.Eventf(secret, corev1.EventTypeWarning, event.ChannelStatusReconciliationFailed.String(), "Failed To Reconcile Channel's KafkaChannel Status: %v", statusErr)
 		logger.Error("Failed To Reconcile KafkaChannel Status", zap.Error(statusErr))
