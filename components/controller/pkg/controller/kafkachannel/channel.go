@@ -56,7 +56,6 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *kafkav1alpha1.KafkaCh
 			service, err = r.KubeClientSet.CoreV1().Services(service.Namespace).Create(service)
 			if err != nil {
 				r.Logger.Error("Failed To Create KafkaChannel Service", zap.Error(err))
-				// TODO r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.KafkaChannelServiceFailed.String(), "Failed To Reconcile KafkaChannel Service: %v", err)
 				channel.Status.MarkChannelServiceFailed(event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Create KafkaChannel Service: %v", err)
 				return err
 			} else {
@@ -65,7 +64,6 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *kafkav1alpha1.KafkaCh
 			}
 		} else {
 			r.Logger.Error("Failed To Get KafkaChannel Service", zap.Error(err))
-			// TODO r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.KafkaChannelServiceFailed.String(), "Failed To Reconcile KafkaChannel Service: %v", err)
 			channel.Status.MarkChannelServiceFailed(event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Get KafkaChannel Service: %v", err)
 			return err
 		}

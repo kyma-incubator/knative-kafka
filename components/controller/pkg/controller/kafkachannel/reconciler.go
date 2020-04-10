@@ -83,6 +83,15 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, channel *kafkav1alpha1.Ka
 // Perform The Actual Channel Reconciliation
 func (r *Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) error {
 
+	// NOTE - The sequential order of reconciliation must be "Topic" then "Channel / Dispatcher" in order for the
+	//        EventHub Cache to know the dynamically determined EventHub Namespace / Kafka Secret selected for the topic.
+
+	// Reconcile The KafkaChannel's Kafka Topic
+	err := r.reconcileTopic(ctx, channel)
+	if err != nil {
+		return fmt.Errorf(constants.ReconciliationFailedError)
+	}
+
 	//
 	// This implementation is based on the eventing-contrib KafkaChannel, and thus we're using
 	// their Status tracking even though it does not align with our architecture.  We get our
@@ -92,16 +101,7 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.Kafka
 	if len(r.adminClient.GetKafkaSecretName(util.TopicName(channel))) > 0 {
 		channel.Status.MarkConfigTrue()
 	} else {
-		channel.Status.MarkConfigFailed(event.KafkaSecretReconciled.String(), "No Kafka Secret For KafkaChannel: %v/%v", channel.Namespace, channel.Name)
-		return fmt.Errorf(constants.ReconciliationFailedError)
-	}
-
-	// NOTE - The sequential order of reconciliation must be "Topic" then "Channel / Dispatcher" in order for the
-	//        EventHub Cache to know the dynamically determined EventHub Namespace / Kafka Secret selected for the topic.
-
-	// Reconcile The KafkaChannel's Kafka Topic
-	err := r.reconcileTopic(ctx, channel)
-	if err != nil {
+		channel.Status.MarkConfigFailed(event.KafkaSecretReconciled.String(), "No Kafka Secret For KafkaChannel")
 		return fmt.Errorf(constants.ReconciliationFailedError)
 	}
 

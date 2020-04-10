@@ -33,14 +33,9 @@ func WithInitKafkaChannelConditions(nc *v1alpha1.KafkaChannel) {
 }
 
 func WithKafkaChannelReady(nc *v1alpha1.KafkaChannel) {
-	nc.Status.MarkTopicTrue()
-	// TODO nc.Status.MarkKafkaChannelServiceTrue()
-	nc.Status.MarkChannelServiceTrue()
-	// TODO nc.Status.MarkChannelDeploymentTrue()
-	// TODO nc.Status.MarkDispatcherDeploymentTrue()
-
-	// TODO - added to fix test
 	nc.Status.MarkConfigTrue()
+	nc.Status.MarkTopicTrue()
+	nc.Status.MarkChannelServiceTrue()
 	nc.Status.MarkServiceTrue()
 	nc.Status.MarkEndpointsTrue()
 	nc.Status.PropagateDispatcherStatus(&appsv1.DeploymentStatus{

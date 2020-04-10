@@ -96,7 +96,7 @@ func (r *Reconciler) updateKafkaChannelStatus(originalChannel *kafkav1alpha1.Kaf
 		//
 		// Update Deployment Status Based On Specified State
 		//
-		// TODO - As part of the conversion to the eventing-contrib KafkaChannel CRD, and the associated
+		// TODO - As part of the conversion to the eventing-contrib KafkaChannel CRD and its associated
 		//        Status, we've not yet implemented Endpoint tracking.  Until this is done we'll track
 		//        the Deployments As Endpoints (since they will result in the Endpoints being up anyway).
 		//

@@ -21,8 +21,7 @@ const (
 	defaultNumPartitions     = 987
 	replicationFactor        = 22
 	defaultReplicationFactor = 33
-	// TODO retentionMillis          = int64(4444)
-	defaultRetentionMillis = int64(55555)
+	defaultRetentionMillis   = int64(55555)
 )
 
 // Test The ChannelLogger() Functionality
@@ -151,7 +150,7 @@ func TestRetentionMillis(t *testing.T) {
 	actualRetentionMillis := RetentionMillis(channel, environment, logger)
 	assert.Equal(t, defaultRetentionMillis, actualRetentionMillis)
 
-	// TODO - No RetentionMillis in eventingcontrib's knative-kafka !!!
+	// TODO - No RetentionMillis In eventing-contrib KafkaChannel
 	//// Test The Valid RetentionMillis Use Case
 	//channel = &kafkav1alpha1.KafkaChannel{Spec: kafkav1alpha1.KafkaChannelSpec{RetentionMillis: retentionMillis}}
 	//actualRetentionMillis = RetentionMillis(channel, environment, logger)

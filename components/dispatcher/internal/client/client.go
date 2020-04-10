@@ -15,11 +15,6 @@ import (
 	"time"
 )
 
-/* TODO - these were removed  when we switched below...
-knativeeventingtracing "knative.dev/eventing/pkg/tracing"
-"knative.dev/pkg/tracing"
-*/
-
 // Create a shared go http client with a timeout
 var httpClient = &http.Client{
 	Timeout: 30 * time.Second,
@@ -46,14 +41,11 @@ var _ RetriableClient = &retriableCloudEventClient{}
 
 func NewRetriableCloudEventClient(logger *zap.Logger, exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
 
-	// TODO - This setup was used to add the cloudevents middleware for tracing.
-	//        The hope is that this is now unnecessary and is part of the cloudevents sdk.
-	//        If not then we cold try the following...
+	// TODO - This setup was used to add the cloudevents middleware for tracing and to support retry.
+	//        Try the following...
 	//          - Use the NewDefaultHTTPClient() function with bits of this (maybe using their NewDefaultHTTPTransport() function?)
 	//        ...or...
 	//          - Keep all this and copy/paste in the removed knative function NewDefaultClientGivenHttpTransport() and create another issue to sort it all out ;) PUNT
-
-	// TODO - omg - also had to build all this to support retry ?
 
 	tOpts := []cloudeventhttp.Option{
 		cloudevents.WithBinaryEncoding(),
@@ -61,13 +53,13 @@ func NewRetriableCloudEventClient(logger *zap.Logger, exponentialBackoff bool, i
 	}
 
 	// Make an http transport for the CloudEvents client.
-	transport, err := cloudevents.NewHTTPTransport(tOpts...) // TODO - call the new knative NewDefaultHTTPTransport() ??
+	transport, err := cloudevents.NewHTTPTransport(tOpts...) // TODO - call the new knative connectionargs.NewDefaultHTTPTransport() ??
 	if err != nil {
 		panic("Failed To Create Transport, " + err.Error())
 	}
 	transport.Client = httpClient
 
-	// TODO - ORIG         ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(transport, nil)
+	// TODO - ORIG ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(transport, nil)
 	ceClient, err := kncloudevents.NewDefaultHTTPClient(transport)
 	if err != nil {
 		panic("Unable To Create KnativeCloudEvent Client: " + err.Error())
