@@ -1,6 +1,7 @@
 # IDEs and editors
 *.iml
 .idea/
+.run/
 
 # System Files
 .DS_Store
