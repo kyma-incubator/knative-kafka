@@ -44,13 +44,18 @@
 
 # Align With Knative Eventing-Contrib
 [[constraint]]
+  name = "knative.dev/eventing"
+  branch = "release-0.14"
+
+# Align With Knative Eventing-Contrib
+[[constraint]]
   name = "knative.dev/eventing-contrib"
-  branch = "master"
+  branch = "release-0.14"
 
 # Align With Knative Eventing-Contrib
 [[constraint]]
   name = "github.com/cloudevents/sdk-go"
-  version = "v2.0.0-preview8"
+  version = "v2.0.0-RC1"
 
 [prune]
   go-tests = true

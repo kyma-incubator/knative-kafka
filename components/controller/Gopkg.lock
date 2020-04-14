@@ -202,8 +202,8 @@
     "v1/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "6dc020a8df7f3ee38d729e53cde2193ea7edf12a"
-  version = "v2.0.0-preview8"
+  revision = "3638af885cfe1cc7dd7421d23ebe4dbf278d1937"
+  version = "v2.0.0-RC1"
 
 [[projects]]
   digest = "1:a608126722b85a26268c20c9f355b839aa2c9d6236890bf0f7dda21227782f83"
@@ -1323,8 +1323,8 @@
   revision = "f07c713de88362aef7545072487d6118bd4a3d4a"
 
 [[projects]]
-  branch = "master"
-  digest = "1:0df27673d242df21d8ff87e9a0ae324bd83cd92470b6d3a7e7544e4ea3772fd6"
+  branch = "release-0.14"
+  digest = "1:840f063348f9f10792f111cef4b5ced423f699bbabb80b20e945c039fdeed567"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1370,15 +1370,14 @@
     "pkg/client/injection/client",
     "pkg/client/injection/client/fake",
     "pkg/logging",
-    "pkg/reconciler",
     "pkg/reconciler/names",
     "pkg/utils",
   ]
   pruneopts = "NUT"
-  revision = "8b8bed39541eaf8f9d518adfcd27112b36d0a1c8"
+  revision = "02bc51668a0c7d2d8cbb56823c5aecbeec46253d"
 
 [[projects]]
-  branch = "master"
+  branch = "release-0.14"
   digest = "1:67e305710a6174e20eed58cad069475fd209f129705fcc4a4a819271875d49d2"
   name = "knative.dev/eventing-contrib"
   packages = [
@@ -1402,7 +1401,7 @@
     "kafka/channel/pkg/utils",
   ]
   pruneopts = "NUT"
-  revision = "833d79b896989684192a1e9f10a7ba6cb05434f4"
+  revision = "6ba61a66e189049d5d09ce61e4fe29df71d5991b"
 
 [[projects]]
   branch = "master"
@@ -1501,6 +1500,7 @@
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/informers",
     "k8s.io/client-go/informers/core/v1",
+    "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/kubernetes/typed/core/v1",
@@ -1526,7 +1526,6 @@
     "knative.dev/eventing/pkg/client/clientset/versioned/fake",
     "knative.dev/eventing/pkg/client/injection/client/fake",
     "knative.dev/eventing/pkg/logging",
-    "knative.dev/eventing/pkg/reconciler",
     "knative.dev/eventing/pkg/reconciler/names",
     "knative.dev/eventing/pkg/utils",
     "knative.dev/pkg/apis",

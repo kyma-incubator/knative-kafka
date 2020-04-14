@@ -131,7 +131,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:90f92270f9f207bd05f8dd42dab33a8089e78a8b27af0b208a6d216c3aeba879"
+  digest = "1:1d70a0f5374ad98a6c4f4faaa9fe47b9abdde49b3ce78db8837be79be28c328a"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "v1",
@@ -166,8 +166,8 @@
     "v2/types",
   ]
   pruneopts = "UT"
-  revision = "6dc020a8df7f3ee38d729e53cde2193ea7edf12a"
-  version = "v2.0.0-preview8"
+  revision = "3638af885cfe1cc7dd7421d23ebe4dbf278d1937"
+  version = "v2.0.0-RC1"
 
 [[projects]]
   digest = "1:160ab0a25b5cc8c8741882b75db882e18806bb1dba87680ef87604aca763bdae"
@@ -1164,8 +1164,8 @@
   revision = "94aeca20bf0991bf33922a5938174b9147ab8ca7"
 
 [[projects]]
-  branch = "master"
-  digest = "1:47d82fd981a72faffe4141903b2ebc25d5fec28f311b7bc27cab23752ad5809e"
+  branch = "release-0.14"
+  digest = "1:3a2e13ec8fb8cfacdafb9e45ac181444722f45210d30d3773754f9733ef9adc3"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1179,10 +1179,10 @@
     "pkg/utils",
   ]
   pruneopts = "UT"
-  revision = "d5ddc0b44c9b1c3e62ba20ff53374b08e96f79a2"
+  revision = "02bc51668a0c7d2d8cbb56823c5aecbeec46253d"
 
 [[projects]]
-  branch = "master"
+  branch = "release-0.14"
   digest = "1:3ea0a94034c6a70c5aa620fb6d686669fd6bda275b6228f04bd9b3317518826d"
   name = "knative.dev/eventing-contrib"
   packages = [
@@ -1201,7 +1201,7 @@
     "kafka/channel/pkg/utils",
   ]
   pruneopts = "UT"
-  revision = "3e94a36c9163d8518cbec5d9e23d447817db9258"
+  revision = "6ba61a66e189049d5d09ce61e4fe29df71d5991b"
 
 [[projects]]
   branch = "master"
