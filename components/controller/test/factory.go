@@ -2,13 +2,12 @@ package test
 
 import (
 	"context"
-	fakeknativekafkaclient "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client/fake"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
+	fakekafkaclient "knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/client/fake"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
-	fakelegacyclient "knative.dev/eventing/pkg/legacyclient/injection/client/fake"
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -37,8 +36,7 @@ func MakeFactory(ctor Ctor, logger *zap.Logger) Factory {
 
 		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
 		ctx, eventingClient := fakeeventingclient.With(ctx, ls.GetEventingObjects()...)
-		ctx, legacy := fakelegacyclient.With(ctx, ls.GetLegacyObjects()...)
-		ctx, client := fakeknativekafkaclient.With(ctx, ls.GetKafkaChannelObjects()...)
+		ctx, client := fakekafkaclient.With(ctx, ls.GetKafkaChannelObjects()...)
 
 		dynamicScheme := runtime.NewScheme()
 		for _, addTo := range clientSetSchemes {
@@ -56,7 +54,6 @@ func MakeFactory(ctor Ctor, logger *zap.Logger) Factory {
 		for _, reactor := range r.WithReactors {
 			kubeClient.PrependReactor("*", "*", reactor)
 			client.PrependReactor("*", "*", reactor)
-			legacy.PrependReactor("*", "*", reactor)
 			dynamicClient.PrependReactor("*", "*", reactor)
 			eventingClient.PrependReactor("*", "*", reactor)
 		}
@@ -67,14 +64,6 @@ func MakeFactory(ctor Ctor, logger *zap.Logger) Factory {
 		})
 		client.PrependReactor("update", "*", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
 			return ValidateUpdates(context.Background(), action)
-		})
-
-		// Validate all Create operations through the legacy client.
-		legacy.PrependReactor("create", "*", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-			return ValidateCreates(ctx, action)
-		})
-		legacy.PrependReactor("update", "*", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-			return ValidateUpdates(ctx, action)
 		})
 
 		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient}

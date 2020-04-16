@@ -2,7 +2,7 @@ package dispatcher
 
 import (
 	"errors"
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v1"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/consumer"
 	"github.com/kyma-incubator/knative-kafka/components/common/pkg/prometheus"
@@ -65,7 +65,7 @@ func NewDispatcher(dispatcherConfig DispatcherConfig) *Dispatcher {
 
 // Stop All Consumers
 func (d *Dispatcher) StopConsumers() {
-	for subscription, _ := range d.consumers {
+	for subscription := range d.consumers {
 		d.stopConsumer(subscription)
 	}
 }

@@ -1,16 +1,13 @@
 package testing
 
 import (
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
-	"testing"
-
 	"k8s.io/apimachinery/pkg/runtime"
-
 	"k8s.io/client-go/tools/record"
-
-	fakeclientset "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/fake"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
+	fakeclientset "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned/fake"
 	"knative.dev/pkg/controller"
 	. "knative.dev/pkg/reconciler/testing"
+	"testing"
 )
 
 const (
@@ -24,18 +21,17 @@ type Ctor func(listers *Listers, kafkaClient versioned.Interface, eventRecorder 
 
 // MakeFactory creates a reconciler factory with fake clients and controller created by `ctor`.
 func MakeFactory(ctor Ctor) Factory {
-	return func(t *testing.T, r *TableRow) (controller.Reconciler, ActionRecorderList, EventList, *FakeStatsReporter) {
+	return func(t *testing.T, r *TableRow) (controller.Reconciler, ActionRecorderList, EventList) {
 		ls := NewListers(r.Objects)
 
 		client := fakeclientset.NewSimpleClientset(ls.GetMessagingObjects()...)
 
 		dynamicScheme := runtime.NewScheme()
 		for _, addTo := range clientSetSchemes {
-			addTo(dynamicScheme)
+			_ = addTo(dynamicScheme)
 		}
 
 		eventRecorder := record.NewFakeRecorder(maxEventBufferSize)
-		statsReporter := &FakeStatsReporter{}
 
 		// Set up our Controller from the fakes.
 		c := ctor(&ls, client, eventRecorder)
@@ -43,6 +39,6 @@ func MakeFactory(ctor Ctor) Factory {
 		actionRecorderList := ActionRecorderList{client}
 		eventList := EventList{Recorder: eventRecorder}
 
-		return c, actionRecorderList, eventList, statsReporter
+		return c, actionRecorderList, eventList
 	}
 }

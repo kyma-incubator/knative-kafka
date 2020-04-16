@@ -5,12 +5,12 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/go-cmp/cmp"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/test"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
-	"knative.dev/eventing/pkg/reconciler"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
+	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 	"strconv"
 	"testing"
@@ -19,7 +19,7 @@ import (
 // Define The Topic TestCase Type
 type TopicTestCase struct {
 	Name                   string
-	Channel                *knativekafkav1alpha1.KafkaChannel
+	Channel                *kafkav1alpha1.KafkaChannel
 	WantTopicSpecification kafka.TopicSpecification
 	MockErrorCode          kafka.ErrorCode
 	WantError              string
@@ -40,29 +40,29 @@ func TestReconcileTopic(t *testing.T) {
 	topicTestCases := []TopicTestCase{
 		{
 			Name: "Skip Deleted Topic",
-			Channel: test.NewKnativeKafkaChannel(
-				test.WithKafkaChannelFinalizer,
-				test.WithKafkaChannelDeleted,
-				test.WithKafkaChannelAddress,
-				test.WithInitKafkaChannelConditions,
+			Channel: test.NewKafkaChannel(
+				test.WithFinalizer,
+				test.WithDeletionTimestamp,
+				test.WithAddress,
+				test.WithInitializedConditions,
 				test.WithKafkaChannelServiceReady,
-				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelChannelDeploymentReady,
-				test.WithKafkaChannelDispatcherDeploymentReady,
+				test.WithChannelServiceReady,
+				test.WithChannelDeploymentReady,
+				test.WithDispatcherDeploymentReady,
 			),
 			WantCreate: false,
 			WantDelete: false,
 		},
 		{
 			Name: "Create New Topic",
-			Channel: test.NewKnativeKafkaChannel(
-				test.WithKafkaChannelFinalizer,
-				test.WithKafkaChannelAddress,
-				test.WithInitKafkaChannelConditions,
+			Channel: test.NewKafkaChannel(
+				test.WithFinalizer,
+				test.WithAddress,
+				test.WithInitializedConditions,
 				test.WithKafkaChannelServiceReady,
-				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelChannelDeploymentReady,
-				test.WithKafkaChannelDispatcherDeploymentReady,
+				test.WithChannelServiceReady,
+				test.WithChannelDeploymentReady,
+				test.WithDispatcherDeploymentReady,
 			),
 			WantCreate: true,
 			WantDelete: false,
@@ -71,20 +71,20 @@ func TestReconcileTopic(t *testing.T) {
 				NumPartitions:     test.NumPartitions,
 				ReplicationFactor: test.ReplicationFactor,
 				Config: map[string]string{
-					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
+					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.DefaultRetentionMillis, 10),
 				},
 			},
 		},
 		{
 			Name: "Create Preexisting Topic",
-			Channel: test.NewKnativeKafkaChannel(
-				test.WithKafkaChannelFinalizer,
-				test.WithKafkaChannelAddress,
-				test.WithInitKafkaChannelConditions,
+			Channel: test.NewKafkaChannel(
+				test.WithFinalizer,
+				test.WithAddress,
+				test.WithInitializedConditions,
 				test.WithKafkaChannelServiceReady,
-				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelChannelDeploymentReady,
-				test.WithKafkaChannelDispatcherDeploymentReady,
+				test.WithChannelServiceReady,
+				test.WithChannelDeploymentReady,
+				test.WithDispatcherDeploymentReady,
 			),
 			WantCreate: true,
 			WantDelete: false,
@@ -93,21 +93,21 @@ func TestReconcileTopic(t *testing.T) {
 				NumPartitions:     test.NumPartitions,
 				ReplicationFactor: test.ReplicationFactor,
 				Config: map[string]string{
-					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
+					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.DefaultRetentionMillis, 10),
 				},
 			},
 			MockErrorCode: kafka.ErrTopicAlreadyExists,
 		},
 		{
 			Name: "Error Creating Topic",
-			Channel: test.NewKnativeKafkaChannel(
-				test.WithKafkaChannelFinalizer,
-				test.WithKafkaChannelAddress,
-				test.WithInitKafkaChannelConditions,
+			Channel: test.NewKafkaChannel(
+				test.WithFinalizer,
+				test.WithAddress,
+				test.WithInitializedConditions,
 				test.WithKafkaChannelServiceReady,
-				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelChannelDeploymentReady,
-				test.WithKafkaChannelDispatcherDeploymentReady,
+				test.WithChannelServiceReady,
+				test.WithChannelDeploymentReady,
+				test.WithDispatcherDeploymentReady,
 			),
 			WantCreate: true,
 			WantDelete: false,
@@ -116,7 +116,7 @@ func TestReconcileTopic(t *testing.T) {
 				NumPartitions:     test.NumPartitions,
 				ReplicationFactor: test.ReplicationFactor,
 				Config: map[string]string{
-					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
+					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.DefaultRetentionMillis, 10),
 				},
 			},
 			MockErrorCode: kafka.ErrAllBrokersDown,
@@ -124,69 +124,54 @@ func TestReconcileTopic(t *testing.T) {
 		},
 		{
 			Name: "Delete Existing Topic",
-			Channel: test.NewKnativeKafkaChannel(
-				test.WithKafkaChannelFinalizer,
-				test.WithKafkaChannelAddress,
-				test.WithInitKafkaChannelConditions,
+			Channel: test.NewKafkaChannel(
+				test.WithFinalizer,
+				test.WithAddress,
+				test.WithInitializedConditions,
 				test.WithKafkaChannelServiceReady,
-				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelChannelDeploymentReady,
-				test.WithKafkaChannelDispatcherDeploymentReady,
+				test.WithChannelServiceReady,
+				test.WithChannelDeploymentReady,
+				test.WithDispatcherDeploymentReady,
 			),
 			WantCreate: false,
 			WantDelete: true,
 			WantTopicSpecification: kafka.TopicSpecification{
-				Topic:             test.TopicName,
-				NumPartitions:     test.NumPartitions,
-				ReplicationFactor: test.ReplicationFactor,
-				Config: map[string]string{
-					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
-				},
+				Topic: test.TopicName,
 			},
 		},
 		{
 			Name: "Delete Nonexistent Topic",
-			Channel: test.NewKnativeKafkaChannel(
-				test.WithKafkaChannelFinalizer,
-				test.WithKafkaChannelAddress,
-				test.WithInitKafkaChannelConditions,
+			Channel: test.NewKafkaChannel(
+				test.WithFinalizer,
+				test.WithAddress,
+				test.WithInitializedConditions,
 				test.WithKafkaChannelServiceReady,
-				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelChannelDeploymentReady,
-				test.WithKafkaChannelDispatcherDeploymentReady,
+				test.WithChannelServiceReady,
+				test.WithChannelDeploymentReady,
+				test.WithDispatcherDeploymentReady,
 			),
 			WantCreate: false,
 			WantDelete: true,
 			WantTopicSpecification: kafka.TopicSpecification{
-				Topic:             test.TopicName,
-				NumPartitions:     test.NumPartitions,
-				ReplicationFactor: test.ReplicationFactor,
-				Config: map[string]string{
-					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
-				},
+				Topic: test.TopicName,
 			},
 			MockErrorCode: kafka.ErrUnknownTopic,
 		},
 		{
 			Name: "Error Deleting Topic",
-			Channel: test.NewKnativeKafkaChannel(
-				test.WithKafkaChannelFinalizer,
-				test.WithKafkaChannelAddress,
-				test.WithInitKafkaChannelConditions,
+			Channel: test.NewKafkaChannel(
+				test.WithFinalizer,
+				test.WithAddress,
+				test.WithInitializedConditions,
 				test.WithKafkaChannelServiceReady,
-				test.WithKafkaChannelChannelServiceReady,
-				test.WithKafkaChannelChannelDeploymentReady,
-				test.WithKafkaChannelDispatcherDeploymentReady,
+				test.WithChannelServiceReady,
+				test.WithChannelDeploymentReady,
+				test.WithDispatcherDeploymentReady,
 			),
 			WantCreate: false,
 			WantDelete: true,
 			WantTopicSpecification: kafka.TopicSpecification{
-				Topic:             test.TopicName,
-				NumPartitions:     test.NumPartitions,
-				ReplicationFactor: test.ReplicationFactor,
-				Config: map[string]string{
-					constants.KafkaTopicConfigRetentionMs: strconv.FormatInt(test.RetentionMillis, 10),
-				},
+				Topic: test.TopicName,
 			},
 			MockErrorCode: kafka.ErrAllBrokersDown,
 			WantError:     test.ErrorString,
@@ -203,18 +188,16 @@ func TestReconcileTopic(t *testing.T) {
 func topicTestCaseFactory(tc TopicTestCase) func(t *testing.T) {
 	return func(t *testing.T) {
 
-		// Create A New Recorder & Logger For Testing
+		// Setup Context With New Recorder For Testing
 		recorder := record.NewBroadcaster().NewRecorder(scheme.Scheme, corev1.EventSource{Component: constants.KafkaChannelControllerAgentName})
+		ctx := controller.WithEventRecorder(context.TODO(), recorder)
 
 		// Create A Mock Kafka AdminClient For Current TopicTestCase
 		mockAdminClient := createMockAdminClientForTestCase(t, tc)
 
 		// Initialize The Reconciler For The Current TopicTestCase
 		r := &Reconciler{
-			Base: &reconciler.Base{
-				Logger:   logtesting.TestLogger(t),
-				Recorder: recorder,
-			},
+			logger:      logtesting.TestLogger(t).Desugar(),
 			adminClient: mockAdminClient,
 			environment: test.NewEnvironment(),
 		}
@@ -224,7 +207,7 @@ func topicTestCaseFactory(tc TopicTestCase) func(t *testing.T) {
 
 		// Perform The Test (Create) - Normal Topic Reconciliation Called Indirectly From ReconcileKind()
 		if tc.WantCreate {
-			err = r.reconcileTopic(context.TODO(), tc.Channel)
+			err = r.reconcileTopic(ctx, tc.Channel)
 			if !mockAdminClient.CreateTopicsCalled() {
 				t.Errorf("expected CreateTopics() called to be %t", tc.WantCreate)
 			}
@@ -232,7 +215,7 @@ func topicTestCaseFactory(tc TopicTestCase) func(t *testing.T) {
 
 		// Perform The Test (Delete) - Called By Knative FinalizeKind() Directly
 		if tc.WantDelete {
-			err = r.deleteTopic(context.TODO(), test.TopicName)
+			err = r.deleteTopic(ctx, test.TopicName)
 			if !mockAdminClient.DeleteTopicsCalled() {
 				t.Errorf("expected DeleteTopics() called to be %t", tc.WantCreate)
 			}

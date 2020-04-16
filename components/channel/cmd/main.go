@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go/v1/cloudevents"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/channel"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/env"

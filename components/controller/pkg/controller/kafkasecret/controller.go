@@ -3,18 +3,18 @@ package kafkasecret
 import (
 	"context"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	injectionclient "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/client"
-	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/informers/knativekafka/v1alpha1/kafkachannel"
-	kafkasecretreconciler "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/injection/reconciler/knativekafka/v1alpha1/kafkasecret"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/env"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinformer"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/kafkasecretinjection"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+	injectionclient "knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/client"
+	"knative.dev/eventing-contrib/kafka/channel/pkg/client/injection/informers/messaging/v1alpha1/kafkachannel"
 	"knative.dev/eventing/pkg/logging"
-	"knative.dev/eventing/pkg/reconciler"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
@@ -23,7 +23,7 @@ import (
 )
 
 // Create A New KafkaSecret Controller
-func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+func NewController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 
 	// Get A Logger
 	logger := logging.FromContext(ctx)
@@ -43,7 +43,8 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 
 	// Create The KafkaSecret Reconciler
 	r := &Reconciler{
-		Base:               reconciler.NewBase(ctx, constants.KafkaSecretControllerAgentName, cmw),
+		logger:             logging.FromContext(ctx),
+		kubeClientset:      kubeclient.Get(ctx),
 		environment:        environment,
 		kafkaChannelClient: injectionclient.Get(ctx),
 		kafkachannelLister: kafkachannelInformer.Lister(),
@@ -52,19 +53,19 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	}
 
 	// Create A New KafkaSecret Controller Impl With The Reconciler
-	controllerImpl := kafkasecretreconciler.NewImpl(ctx, r)
+	controllerImpl := kafkasecretinjection.NewImpl(ctx, r)
 
 	// Configure The Informers' EventHandlers
-	r.Logger.Info("Setting Up EventHandlers")
+	r.logger.Info("Setting Up EventHandlers")
 	kafkaSecretInformer.Informer().AddEventHandler(
 		controller.HandleAll(controllerImpl.Enqueue),
 	)
 	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(corev1.SchemeGroupVersion.WithKind(constants.SecretKind)),
+		FilterFunc: controller.FilterGroupVersionKind(corev1.SchemeGroupVersion.WithKind(constants.SecretKind)),
 		Handler:    controller.HandleAll(controllerImpl.EnqueueControllerOf),
 	})
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(corev1.SchemeGroupVersion.WithKind(constants.SecretKind)),
+		FilterFunc: controller.FilterGroupVersionKind(corev1.SchemeGroupVersion.WithKind(constants.SecretKind)),
 		Handler:    controller.HandleAll(controllerImpl.EnqueueControllerOf),
 	})
 	kafkachannelInformer.Informer().AddEventHandler(

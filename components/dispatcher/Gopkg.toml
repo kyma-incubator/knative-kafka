@@ -32,20 +32,20 @@
    name = "github.com/kyma-incubator/knative-kafka"
    branch = "master"
 
-# Match Azure version in common component
-[[override]]
-  name = "github.com/Azure/azure-event-hubs-go"
-  version = "v1.3.1"
-
-# Align With Knative Eventing
+# Align With Knative Eventing-Contrib
 [[constraint]]
   name = "knative.dev/eventing"
-  version = "v0.13.5"
+  branch = "release-0.14"
 
-# Align With Knative-Eventing v0.13.5
-[[override]]
+# Align With Knative Eventing-Contrib
+[[constraint]]
+  name = "knative.dev/eventing-contrib"
+  branch = "release-0.14"
+
+# Align With Knative Eventing-Contrib
+[[constraint]]
   name = "github.com/cloudevents/sdk-go"
-  revision = "427e8cf75237fdc7d4bb6c496398d7288efb8921"
+  version = "v2.0.0-RC1"
 
 [prune]
   go-tests = true

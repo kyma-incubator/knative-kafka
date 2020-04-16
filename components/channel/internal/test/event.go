@@ -2,7 +2,7 @@ package test
 
 import (
 	"encoding/json"
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v1"
 	"github.com/kyma-incubator/knative-kafka/components/channel/internal/constants"
 )
 

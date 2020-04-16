@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The Knative Authors
+ * Copyright 2020 The Knative Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ import (
 	"strings"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go/v1"
 	"go.uber.org/zap"
+
 	"knative.dev/eventing/pkg/kncloudevents"
-	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/eventing/pkg/utils"
 )
 
@@ -43,6 +43,13 @@ type UnknownChannelError struct {
 
 func (e *UnknownChannelError) Error() string {
 	return fmt.Sprintf("unknown channel: %v", e.c)
+}
+
+// UnknownHostError represents the error when a ResolveMessageChannelFromHostHeader func cannot resolve an host
+type UnknownHostError string
+
+func (e UnknownHostError) Error() string {
+	return fmt.Sprintf("cannot map host to channel: %s", string(e))
 }
 
 // EventReceiver starts a server to receive new events for the channel dispatcher. The new
@@ -62,6 +69,7 @@ type ReceiverOptions func(*EventReceiver) error
 
 // ResolveChannelFromHostFunc function enables EventReceiver to get the Channel Reference from incoming request HostHeader
 // before calling receiverFunc.
+// Returns UnknownHostError if the channel is not found, otherwise returns a generic error.
 type ResolveChannelFromHostFunc func(string) (ChannelReference, error)
 
 // ResolveChannelFromHostHeader is a ReceiverOption for NewEventReceiver which enables the caller to overwrite the
@@ -158,7 +166,6 @@ func (r *EventReceiver) ServeHTTP(ctx context.Context, event cloudevents.Event, 
 	sctx := utils.ReceivingContextFrom(ctx)
 	AppendHistory(&event, host)
 
-	event = tracing.AddTraceparentAttributeFromContext(ctx, event)
 	err = r.receiverFunc(sctx, channel, event)
 	if err != nil {
 		if _, ok := err.(*UnknownChannelError); ok {

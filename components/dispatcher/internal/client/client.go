@@ -2,13 +2,12 @@ package client
 
 import (
 	"context"
-	cloudevents "github.com/cloudevents/sdk-go"
-	cloudeventhttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
+	cloudevents "github.com/cloudevents/sdk-go/v1"
+	cloudeventhttp "github.com/cloudevents/sdk-go/v1/cloudevents/transport/http"
 	"github.com/pkg/errors"
 	"github.com/slok/goresilience/retry"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/kncloudevents"
-	knativeeventingtracing "knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/tracing"
 	"math"
 	"net/http"
@@ -41,6 +40,14 @@ type retriableCloudEventClient struct {
 var _ RetriableClient = &retriableCloudEventClient{}
 
 func NewRetriableCloudEventClient(logger *zap.Logger, exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) retriableCloudEventClient {
+
+	//
+	// TODO - Previously we we're adding cloud events middleware for tracing.  This implementation is still
+	//        based on CloudEvents V1, despite being based on knative eventing release-0.14 which has moved
+	//        on to CloudEvents V2.  This will all need to be re-done once we migrate to CloudEvents V2 and
+	//        re-evaluate their support for event tracing.
+	//
+
 	tOpts := []cloudeventhttp.Option{
 		cloudevents.WithBinaryEncoding(),
 		cloudevents.WithMiddleware(tracing.HTTPSpanMiddleware),
@@ -53,7 +60,7 @@ func NewRetriableCloudEventClient(logger *zap.Logger, exponentialBackoff bool, i
 	}
 	transport.Client = httpClient
 
-	ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(transport, nil)
+	ceClient, err := kncloudevents.NewDefaultHTTPClient(transport)
 	if err != nil {
 		panic("Unable To Create KnativeCloudEvent Client: " + err.Error())
 	}
@@ -83,12 +90,18 @@ func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event, uri stri
 	// Build the sending context for the event
 	sendingCtx := cloudevents.ContextWithTarget(context.Background(), uri)
 
-	sendingCtx, err := knativeeventingtracing.AddSpanFromTraceparentAttribute(sendingCtx, uri, event)
-	if err != nil {
-		logger.Error("Unable to connect outgoing span", zap.Error(err))
-	}
+	//
+	// TODO - Previously we were manually adding tracing information to the HTTP conext from the event.
+	//        It is hoped that when we convert this implementation to CloudEvents V2 that this will be
+	//        handled for us.  The AddSpanFromTraceparentAttribute() function was removed from knative
+	//        after the release-0.13 branch.
+	//
+	//sendingCtx, err := knativeeventingtracing.AddSpanFromTraceparentAttribute(sendingCtx, uri, event)
+	//if err != nil {
+	//	logger.Error("Unable to connect outgoing span", zap.Error(err))
+	//}
 
-	err = runner.Run(sendingCtx, func(ctx context.Context) error {
+	err := runner.Run(sendingCtx, func(ctx context.Context) error {
 		responseContext, _, err := rcec.cloudEventClient.Send(sendingCtx, event)
 		transportContext := cloudevents.HTTPTransportContextFrom(responseContext)
 		return logResponse(logger, transportContext.StatusCode, err)

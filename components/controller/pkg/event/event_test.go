@@ -5,11 +5,12 @@ import (
 )
 
 // Test The CoreV1 EventType "Enum" String Values
-func TestNewChannelLogger(t *testing.T) {
+func TestEventTypes(t *testing.T) {
 	performEventTypeStringTest(t, KafkaChannelReconciled, "KafkaChannelReconciled")
 	performEventTypeStringTest(t, KafkaChannelFinalized, "KafkaChannelFinalized")
 	performEventTypeStringTest(t, ClusterChannelProvisionerReconciliationFailed, "ClusterChannelProvisionerReconciliationFailed")
 	performEventTypeStringTest(t, ClusterChannelProvisionerUpdateStatusFailed, "ClusterChannelProvisionerUpdateStatusFailed")
+	performEventTypeStringTest(t, KafkaChannelServiceReconciliationFailed, "KafkaChannelServiceReconciliationFailed")
 	performEventTypeStringTest(t, ChannelUpdateFailed, "ChannelUpdateFailed")
 	performEventTypeStringTest(t, ChannelServiceReconciliationFailed, "ChannelServiceReconciliationFailed")
 	performEventTypeStringTest(t, ChannelServiceReconciliationFailed, "ChannelServiceReconciliationFailed")

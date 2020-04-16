@@ -2,7 +2,7 @@ package constants
 
 // Global Constants
 const (
-	Component = "KnativeKafkaChannel"
+	Component = "KafkaChannel"
 
 	ExtensionKeyPartitionKey = "partitionkey"
 

@@ -1,31 +1,33 @@
 package kafkachannel
 
 import (
+	"context"
 	"fmt"
 	kafkautil "github.com/kyma-incubator/knative-kafka/components/common/pkg/kafka/util"
 	"github.com/kyma-incubator/knative-kafka/components/controller/constants"
-	knativekafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/event"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/util"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kafkav1alpha1 "knative.dev/eventing-contrib/kafka/channel/pkg/apis/messaging/v1alpha1"
 	eventingNames "knative.dev/eventing/pkg/reconciler/names"
 	eventingUtils "knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/controller"
 )
 
 // Reconcile The "Channel" Inbound For The Specified Channel
-func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileChannel(ctx context.Context, channel *kafkav1alpha1.KafkaChannel) error {
 
 	// Get Channel Specific Logger
-	logger := util.ChannelLogger(r.Logger.Desugar(), channel)
+	logger := util.ChannelLogger(r.logger, channel)
 
 	// Reconcile The KafkaChannel's Service
 	err := r.reconcileKafkaChannelService(channel)
 	if err != nil {
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, event.ChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service: %v", err)
+		controller.GetEventRecorder(ctx).Eventf(channel, corev1.EventTypeWarning, event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Reconcile KafkaChannel Service: %v", err)
 		logger.Error("Failed To Reconcile KafkaChannel Service", zap.Error(err))
 		return fmt.Errorf("failed to reconcile channel resources")
 	} else {
@@ -43,7 +45,7 @@ func (r *Reconciler) reconcileChannel(channel *knativekafkav1alpha1.KafkaChannel
 //
 
 // Reconcile The KafkaChannel Service
-func (r *Reconciler) reconcileKafkaChannelService(channel *knativekafkav1alpha1.KafkaChannel) error {
+func (r *Reconciler) reconcileKafkaChannelService(channel *kafkav1alpha1.KafkaChannel) error {
 
 	// Attempt To Get The Service Associated With The Specified Channel
 	service, err := r.getKafkaChannelService(channel)
@@ -51,29 +53,29 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *knativekafkav1alpha1.
 
 		// If The Service Was Not Found - Then Create A New One For The Channel
 		if errors.IsNotFound(err) {
-			r.Logger.Info("KafkaChannel Service Not Found - Creating New One")
+			r.logger.Info("KafkaChannel Service Not Found - Creating New One")
 			service = r.newKafkaChannelService(channel)
-			service, err = r.KubeClientSet.CoreV1().Services(service.Namespace).Create(service)
+			service, err = r.kubeClientset.CoreV1().Services(service.Namespace).Create(service)
 			if err != nil {
-				r.Logger.Error("Failed To Create KafkaChannel Service", zap.Error(err))
-				channel.Status.MarkKafkaChannelServiceFailed("KafkaChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
+				r.logger.Error("Failed To Create KafkaChannel Service", zap.Error(err))
+				channel.Status.MarkChannelServiceFailed(event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Create KafkaChannel Service: %v", err)
 				return err
 			} else {
-				r.Logger.Info("Successfully Created KafkaChannel Service")
+				r.logger.Info("Successfully Created KafkaChannel Service")
 				// Continue To Update Channel Status
 			}
 		} else {
-			r.Logger.Error("Failed To Get KafkaChannel Service", zap.Error(err))
-			channel.Status.MarkKafkaChannelServiceFailed("KafkaChannelServiceFailed", fmt.Sprintf("Channel Service Failed: %s", err))
+			r.logger.Error("Failed To Get KafkaChannel Service", zap.Error(err))
+			channel.Status.MarkChannelServiceFailed(event.KafkaChannelServiceReconciliationFailed.String(), "Failed To Get KafkaChannel Service: %v", err)
 			return err
 		}
 	} else {
-		r.Logger.Info("Successfully Verified KafkaChannel Service")
+		r.logger.Info("Successfully Verified KafkaChannel Service")
 		// Continue To Update Channel Status
 	}
 
 	// Update Channel Status
-	channel.Status.MarkKafkaChannelServiceTrue()
+	channel.Status.MarkChannelServiceTrue()
 	channel.Status.SetAddress(&apis.URL{
 		Scheme: "http",
 		Host:   eventingNames.ServiceHostName(service.Name, service.Namespace),
@@ -84,7 +86,7 @@ func (r *Reconciler) reconcileKafkaChannelService(channel *knativekafkav1alpha1.
 }
 
 // Get The KafkaChannel Service Associated With The Specified Channel
-func (r *Reconciler) getKafkaChannelService(channel *knativekafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
+func (r *Reconciler) getKafkaChannelService(channel *kafkav1alpha1.KafkaChannel) (*corev1.Service, error) {
 
 	// Get The KafkaChannel Service Name
 	serviceName := kafkautil.AppendKafkaChannelServiceNameSuffix(channel.Name)
@@ -98,7 +100,7 @@ func (r *Reconciler) getKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 }
 
 // Create KafkaChannel Service Model For The Specified Channel
-func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaChannel) *corev1.Service {
+func (r *Reconciler) newKafkaChannelService(channel *kafkav1alpha1.KafkaChannel) *corev1.Service {
 
 	// Get The KafkaChannel Service Name
 	serviceName := kafkautil.AppendKafkaChannelServiceNameSuffix(channel.Name)
@@ -138,6 +140,6 @@ func (r *Reconciler) newKafkaChannelService(channel *knativekafkav1alpha1.KafkaC
 //
 
 // Get The Kafka Auth Secret Corresponding To The Specified KafkaChannel
-func (r *Reconciler) kafkaSecretName(channel *knativekafkav1alpha1.KafkaChannel) string {
+func (r *Reconciler) kafkaSecretName(channel *kafkav1alpha1.KafkaChannel) string {
 	return r.adminClient.GetKafkaSecretName(util.TopicName(channel))
 }
