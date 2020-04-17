@@ -157,8 +157,7 @@ and processing continues with the next event.
 ## Installation
 
 For installation and configuration instructions please see the Helm Chart 
-[README](./resources/README.md).  In the near future, the project will remove 
-the Helm chart and convert to using Ko.
+[README](./resources/README.md).
 
 
 ## Support Tooling
