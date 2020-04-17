@@ -19,7 +19,7 @@ RUN /bin/bash -c "cd /go/src/github.com/kyma-incubator/knative-kafka && \
 source ./build/dispatcher/local-env.sh && \
 export GOPATH=/go && \
 if [[ \"${RUN_TESTS}\" == \"true\" ]]; then \
-  make test build-native-dispatcher; \
+  make test-dispatcher build-native-dispatcher; \
 else \
   make build-native-dispatcher; \
 fi"

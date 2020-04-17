@@ -22,7 +22,7 @@ ARG RUN_TESTS=false
 RUN /bin/bash -c "cd /go/src/github.com/kyma-incubator/knative-kafka && \
 source ./build/controller/local-env.sh && \
 if [[ \"${RUN_TESTS}\" == \"true\" ]]; then \
-  make test build-native-controller; \
+  make test-controller build-native-controller; \
 else \
   make build-native-controller; \
 fi"

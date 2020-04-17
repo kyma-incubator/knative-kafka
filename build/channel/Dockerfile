@@ -19,7 +19,7 @@ RUN /bin/bash -c "cd /go/src/github.com/kyma-incubator/knative-kafka && \
 source ./build/channel/local-env.sh && \
 export GOPATH=/go && \
 if [[ \"${RUN_TESTS}\" == \"true\" ]]; then \
-  make test build-native-channel; \
+  make test-channel build-native-channel; \
 else \
   make build-native-channel; \
 fi"
