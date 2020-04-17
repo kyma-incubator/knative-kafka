@@ -78,45 +78,43 @@ segregation / scaling.
 
 ### Project Structure
 
-The following components comprise the current **Knative-Kafka** solution...
+**Knative-Kafka** is comprised of three distinct runtime K8S deployments 
+as follows...
 
-- [knative-kafka-common](./components/common/README.md) - Common code used by 
-the other Knative-Kafka components.
-
-- [channel](./components/channel/README.md) - The event receiver of the Channel 
+- [channel](./pkg/channel/README.md) - The event receiver of the Channel 
 to which inbound messages are sent.  An http server which accepts messages that
-conform to the CloudEvent specification and then writes those messages to the 
+conform to the CloudEvent specification, and then writes those messages to the 
 corresponding Kafka Topic. This is the "Producer" from the Kafka perspective.
 A separate Channel Deployment is created for each Kafka Secret detected in the
 knative-eventing namespace.
     
-- [controller](./components/controller/README.md) - This component implements 
-the `KafkaChannel` Controller. It was originally generated with Kubebuilder 
-based on the controller-runtime library.  It has since been refactored to use 
-the current knative-eventing "Shared Main" approach based directly on K8S 
-informers / listers.  The `KafkaChannel` CRD, api, client, etc. are all 
-generated via standard knative tooling.
+- [controller](./pkg/controller/README.md) - This component implements 
+the `KafkaChannel` Controller. It is using the current knative-eventing 
+"Shared Main" approach based directly on K8S informers / listers.  The 
+controller is using the `KafkaChannel` CRD, api, and client from the current 
+Knative eventing-contrib/kafka implementation in order to align as closely as 
+possible with the existing implementation. 
 
-- [dispatcher](./components/dispatcher/README.md) - This component runs the 
+- [dispatcher](./pkg/dispatcher/README.md) - This component runs the 
 Kafka ConsumerGroups responsible for processing messages from the corresponding 
 Kafka Topic.  This is the "Consumer" from the Kafka perspective.  A separate 
 dispatcher Deployment will be created for each unique `KafkaChannel` (Kafka 
 Topic), and will contain a distinct Kafka Consumer Group for each 
 Subscription to the `KafkaChannel`.
 
-- [resources](./resources/README.md) - Knative-Kafka Helm Chart used to install 
-the `KafkaChannel` CRD and controller.  The implementation has historically 
-used Helm Charts, but will be switching to Ko in order to further align with 
-the knative ecosystem.
+...and the controller can be deployed via the Helm Chart found in the
+resources/ directory...  
 
-**Note:** This "component" based project structure will be refactored (removed)
-to align with the single project structure in eventing-contrib and is a carry-over 
-from the original development pipeline constraints.
+- [resources](./resources/README.md) - Knative-Kafka Helm Chart used to install 
+the `KafkaChannel` CRD and controller.  The use of **ko** has been explored but 
+is currently not feasible due to limitations with its ability to handle our 
+build / packaging of the external librdkafka C library.
+
 
 ### Control Plane
 
 The control plane for the Kafka Channels is managed by the 
-[knative-kafka-controller](./components/controller/README.md) which is installed
+[knative-kafka-controller](./pkg/controller/README.md) which is installed
 in the knative-eventing namespace. `KafkaChannel` Custom Resource instances can 
 be created in any user namespace. The knative-kafka-controller will guarantee 
 that the Data Plane is configured to support the flow of events as defined by 
