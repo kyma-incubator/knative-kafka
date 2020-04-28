@@ -1,11 +1,14 @@
 package client
 
 import (
-	"errors"
 	"fmt"
-	cloudevents "github.com/cloudevents/sdk-go/v1"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/subscription"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/apis"
 	logtesting "knative.dev/pkg/logging/testing"
 	"net/http"
 	"net/http/httptest"
@@ -100,11 +103,12 @@ func TestHttpClient_Dispatch(t *testing.T) {
 			testCloudEvent.SetID("ABC-123")
 			testCloudEvent.SetType("com.cloudevents.readme.sent")
 			testCloudEvent.SetSource("http://localhost:8080/")
-			testCloudEvent.SetDataContentType("application/json")
-			err := testCloudEvent.SetData(map[string]string{"test": "value"})
+			err := testCloudEvent.SetData("application/json", map[string]string{"test": "value"})
 			assert.Nil(t, err)
 
-			err = client.Dispatch(testCloudEvent, server.URL)
+			subscriberURI, _ := apis.ParseURL(server.URL)
+
+			err = client.Dispatch(&testCloudEvent, subscription.Subscription{SubscriberSpec: eventingduck.SubscriberSpec{SubscriberURI: subscriberURI}})
 
 			if tc.expectedSuccess && err != nil {
 				t.Error("Message failed to dispatch:", err)
@@ -119,7 +123,7 @@ func TestHttpClient_Dispatch(t *testing.T) {
 	}
 }
 
-func setup(t *testing.T) (*retriableCloudEventClient, *httptest.Server, *http.ServeMux) {
+func setup(t *testing.T) (*RetriableCloudEventClient, *httptest.Server, *http.ServeMux) {
 	// test server
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
@@ -152,7 +156,7 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%d max retry, initial interval %d", tt.fields.maxRetryTime, tt.fields.initialRetryInterval), func(t *testing.T) {
-			hc := retriableCloudEventClient{
+			hc := RetriableCloudEventClient{
 				exponentialBackoff:   tt.fields.exponentialBackoff,
 				initialRetryInterval: tt.fields.initialRetryInterval,
 				maxRetryTime:         tt.fields.maxRetryTime,
@@ -164,62 +168,103 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 	}
 }
 
-func Test_logResponse(t *testing.T) {
+func TestLogResponse(t *testing.T) {
 
+	// Test Data
+	noStatusCodeError := errors.New("No response code detected in error, retrying")
+	badResponseError := errors.New("Server returned a bad response code")
+
+	// Define TestCase Type
+	type testCase struct {
+		errIn  error
+		errOut error
+	}
+
+	// Create The Set Of TestCases
+	tests := []testCase{
+
+		{errIn: nil, errOut: nil},
+
+		{errIn: errors.New(""), errOut: noStatusCodeError},
+		{errIn: errors.New("no status code"), errOut: noStatusCodeError},
+
+		{errIn: errors.New("100"), errOut: nil},
+		{errIn: errors.New("200"), errOut: nil},
+
+		{errIn: errors.New("300"), errOut: nil},
+		{errIn: errors.New("301"), errOut: nil},
+		{errIn: errors.New("399"), errOut: nil},
+
+		{errIn: errors.New("400"), errOut: nil},
+		{errIn: errors.New("401"), errOut: nil},
+		{errIn: errors.New("499"), errOut: nil},
+
+		{errIn: errors.New("404"), errOut: badResponseError},
+		{errIn: errors.New("429"), errOut: badResponseError},
+
+		{errIn: errors.New("500"), errOut: badResponseError},
+		{errIn: errors.New("503"), errOut: badResponseError},
+		{errIn: errors.New("599"), errOut: badResponseError},
+	}
+
+	// Create A Test Logger
 	logger := logtesting.TestLogger(t).Desugar()
 
-	type args struct {
-		logger     *zap.Logger
-		statusCode int
-		err        error
+	// Create A RetriableCloudEventClient For Testing
+	client := NewRetriableCloudEventClient(logger, true, 500, 300000)
+
+	// Loop Over The TestCases
+	for _, test := range tests {
+
+		// Perform The Specific TestCase
+		actualErrOut := client.logResponse(test.errIn)
+
+		// Verify Results
+		if test.errOut == nil {
+			assert.Nil(t, actualErrOut)
+		} else {
+			assert.NotNil(t, actualErrOut)
+			assert.Equal(t, test.errOut.Error(), actualErrOut.Error())
+		}
 	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "200",
-			args: args{
-				logger:     logger,
-				statusCode: 200,
-				err:        nil,
-			},
-			wantErr: false,
-		},
-		{
-			name: "429",
-			args: args{
-				logger:     logger,
-				statusCode: 429,
-				err:        nil,
-			},
-			wantErr: true,
-		},
-		{
-			name: "503",
-			args: args{
-				logger:     logger,
-				statusCode: 503,
-				err:        nil,
-			},
-			wantErr: true,
-		},
-		{
-			name: "Validation Error",
-			args: args{
-				logger:     logger,
-				statusCode: 0,
-				err:        errors.New("validation error"),
-			},
-			wantErr: true,
-		},
+}
+
+func TestParseHttpStatusCodeFromError(t *testing.T) {
+
+	// Define TestCase Type
+	type testCase struct {
+		error error
+		code  int
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := logResponse(tt.args.logger, tt.args.statusCode, tt.args.err); (err != nil) != tt.wantErr {
-				t.Errorf("logResponse() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+
+	// Create The Set Of TestCases
+	tests := []testCase{
+		{error: nil, code: -1},
+		{error: errors.New(""), code: -1},
+		{error: errors.New("no status codes to see here"), code: -1},
+		{error: errors.New("status code without leading200 word boundary"), code: -1},
+		{error: errors.New("status code without both200word boundary"), code: -1},
+		{error: errors.New("status code without 200trailing word boundary"), code: -1},
+		{error: errors.New("200 status code at start"), code: 200},
+		{error: errors.New("status code 200 in middle"), code: 200},
+		{error: errors.New("status code at end 200"), code: 200},
+		{error: errors.New("multiple 200 status codes 300 selects first"), code: 200},
+		{error: errors.New("unable to complete request to http://sample-event-proxy-300-stage.svc.cluster.local/: unexpected HTTP response, expected 2xx, got 500"), code: 500},
+	}
+
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
+	// Create A RetriableCloudEventClient For Testing
+	client := NewRetriableCloudEventClient(logger, true, 500, 300000)
+
+	// Loop Over The TestCases
+	for _, test := range tests {
+
+		// Perform The Specific TestCase
+		actualStatusCode := client.parseHttpStatusCodeFromError(test.error)
+
+		// Verify Results
+		assert.Equal(t, test.code, actualStatusCode)
 	}
 }

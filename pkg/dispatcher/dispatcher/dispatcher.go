@@ -2,11 +2,12 @@ package dispatcher
 
 import (
 	"errors"
-	cloudevents "github.com/cloudevents/sdk-go/v1"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/pkg/common/kafka/consumer"
 	"github.com/kyma-incubator/knative-kafka/pkg/common/prometheus"
 	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/client"
+	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/subscription"
 	"go.uber.org/zap"
 	"strings"
 	"sync"
@@ -30,11 +31,6 @@ type DispatcherConfig struct {
 	Metrics                     *prometheus.MetricsServer
 }
 
-type Subscription struct {
-	URI     string
-	GroupId string
-}
-
 type ConsumerOffset struct {
 	consumer         kafkaconsumer.ConsumerInterface
 	lastOffsetCommit time.Time
@@ -46,7 +42,7 @@ type ConsumerOffset struct {
 // Define a Dispatcher Struct to hold Dispatcher Config and dispatcher implementation details
 type Dispatcher struct {
 	DispatcherConfig
-	consumers          map[Subscription]*ConsumerOffset
+	consumers          map[subscription.Subscription]*ConsumerOffset
 	consumerUpdateLock sync.Mutex
 }
 
@@ -56,7 +52,7 @@ func NewDispatcher(dispatcherConfig DispatcherConfig) *Dispatcher {
 	// Create The Dispatcher With Specified Configuration
 	dispatcher := &Dispatcher{
 		DispatcherConfig: dispatcherConfig,
-		consumers:        make(map[Subscription]*ConsumerOffset),
+		consumers:        make(map[subscription.Subscription]*ConsumerOffset),
 	}
 
 	// Return The Dispatcher
@@ -71,8 +67,8 @@ func (d *Dispatcher) StopConsumers() {
 }
 
 // Stop An Individual Consumer
-func (d *Dispatcher) stopConsumer(subscription Subscription) {
-	d.Logger.Info("Stopping Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
+func (d *Dispatcher) stopConsumer(subscription subscription.Subscription) {
+	d.Logger.Info("Stopping Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.SubscriberURI.String()))
 	consumerOffset := d.consumers[subscription]
 	consumerOffset.stopCh <- true // Send Stop Signal
 	<-consumerOffset.stoppedCh    // Wait Until Stop Completes
@@ -80,10 +76,10 @@ func (d *Dispatcher) stopConsumer(subscription Subscription) {
 }
 
 // Create And Start A Consumer
-func (d *Dispatcher) initConsumer(subscription Subscription) (*ConsumerOffset, error) {
+func (d *Dispatcher) initConsumer(subscription subscription.Subscription) (*ConsumerOffset, error) {
 
 	// Create Consumer
-	d.Logger.Info("Creating Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.URI))
+	d.Logger.Info("Creating Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.SubscriberURI.String()))
 	consumer, err := kafkaconsumer.CreateConsumer(d.Brokers, subscription.GroupId, d.Offset, d.Username, d.Password)
 	if err != nil {
 		d.Logger.Error("Failed To Create New Consumer", zap.Error(err))
@@ -114,7 +110,7 @@ func (d *Dispatcher) initConsumer(subscription Subscription) (*ConsumerOffset, e
 }
 
 // Consumer Message Handler - Wait For Consumer Messages, Log Them & Commit The Offset
-func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscription Subscription) {
+func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscription subscription.Subscription) {
 
 	// Configure The Logger
 	logger := d.Logger.With(zap.String("GroupID", subscription.GroupId))
@@ -151,20 +147,23 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 			switch e := event.(type) {
 
 			case *kafka.Message:
-				// Dispatch The Message - Send To Target URL
+
+				// Debug Log Kafka Message Dispatching
 				logger.Debug("Received Kafka Message - Dispatching",
 					zap.String("Message", string(e.Value)),
 					zap.String("Topic", *e.TopicPartition.Topic),
 					zap.Int32("Partition", e.TopicPartition.Partition),
 					zap.Any("Offset", e.TopicPartition.Offset))
 
-				cloudEvent, err := convertToCloudEvent(e)
+				// Convert The Kafka Message To A Cloud Event
+				cloudEvent, err := d.convertToCloudEvent(e)
 				if err != nil {
 					logger.Error("Unable To Convert Kafka Message To CloudEvent, Skipping", zap.Any("message", e))
 					continue
 				}
 
-				_ = d.Client.Dispatch(*cloudEvent, subscription.URI) // Ignore Errors - Dispatcher Will Retry And We're Moving On!
+				// Dispatch (Send!) The CloudEvent To The Subscription URL  (Ignore Errors - Dispatcher Will Retry And We're Moving On!)
+				_ = d.Client.Dispatch(cloudEvent, subscription)
 
 				// Update Stored Offsets Based On The Processed Message
 				d.updateOffsets(consumerOffset.consumer, e)
@@ -231,10 +230,10 @@ func (d *Dispatcher) commitOffsets(logger *zap.Logger, consumerOffset *ConsumerO
 }
 
 // Update The Dispatcher's Subscriptions
-func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) map[Subscription]error {
+func (d *Dispatcher) UpdateSubscriptions(subscriptions []subscription.Subscription) map[subscription.Subscription]error {
 
-	failedSubscriptions := make(map[Subscription]error)
-	activeSubscriptions := make(map[Subscription]bool)
+	failedSubscriptions := make(map[subscription.Subscription]error)
+	activeSubscriptions := make(map[subscription.Subscription]bool)
 
 	d.consumerUpdateLock.Lock()
 	defer d.consumerUpdateLock.Unlock()
@@ -256,7 +255,7 @@ func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) map[Subsc
 	}
 
 	// Stop Consumers For Removed Subscriptions
-	for runningSubscription, _ := range d.consumers {
+	for runningSubscription := range d.consumers {
 		if !activeSubscriptions[runningSubscription] {
 			d.stopConsumer(runningSubscription)
 		}
@@ -266,7 +265,7 @@ func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) map[Subsc
 }
 
 // Convert Kafka Message To A Cloud Event, Eventually We Should Consider Writing A Cloud Event SDK Codec For This
-func convertToCloudEvent(message *kafka.Message) (*cloudevents.Event, error) {
+func (d *Dispatcher) convertToCloudEvent(message *kafka.Message) (*cloudevents.Event, error) {
 	var specVersion string
 
 	// Determine CloudEvent Version
@@ -283,13 +282,16 @@ func convertToCloudEvent(message *kafka.Message) (*cloudevents.Event, error) {
 
 	// Generate CloudEvent
 	event := cloudevents.NewEvent(specVersion)
-	event.SetData(message.Value)
 	for _, header := range message.Headers {
 		h := header.Key
 		var v = string(header.Value)
 		switch h {
 		case "ce_datacontenttype":
-			event.SetDataContentType(v)
+			err := event.SetData(v, message.Value)
+			if err != nil {
+				d.Logger.Error("Failed To Set CloudEvent Data From Kafka Message", zap.Error(err))
+				return nil, err
+			}
 		case "ce_type":
 			event.SetType(v)
 		case "ce_source":
