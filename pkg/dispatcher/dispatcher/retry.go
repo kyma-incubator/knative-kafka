@@ -1,14 +1,12 @@
-package client
+package dispatcher
 
 import (
 	"context"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
-	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/subscription"
 	"github.com/pkg/errors"
 	"github.com/slok/goresilience/retry"
 	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/channel"
 	"math"
 	"net/url"
 	"regexp"
@@ -19,51 +17,21 @@ import (
 // 3 Digit Word Boundary HTTP Status Code Regular Expression
 var HttpStatusCodeRegExp = regexp.MustCompile("(^|\\s)([12345]\\d{2})(\\s|$)")
 
-// Client represents anything that can dispatch an event
-// to a downstream service
-type RetriableClient interface {
-	Dispatch(message *cloudevents.Event, subscription subscription.Subscription) error
-}
-
-// retriableCloudEventClient is a client implementation that interprets
-// kafka messages as cloud events and utilizes the cloud event library
-// and supports retries with exponential backoff
-type RetriableCloudEventClient struct {
-	logger               *zap.Logger
-	exponentialBackoff   bool
-	initialRetryInterval int64
-	maxRetryTime         int64
-	messageDispatcher    channel.MessageDispatcher
-}
-
-var _ RetriableClient = &RetriableCloudEventClient{}
-
-func NewRetriableCloudEventClient(logger *zap.Logger, exponentialBackoff bool, initialRetryInterval int64, maxRetryTime int64) RetriableCloudEventClient {
-
-	return RetriableCloudEventClient{
-		logger:               logger,
-		exponentialBackoff:   exponentialBackoff,
-		initialRetryInterval: initialRetryInterval,
-		maxRetryTime:         maxRetryTime,
-		messageDispatcher:    channel.NewMessageDispatcher(logger),
-	}
-}
-
 // Dispatch A Cloud Event To The Specified Destination URL
-func (c RetriableCloudEventClient) Dispatch(event *cloudevents.Event, subscription subscription.Subscription) error {
+func (d *Dispatcher) Dispatch(event *cloudevents.Event, subscription Subscription) error {
 
 	// Configure The Logger
-	logger := c.logger.With(zap.String("Subscriber URI", subscription.SubscriberURI.String()))
-	if c.logger.Core().Enabled(zap.DebugLevel) {
-		logger = c.logger.With(zap.String("Event", event.String()))
+	logger := d.Logger.With(zap.String("Subscriber URI", subscription.SubscriberURI.String()))
+	if d.Logger.Core().Enabled(zap.DebugLevel) {
+		logger = d.Logger.With(zap.String("Event", event.String()))
 	}
 
 	// Create A New Retry Runner With Configured Backoff Behavior
 	retryRunner := retry.New(
 		retry.Config{
-			DisableBackoff: c.exponentialBackoff,
-			Times:          c.calculateNumberOfRetries(),
-			WaitBase:       time.Millisecond * time.Duration(c.initialRetryInterval),
+			DisableBackoff: d.ExponentialBackoff,
+			Times:          d.calculateNumberOfRetries(),
+			WaitBase:       time.Millisecond * time.Duration(d.InitialRetryInterval),
 		},
 	)
 
@@ -96,8 +64,8 @@ func (c RetriableCloudEventClient) Dispatch(event *cloudevents.Event, subscripti
 
 	// Attempt To Dispatch The CloudEvent Message Via Knative Message Dispatcher With Retry Wrapper
 	err := retryRunner.Run(context.Background(), func(ctx context.Context) error {
-		err := c.messageDispatcher.DispatchMessage(ctx, message, nil, destinationURL, replyURL, deadLetterURL)
-		return c.logResponse(err)
+		err := d.messageDispatcher.DispatchMessage(ctx, message, nil, destinationURL, replyURL, deadLetterURL)
+		return d.logResponse(err)
 	})
 
 	// Retries failed
@@ -111,14 +79,14 @@ func (c RetriableCloudEventClient) Dispatch(event *cloudevents.Event, subscripti
 }
 
 // Utility Function For Logging The Response From A Dispatch Request
-func (c RetriableCloudEventClient) logResponse(err error) error {
+func (d *Dispatcher) logResponse(err error) error {
 
 	if err == nil {
-		c.logger.Debug("Successfully Sent Cloud Event To Subscription")
+		d.Logger.Debug("Successfully Sent Cloud Event To Subscription")
 		return nil
 	} else {
-		statusCode := c.parseHttpStatusCodeFromError(err)
-		logger := c.logger.With(zap.Error(err), zap.Int("StatusCode", statusCode))
+		statusCode := d.parseHttpStatusCodeFromError(err)
+		logger := d.Logger.With(zap.Error(err), zap.Int("StatusCode", statusCode))
 		if statusCode >= 500 || statusCode == 404 || statusCode == 429 {
 			logger.Warn("Failed to send message to subscriber service, retrying")
 			return errors.New("Server returned a bad response code")
@@ -144,7 +112,7 @@ func (c RetriableCloudEventClient) logResponse(err error) error {
 // hoped that we can provide a better solution directly in the knative channel implementation
 // in the near future.
 //
-func (c RetriableCloudEventClient) parseHttpStatusCodeFromError(err error) int {
+func (d *Dispatcher) parseHttpStatusCodeFromError(err error) int {
 
 	// Default Value Indicates The HTTP Status Code Was Not Found In Error
 	statusCode := -1
@@ -163,7 +131,7 @@ func (c RetriableCloudEventClient) parseHttpStatusCodeFromError(err error) int {
 
 			// Log Warning If Multiple Potential HTTP StatusCodes Detected
 			if len(statusCodeStringSubMatch) > 1 {
-				c.logger.Warn("Encountered Multiple Possible HTTP Status Codes In Error String - Using First One")
+				d.Logger.Warn("Encountered Multiple Possible HTTP Status Codes In Error String - Using First One")
 			}
 
 			// Take The First Potential HTTP StatusCode (For lack anything more sophisticated ;)
@@ -173,7 +141,7 @@ func (c RetriableCloudEventClient) parseHttpStatusCodeFromError(err error) int {
 			code, conversionErr := strconv.Atoi(statusCodeString)
 			if conversionErr != nil {
 				// Conversion Error - Should Be Impossible Due To RegExp Match - But Log A Warning Just To Be Safe ; )
-				c.logger.Warn("Failed To Convert Parsed HTTP Status Code String To Int", zap.String("HTTP Status Code String", statusCodeString), zap.Error(conversionErr))
+				d.Logger.Warn("Failed To Convert Parsed HTTP Status Code String To Int", zap.String("HTTP Status Code String", statusCodeString), zap.Error(conversionErr))
 			} else {
 				statusCode = code
 			}
@@ -186,6 +154,6 @@ func (c RetriableCloudEventClient) parseHttpStatusCodeFromError(err error) int {
 
 // Convert defined max retry time to the approximate number
 // of retries, taking into account the exponential backoff algorithm
-func (c RetriableCloudEventClient) calculateNumberOfRetries() int {
-	return int(math.Round(math.Log2(float64(c.maxRetryTime)/float64(c.initialRetryInterval))) + 1)
+func (d *Dispatcher) calculateNumberOfRetries() int {
+	return int(math.Round(math.Log2(float64(d.MaxRetryTime)/float64(d.InitialRetryInterval))) + 1)
 }

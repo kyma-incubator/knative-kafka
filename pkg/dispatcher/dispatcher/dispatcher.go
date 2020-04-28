@@ -6,9 +6,9 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/pkg/common/kafka/consumer"
 	"github.com/kyma-incubator/knative-kafka/pkg/common/prometheus"
-	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/client"
-	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/subscription"
 	"go.uber.org/zap"
+	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	"knative.dev/eventing/pkg/channel"
 	"strings"
 	"sync"
 	"time"
@@ -26,9 +26,11 @@ type DispatcherConfig struct {
 	OffsetCommitDurationMinimum time.Duration
 	Username                    string
 	Password                    string
-	Client                      client.RetriableClient
 	ChannelKey                  string
 	Metrics                     *prometheus.MetricsServer
+	ExponentialBackoff          bool
+	InitialRetryInterval        int64
+	MaxRetryTime                int64
 }
 
 type ConsumerOffset struct {
@@ -39,11 +41,17 @@ type ConsumerOffset struct {
 	stoppedCh        chan bool
 }
 
+type Subscription struct {
+	eventingduck.SubscriberSpec
+	GroupId string
+}
+
 // Define a Dispatcher Struct to hold Dispatcher Config and dispatcher implementation details
 type Dispatcher struct {
 	DispatcherConfig
-	consumers          map[subscription.Subscription]*ConsumerOffset
+	consumers          map[Subscription]*ConsumerOffset
 	consumerUpdateLock sync.Mutex
+	messageDispatcher  channel.MessageDispatcher
 }
 
 // Create A New Dispatcher Of Specified Configuration
@@ -51,8 +59,9 @@ func NewDispatcher(dispatcherConfig DispatcherConfig) *Dispatcher {
 
 	// Create The Dispatcher With Specified Configuration
 	dispatcher := &Dispatcher{
-		DispatcherConfig: dispatcherConfig,
-		consumers:        make(map[subscription.Subscription]*ConsumerOffset),
+		DispatcherConfig:  dispatcherConfig,
+		consumers:         make(map[Subscription]*ConsumerOffset),
+		messageDispatcher: channel.NewMessageDispatcher(dispatcherConfig.Logger),
 	}
 
 	// Return The Dispatcher
@@ -67,7 +76,7 @@ func (d *Dispatcher) StopConsumers() {
 }
 
 // Stop An Individual Consumer
-func (d *Dispatcher) stopConsumer(subscription subscription.Subscription) {
+func (d *Dispatcher) stopConsumer(subscription Subscription) {
 	d.Logger.Info("Stopping Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.SubscriberURI.String()))
 	consumerOffset := d.consumers[subscription]
 	consumerOffset.stopCh <- true // Send Stop Signal
@@ -76,7 +85,7 @@ func (d *Dispatcher) stopConsumer(subscription subscription.Subscription) {
 }
 
 // Create And Start A Consumer
-func (d *Dispatcher) initConsumer(subscription subscription.Subscription) (*ConsumerOffset, error) {
+func (d *Dispatcher) initConsumer(subscription Subscription) (*ConsumerOffset, error) {
 
 	// Create Consumer
 	d.Logger.Info("Creating Consumer", zap.String("GroupId", subscription.GroupId), zap.String("topic", d.Topic), zap.String("URI", subscription.SubscriberURI.String()))
@@ -110,7 +119,7 @@ func (d *Dispatcher) initConsumer(subscription subscription.Subscription) (*Cons
 }
 
 // Consumer Message Handler - Wait For Consumer Messages, Log Them & Commit The Offset
-func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscription subscription.Subscription) {
+func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscription Subscription) {
 
 	// Configure The Logger
 	logger := d.Logger.With(zap.String("GroupID", subscription.GroupId))
@@ -163,7 +172,7 @@ func (d *Dispatcher) handleKafkaMessages(consumerOffset ConsumerOffset, subscrip
 				}
 
 				// Dispatch (Send!) The CloudEvent To The Subscription URL  (Ignore Errors - Dispatcher Will Retry And We're Moving On!)
-				_ = d.Client.Dispatch(cloudEvent, subscription)
+				_ = d.Dispatch(cloudEvent, subscription)
 
 				// Update Stored Offsets Based On The Processed Message
 				d.updateOffsets(consumerOffset.consumer, e)
@@ -230,10 +239,10 @@ func (d *Dispatcher) commitOffsets(logger *zap.Logger, consumerOffset *ConsumerO
 }
 
 // Update The Dispatcher's Subscriptions
-func (d *Dispatcher) UpdateSubscriptions(subscriptions []subscription.Subscription) map[subscription.Subscription]error {
+func (d *Dispatcher) UpdateSubscriptions(subscriptions []Subscription) map[Subscription]error {
 
-	failedSubscriptions := make(map[subscription.Subscription]error)
-	activeSubscriptions := make(map[subscription.Subscription]bool)
+	failedSubscriptions := make(map[Subscription]error)
+	activeSubscriptions := make(map[Subscription]bool)
 
 	d.consumerUpdateLock.Lock()
 	defer d.consumerUpdateLock.Unlock()

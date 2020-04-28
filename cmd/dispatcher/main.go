@@ -5,7 +5,6 @@ import (
 	"flag"
 	commonk8s "github.com/kyma-incubator/knative-kafka/pkg/common/k8s"
 	"github.com/kyma-incubator/knative-kafka/pkg/common/prometheus"
-	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/client"
 	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/controller"
 	dispatch "github.com/kyma-incubator/knative-kafka/pkg/dispatcher/dispatcher"
 	dispatcherhealth "github.com/kyma-incubator/knative-kafka/pkg/dispatcher/health"
@@ -109,9 +108,6 @@ func main() {
 	metricsServer := prometheus.NewMetricsServer(logger, metricsPort, "/metrics")
 	metricsServer.Start()
 
-	// Create HTTP Client With Retry Settings
-	ceClient := client.NewRetriableCloudEventClient(logger, exponentialBackoff, initialRetryInterval, maxRetryTime)
-
 	// Create The Dispatcher With Specified Configuration
 	dispatcherConfig := dispatch.DispatcherConfig{
 		Logger:                      logger,
@@ -124,9 +120,11 @@ func main() {
 		OffsetCommitDurationMinimum: MinimumKafkaConsumerOffsetCommitDurationMillis * time.Millisecond,
 		Username:                    kafkaUsername,
 		Password:                    kafkaPassword,
-		Client:                      ceClient,
 		ChannelKey:                  channelKey,
 		Metrics:                     metricsServer,
+		ExponentialBackoff:          exponentialBackoff,
+		InitialRetryInterval:        initialRetryInterval,
+		MaxRetryTime:                maxRetryTime,
 	}
 	dispatcher = dispatch.NewDispatcher(dispatcherConfig)
 

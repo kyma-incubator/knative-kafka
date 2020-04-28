@@ -3,7 +3,6 @@ package controller
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/pkg/common/kafka/consumer"
-	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/client"
 	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/dispatcher"
 	dispatchertesting "github.com/kyma-incubator/knative-kafka/pkg/dispatcher/testing"
 	reconciletesting "github.com/kyma-incubator/knative-kafka/pkg/dispatcher/testing"
@@ -36,6 +35,9 @@ const (
 	testOffsetCommitDurationMin = 50 * time.Millisecond // Small Durations For Testing!
 	testUsername                = "TestUsername"
 	testPassword                = "TestPassword"
+	testExponentialBackoff      = false
+	testInitialRetryInterval    = 500
+	testMaxRetryTime            = 5000
 )
 
 func init() {
@@ -154,8 +156,6 @@ func NewTestDispatcher(t *testing.T, channelKey string) *dispatcher.Dispatcher {
 	}
 	defer func() { kafkaconsumer.NewConsumerWrapper = newConsumerWrapperPlaceholder }()
 
-	cloudEventClient := client.NewRetriableCloudEventClient(logger, false, 500, 5000)
-
 	// Create A New Dispatcher
 	dispatcherConfig := dispatcher.DispatcherConfig{
 		Logger:                      logger,
@@ -168,8 +168,10 @@ func NewTestDispatcher(t *testing.T, channelKey string) *dispatcher.Dispatcher {
 		OffsetCommitDurationMinimum: testOffsetCommitDurationMin,
 		Username:                    testUsername,
 		Password:                    testPassword,
-		Client:                      cloudEventClient,
 		ChannelKey:                  channelKey,
+		ExponentialBackoff:          testExponentialBackoff,
+		InitialRetryInterval:        testInitialRetryInterval,
+		MaxRetryTime:                testMaxRetryTime,
 	}
 	testDispatcher := dispatcher.NewDispatcher(dispatcherConfig)
 	return testDispatcher

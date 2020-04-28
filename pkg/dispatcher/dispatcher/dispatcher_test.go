@@ -6,8 +6,6 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/go-cmp/cmp"
 	kafkaconsumer "github.com/kyma-incubator/knative-kafka/pkg/common/kafka/consumer"
-	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/client"
-	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/subscription"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
@@ -39,6 +37,9 @@ const (
 	testUsername                = "TestUsername"
 	testPassword                = "TestPassword"
 	testChannelKey              = "TestChannel"
+	testExponentialBackoff      = false
+	testInitialRetryInterval    = 500
+	testMaxRetryTime            = 5000
 )
 
 // Test Data (Non-Constants)
@@ -81,8 +82,6 @@ func TestDispatcher(t *testing.T) {
 	}
 	defer func() { kafkaconsumer.NewConsumerWrapper = newConsumerWrapperPlaceholder }()
 
-	cloudEventClient := client.NewRetriableCloudEventClient(logtesting.TestLogger(t).Desugar(), false, 500, 5000)
-
 	// Create A New Dispatcher
 	dispatcherConfig := DispatcherConfig{
 		Logger:                      logger,
@@ -95,8 +94,10 @@ func TestDispatcher(t *testing.T) {
 		OffsetCommitDurationMinimum: testOffsetCommitDurationMin,
 		Username:                    testUsername,
 		Password:                    testPassword,
-		Client:                      cloudEventClient,
 		ChannelKey:                  testChannelKey,
+		ExponentialBackoff:          testExponentialBackoff,
+		InitialRetryInterval:        testInitialRetryInterval,
+		MaxRetryTime:                testMaxRetryTime,
 	}
 	testDispatcher := NewDispatcher(dispatcherConfig)
 
@@ -113,7 +114,7 @@ func TestDispatcher(t *testing.T) {
 		testChannelKey)
 
 	// Start 1 Consumer
-	subscriptionResults := testDispatcher.UpdateSubscriptions([]subscription.Subscription{
+	subscriptionResults := testDispatcher.UpdateSubscriptions([]Subscription{
 		{
 			SubscriberSpec: eventingduck.SubscriberSpec{SubscriberURI: testSubscriberUrl1},
 			GroupId:        testGroupId1,
@@ -125,13 +126,13 @@ func TestDispatcher(t *testing.T) {
 	verifyConsumersCount(t, testDispatcher.consumers, 1)
 
 	// Remove All Consumers
-	subscriptionResults = testDispatcher.UpdateSubscriptions(make([]subscription.Subscription, 0))
+	subscriptionResults = testDispatcher.UpdateSubscriptions(make([]Subscription, 0))
 
 	assert.Len(t, subscriptionResults, 0)
 	verifyConsumersCount(t, testDispatcher.consumers, 0)
 
 	// Start 3 Consumers
-	subscriptionResults = testDispatcher.UpdateSubscriptions([]subscription.Subscription{
+	subscriptionResults = testDispatcher.UpdateSubscriptions([]Subscription{
 		{
 			SubscriberSpec: eventingduck.SubscriberSpec{SubscriberURI: testSubscriberUrl1},
 			GroupId:        testGroupId1,
@@ -162,7 +163,7 @@ func TestDispatcher(t *testing.T) {
 	verifyConsumerCommits(t, testDispatcher.consumers, 3)
 
 	// Remove 2 Consumers
-	subscriptionResults = testDispatcher.UpdateSubscriptions([]subscription.Subscription{
+	subscriptionResults = testDispatcher.UpdateSubscriptions([]Subscription{
 		{
 			SubscriberSpec: eventingduck.SubscriberSpec{SubscriberURI: testSubscriberUrl1},
 			GroupId:        testGroupId1,
@@ -265,7 +266,7 @@ func verifyDispatcher(t *testing.T,
 }
 
 // Verify The Appropriate Consumers Were Created
-func verifyConsumersCount(t *testing.T, consumers map[subscription.Subscription]*ConsumerOffset, expectedCount int) {
+func verifyConsumersCount(t *testing.T, consumers map[Subscription]*ConsumerOffset, expectedCount int) {
 	assert.NotNil(t, consumers)
 	assert.Len(t, consumers, expectedCount)
 	for _, consumer := range consumers {
@@ -276,7 +277,7 @@ func verifyConsumersCount(t *testing.T, consumers map[subscription.Subscription]
 }
 
 // Verify The Consumers Have All Been Closed
-func verifyConsumersClosed(t *testing.T, consumers map[subscription.Subscription]*ConsumerOffset) {
+func verifyConsumersClosed(t *testing.T, consumers map[Subscription]*ConsumerOffset) {
 	assert.NotNil(t, consumers)
 	assert.Len(t, consumers, 0)
 	for _, consumer := range consumers {
@@ -287,7 +288,7 @@ func verifyConsumersClosed(t *testing.T, consumers map[subscription.Subscription
 }
 
 // Verify The Consumers Have The Correct Commit Messages / Offsets
-func verifyConsumerCommits(t *testing.T, consumers map[subscription.Subscription]*ConsumerOffset, expectedCount int) {
+func verifyConsumerCommits(t *testing.T, consumers map[Subscription]*ConsumerOffset, expectedCount int) {
 	assert.NotNil(t, consumers)
 	assert.Len(t, consumers, expectedCount)
 	for _, consumer := range consumers {
@@ -301,7 +302,7 @@ func verifyConsumerCommits(t *testing.T, consumers map[subscription.Subscription
 }
 
 // Send An Error To The Specified Consumers
-func sendErrorToConsumers(t *testing.T, consumers map[subscription.Subscription]*ConsumerOffset, err kafka.Error) {
+func sendErrorToConsumers(t *testing.T, consumers map[Subscription]*ConsumerOffset, err kafka.Error) {
 	for _, consumer := range consumers {
 		mockConsumer, ok := consumer.consumer.(*MockConsumer)
 		assert.True(t, ok)
@@ -310,7 +311,7 @@ func sendErrorToConsumers(t *testing.T, consumers map[subscription.Subscription]
 }
 
 // Send A Notification To The Specified Consumers
-func sendNotificationToConsumers(t *testing.T, consumers map[subscription.Subscription]*ConsumerOffset, notification kafka.Event) {
+func sendNotificationToConsumers(t *testing.T, consumers map[Subscription]*ConsumerOffset, notification kafka.Event) {
 	for _, consumer := range consumers {
 		mockConsumer, ok := consumer.consumer.(*MockConsumer)
 		assert.True(t, ok)
@@ -319,7 +320,7 @@ func sendNotificationToConsumers(t *testing.T, consumers map[subscription.Subscr
 }
 
 // Send Some Messages To The Specified Consumers
-func sendMessagesToConsumers(t *testing.T, consumers map[subscription.Subscription]*ConsumerOffset, count int) {
+func sendMessagesToConsumers(t *testing.T, consumers map[Subscription]*ConsumerOffset, count int) {
 	for i := 0; i < count; i++ {
 		message := createKafkaMessage(kafka.Offset(i+1), cloudevents.VersionV1)
 
@@ -394,7 +395,7 @@ func createMessageHeaders(context cloudevents.EventContext) []kafka.Header {
 }
 
 // Wait For The Consumers To Process All The Events
-func waitForConsumersToProcessEvents(t *testing.T, consumers map[subscription.Subscription]*ConsumerOffset, expectedOffset kafka.Offset) {
+func waitForConsumersToProcessEvents(t *testing.T, consumers map[Subscription]*ConsumerOffset, expectedOffset kafka.Offset) {
 
 	// Track Wait Start Time
 	startTime := time.Now()
@@ -542,8 +543,10 @@ func Test_convertToCloudEvent(t *testing.T) {
 		OffsetCommitDurationMinimum: testOffsetCommitDurationMin,
 		Username:                    testUsername,
 		Password:                    testPassword,
-		Client:                      nil,
 		ChannelKey:                  testChannelKey,
+		ExponentialBackoff:          testExponentialBackoff,
+		InitialRetryInterval:        testInitialRetryInterval,
+		MaxRetryTime:                testMaxRetryTime,
 	}
 	testDispatcher := NewDispatcher(dispatcherConfig)
 

@@ -1,9 +1,8 @@
-package client
+package dispatcher
 
 import (
 	"fmt"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/kyma-incubator/knative-kafka/pkg/dispatcher/subscription"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -90,7 +89,7 @@ func TestHttpClient_Dispatch(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 
-			client, server, mux := setup(t)
+			dispatcher, server, mux := setup(t)
 			defer teardown(server)
 
 			callCount := 0
@@ -108,7 +107,7 @@ func TestHttpClient_Dispatch(t *testing.T) {
 
 			subscriberURI, _ := apis.ParseURL(server.URL)
 
-			err = client.Dispatch(&testCloudEvent, subscription.Subscription{SubscriberSpec: eventingduck.SubscriberSpec{SubscriberURI: subscriberURI}})
+			err = dispatcher.Dispatch(&testCloudEvent, Subscription{SubscriberSpec: eventingduck.SubscriberSpec{SubscriberURI: subscriberURI}})
 
 			if tc.expectedSuccess && err != nil {
 				t.Error("Message failed to dispatch:", err)
@@ -123,13 +122,31 @@ func TestHttpClient_Dispatch(t *testing.T) {
 	}
 }
 
-func setup(t *testing.T) (*RetriableCloudEventClient, *httptest.Server, *http.ServeMux) {
+func setup(t *testing.T) (*Dispatcher, *httptest.Server, *http.ServeMux) {
 	// test server
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
-	client := NewRetriableCloudEventClient(logtesting.TestLogger(t).Desugar(), true, 1000, 10000)
 
-	return &client, server, mux
+	// Create A New Dispatcher
+	dispatcherConfig := DispatcherConfig{
+		Logger:                      logtesting.TestLogger(t).Desugar(),
+		Brokers:                     testBrokers,
+		Topic:                       testTopic,
+		Offset:                      testOffset,
+		PollTimeoutMillis:           testPollTimeoutMillis,
+		OffsetCommitCount:           testOffsetCommitCount,
+		OffsetCommitDuration:        testOffsetCommitDuration,
+		OffsetCommitDurationMinimum: testOffsetCommitDurationMin,
+		Username:                    testUsername,
+		Password:                    testPassword,
+		ChannelKey:                  testChannelKey,
+		ExponentialBackoff:          true,
+		InitialRetryInterval:        1000,
+		MaxRetryTime:                10000,
+	}
+	dispatcher := NewDispatcher(dispatcherConfig)
+
+	return dispatcher, server, mux
 }
 
 func teardown(server *httptest.Server) {
@@ -137,6 +154,7 @@ func teardown(server *httptest.Server) {
 }
 
 func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
+
 	type fields struct {
 		uri                  string
 		exponentialBackoff   bool
@@ -154,15 +172,36 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 		{fields{maxRetryTime: 17000, initialRetryInterval: 1000}, 5},
 		{fields{maxRetryTime: 60000, initialRetryInterval: 5000}, 5},
 	}
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%d max retry, initial interval %d", tt.fields.maxRetryTime, tt.fields.initialRetryInterval), func(t *testing.T) {
-			hc := RetriableCloudEventClient{
-				exponentialBackoff:   tt.fields.exponentialBackoff,
-				initialRetryInterval: tt.fields.initialRetryInterval,
-				maxRetryTime:         tt.fields.maxRetryTime,
+
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
+	// Loop Over All The Tests
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%d max retry, initial interval %d", test.fields.maxRetryTime, test.fields.initialRetryInterval), func(t *testing.T) {
+
+			// Create A New Dispatcher
+			dispatcherConfig := DispatcherConfig{
+				Logger:                      logger,
+				Brokers:                     testBrokers,
+				Topic:                       testTopic,
+				Offset:                      testOffset,
+				PollTimeoutMillis:           testPollTimeoutMillis,
+				OffsetCommitCount:           testOffsetCommitCount,
+				OffsetCommitDuration:        testOffsetCommitDuration,
+				OffsetCommitDurationMinimum: testOffsetCommitDurationMin,
+				Username:                    testUsername,
+				Password:                    testPassword,
+				ChannelKey:                  testChannelKey,
+				ExponentialBackoff:          test.fields.exponentialBackoff,
+				InitialRetryInterval:        test.fields.initialRetryInterval,
+				MaxRetryTime:                test.fields.maxRetryTime,
 			}
-			if got := hc.calculateNumberOfRetries(); got != tt.want {
-				t.Errorf("httpClient.calculateNumberOfRetries() = %v, want %v", got, tt.want)
+			testDispatcher := NewDispatcher(dispatcherConfig)
+
+			// Perform The Test
+			if got := testDispatcher.calculateNumberOfRetries(); got != test.want {
+				t.Errorf("httpClient.calculateNumberOfRetries() = %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -210,14 +249,30 @@ func TestLogResponse(t *testing.T) {
 	// Create A Test Logger
 	logger := logtesting.TestLogger(t).Desugar()
 
-	// Create A RetriableCloudEventClient For Testing
-	client := NewRetriableCloudEventClient(logger, true, 500, 300000)
+	// Create A New Dispatcher
+	dispatcherConfig := DispatcherConfig{
+		Logger:                      logger,
+		Brokers:                     testBrokers,
+		Topic:                       testTopic,
+		Offset:                      testOffset,
+		PollTimeoutMillis:           testPollTimeoutMillis,
+		OffsetCommitCount:           testOffsetCommitCount,
+		OffsetCommitDuration:        testOffsetCommitDuration,
+		OffsetCommitDurationMinimum: testOffsetCommitDurationMin,
+		Username:                    testUsername,
+		Password:                    testPassword,
+		ChannelKey:                  testChannelKey,
+		ExponentialBackoff:          testExponentialBackoff,
+		InitialRetryInterval:        testInitialRetryInterval,
+		MaxRetryTime:                testMaxRetryTime,
+	}
+	testDispatcher := NewDispatcher(dispatcherConfig)
 
 	// Loop Over The TestCases
 	for _, test := range tests {
 
 		// Perform The Specific TestCase
-		actualErrOut := client.logResponse(test.errIn)
+		actualErrOut := testDispatcher.logResponse(test.errIn)
 
 		// Verify Results
 		if test.errOut == nil {
@@ -255,14 +310,30 @@ func TestParseHttpStatusCodeFromError(t *testing.T) {
 	// Create A Test Logger
 	logger := logtesting.TestLogger(t).Desugar()
 
-	// Create A RetriableCloudEventClient For Testing
-	client := NewRetriableCloudEventClient(logger, true, 500, 300000)
+	// Create A New Dispatcher
+	dispatcherConfig := DispatcherConfig{
+		Logger:                      logger,
+		Brokers:                     testBrokers,
+		Topic:                       testTopic,
+		Offset:                      testOffset,
+		PollTimeoutMillis:           testPollTimeoutMillis,
+		OffsetCommitCount:           testOffsetCommitCount,
+		OffsetCommitDuration:        testOffsetCommitDuration,
+		OffsetCommitDurationMinimum: testOffsetCommitDurationMin,
+		Username:                    testUsername,
+		Password:                    testPassword,
+		ChannelKey:                  testChannelKey,
+		ExponentialBackoff:          testExponentialBackoff,
+		InitialRetryInterval:        testInitialRetryInterval,
+		MaxRetryTime:                testMaxRetryTime,
+	}
+	testDispatcher := NewDispatcher(dispatcherConfig)
 
 	// Loop Over The TestCases
 	for _, test := range tests {
 
 		// Perform The Specific TestCase
-		actualStatusCode := client.parseHttpStatusCodeFromError(test.error)
+		actualStatusCode := testDispatcher.parseHttpStatusCodeFromError(test.error)
 
 		// Verify Results
 		assert.Equal(t, test.code, actualStatusCode)
