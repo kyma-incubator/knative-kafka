@@ -132,8 +132,7 @@ func main() {
 
 	config, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
 	if err != nil {
-		logger.Error("Error building kubeconfig", zap.Error(err))
-		return
+		logger.Fatal("Error building kubeconfig", zap.Error(err))
 	}
 
 	stopCh := signals.SetupSignalHandler()
