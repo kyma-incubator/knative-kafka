@@ -8,7 +8,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	kafkaclientset "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned"
 	fakeclientset "knative.dev/eventing-contrib/kafka/channel/pkg/client/clientset/versioned/fake"
-	eventingChannel "knative.dev/eventing/pkg/channel"
 	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
 	"testing"
@@ -90,23 +89,4 @@ func TestClose(t *testing.T) {
 
 	// Verify stopChan Was Closed
 	assert.False(t, ok)
-}
-
-// TODO - REMOVE
-// Test UnknownChannelError Has Public ChannelReference
-func TestUnknownChannelError(t *testing.T) {
-
-	testName := "TestName"
-	testNamespace := "TestNamespace"
-
-	unknownChannelError := &eventingChannel.UnknownChannelError{
-		C: ChannelReference{
-			Name:      testName,
-			NameSpace: testNamespace,
-		},
-	}
-
-	assert.NotNil(t, unknownChannelError.C)
-	assert.Equal(t, testName, unknownChannelError.C.Name)
-	assert.Equal(t, testNamespace, unknownChannelError.C.Namespace)
 }
