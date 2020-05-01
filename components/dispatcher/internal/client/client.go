@@ -76,7 +76,7 @@ func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event, uri stri
 	}
 
 	// Build the runner for retry capabilities
-	runner := retry.New(retry.Config{DisableBackoff: rcec.exponentialBackoff, Times: rcec.calculateNumberOfRetries(), WaitBase: time.Millisecond * time.Duration(rcec.initialRetryInterval)})
+	runner := retry.New(retry.Config{DisableBackoff: !rcec.exponentialBackoff, Times: rcec.calculateNumberOfRetries(), WaitBase: time.Millisecond * time.Duration(rcec.initialRetryInterval)})
 
 	// Build the sending context for the event
 	sendingCtx := cloudevents.ContextWithTarget(context.Background(), uri)
@@ -116,8 +116,12 @@ func logResponse(logger *zap.Logger, statusCode int, err error) error {
 	return nil
 }
 
-// Convert defined max retry time to the approximate number
-// of retries, taking into account the exponential backoff algorithm
+// Determine the approximate number of retries that will take around maxRetryTime,
+// depending on whether exponential backoff is enabled
 func (rcec retriableCloudEventClient) calculateNumberOfRetries() int {
-	return int(math.Round(math.Log2(float64(rcec.maxRetryTime)/float64(rcec.initialRetryInterval))) + 1)
+	if rcec.exponentialBackoff {
+		return int(math.Round(math.Log2(float64(rcec.maxRetryTime) / float64(rcec.initialRetryInterval))))
+	} else {
+		return int(rcec.maxRetryTime / rcec.initialRetryInterval)
+	}
 }

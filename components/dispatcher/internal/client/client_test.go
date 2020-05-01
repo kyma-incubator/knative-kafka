@@ -43,7 +43,7 @@ func TestHttpClient_Dispatch(t *testing.T) {
 		},
 		{
 			"Test all retries fail",
-			5,
+			4,
 			false,
 			func(w http.ResponseWriter, r *http.Request, callCount int) {
 				w.WriteHeader(http.StatusNotFound)
@@ -147,7 +147,7 @@ func setup(t *testing.T) (*retriableCloudEventClient, *httptest.Server, *http.Se
 	// test server
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
-	client := NewRetriableCloudEventClient(true, 1000, 10000)
+	client := NewRetriableCloudEventClient(false, 1000, 10000)
 
 	return &client, server, mux
 }
@@ -169,13 +169,16 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 		fields fields
 		want   int
 	}{
-		{fields{maxRetryTime: 10000, initialRetryInterval: 1000}, 4},
-		{fields{maxRetryTime: 10000, initialRetryInterval: 5000}, 2},
-		{fields{maxRetryTime: 17000, initialRetryInterval: 1000}, 5},
-		{fields{maxRetryTime: 60000, initialRetryInterval: 5000}, 5},
+		{fields{maxRetryTime: 10000, initialRetryInterval: 1000, exponentialBackoff: true}, 3},
+		{fields{maxRetryTime: 10000, initialRetryInterval: 5000, exponentialBackoff: true}, 1},
+		{fields{maxRetryTime: 17000, initialRetryInterval: 1000, exponentialBackoff: true}, 4},
+		{fields{maxRetryTime: 60000, initialRetryInterval: 5000, exponentialBackoff: true}, 4},
+		{fields{maxRetryTime: 300000, initialRetryInterval: 500, exponentialBackoff: true}, 9},
+		{fields{maxRetryTime: 300000, initialRetryInterval: 500, exponentialBackoff: false}, 600},
+		{fields{maxRetryTime: 10000, initialRetryInterval: 5000, exponentialBackoff: false}, 2},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%d max retry, initial interval %d", tt.fields.maxRetryTime, tt.fields.initialRetryInterval), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d max retry, initial interval %d, exponential backoff %t", tt.fields.maxRetryTime, tt.fields.initialRetryInterval, tt.fields.exponentialBackoff), func(t *testing.T) {
 			hc := retriableCloudEventClient{
 				exponentialBackoff:   tt.fields.exponentialBackoff,
 				initialRetryInterval: tt.fields.initialRetryInterval,
