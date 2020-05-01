@@ -50,11 +50,26 @@ func TestHttpClient_Dispatch(t *testing.T) {
 			},
 		},
 		{
-			"Test don't retry on 400",
+			"Test don't retry on 401",
 			1,
 			true,
 			func(w http.ResponseWriter, r *http.Request, callCount int) {
-				w.WriteHeader(http.StatusBadRequest)
+				w.WriteHeader(http.StatusUnauthorized)
+			},
+		},
+		{
+			// NOTE: We had to retry on 400 to workaround a knative-eventing bug
+			// where the filter service does not passthrough the correct status code
+
+			"Test do retry on 400",
+			2,
+			true,
+			func(w http.ResponseWriter, r *http.Request, callCount int) {
+				if callCount == 1 {
+					w.WriteHeader(http.StatusBadRequest)
+				} else {
+					w.WriteHeader(http.StatusCreated)
+				}
 			},
 		},
 		{

@@ -101,7 +101,9 @@ func (rcec retriableCloudEventClient) Dispatch(event cloudevents.Event, uri stri
 }
 
 func logResponse(logger *zap.Logger, statusCode int, err error) error {
-	if statusCode >= 500 || statusCode == 404 || statusCode == 429 {
+	// NOTE: We had to add 400 as a retry status code due to a bug in knative-eventing
+	// where the filter service does not passthrough the correct status code
+	if statusCode >= 500 || statusCode == 404 || statusCode == 429 || statusCode == 400 {
 		logger.Warn("Failed to send message to subscriber service, retrying", zap.Int("statusCode", statusCode))
 		return errors.New("Server returned a bad response code: " + strconv.Itoa(statusCode))
 	} else if statusCode > 299 {
