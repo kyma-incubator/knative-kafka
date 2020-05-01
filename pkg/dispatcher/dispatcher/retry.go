@@ -29,7 +29,7 @@ func (d *Dispatcher) Dispatch(event *cloudevents.Event, subscription Subscriptio
 	// Create A New Retry Runner With Configured Backoff Behavior
 	retryRunner := retry.New(
 		retry.Config{
-			DisableBackoff: d.ExponentialBackoff,
+			DisableBackoff: !d.ExponentialBackoff, // Note Negation: Env Var Is Whether To Enable & Retry Config Is Whether To Disable ; )
 			Times:          d.calculateNumberOfRetries(),
 			WaitBase:       time.Millisecond * time.Duration(d.InitialRetryInterval),
 		},
@@ -159,8 +159,12 @@ func (d *Dispatcher) parseHttpStatusCodeFromError(err error) int {
 	return statusCode
 }
 
-// Convert defined max retry time to the approximate number
-// of retries, taking into account the exponential backoff algorithm
+// Determine the approximate number of retries that will take around maxRetryTime,
+// depending on whether exponential backoff is enabled
 func (d *Dispatcher) calculateNumberOfRetries() int {
-	return int(math.Round(math.Log2(float64(d.MaxRetryTime)/float64(d.InitialRetryInterval))) + 1)
+	if d.ExponentialBackoff {
+		return int(math.Round(math.Log2(float64(d.MaxRetryTime) / float64(d.InitialRetryInterval))))
+	} else {
+		return int(d.MaxRetryTime / d.InitialRetryInterval)
+	}
 }

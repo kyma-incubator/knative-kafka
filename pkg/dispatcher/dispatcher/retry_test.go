@@ -44,7 +44,7 @@ func TestHttpClient_Dispatch(t *testing.T) {
 		},
 		{
 			"Test all retries fail",
-			5,
+			11,
 			false,
 			func(w http.ResponseWriter, r *http.Request, callCount int) {
 				w.WriteHeader(http.StatusNotFound)
@@ -60,7 +60,7 @@ func TestHttpClient_Dispatch(t *testing.T) {
 		},
 		{
 			// NOTE: We had to retry on 400 to workaround a knative-eventing bug
-			// where the filter service does not passthrough the correct status code
+			// where the filter service does not pass-through the correct status code
 
 			"Test do retry on 400",
 			2,
@@ -155,7 +155,7 @@ func setup(t *testing.T) (*Dispatcher, *httptest.Server, *http.ServeMux) {
 		Username:                    testUsername,
 		Password:                    testPassword,
 		ChannelKey:                  testChannelKey,
-		ExponentialBackoff:          true,
+		ExponentialBackoff:          false,
 		InitialRetryInterval:        1000,
 		MaxRetryTime:                10000,
 	}
@@ -182,10 +182,13 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 		fields fields
 		want   int
 	}{
-		{fields{maxRetryTime: 10000, initialRetryInterval: 1000}, 4},
-		{fields{maxRetryTime: 10000, initialRetryInterval: 5000}, 2},
-		{fields{maxRetryTime: 17000, initialRetryInterval: 1000}, 5},
-		{fields{maxRetryTime: 60000, initialRetryInterval: 5000}, 5},
+		{fields{maxRetryTime: 10000, initialRetryInterval: 1000, exponentialBackoff: true}, 3},
+		{fields{maxRetryTime: 10000, initialRetryInterval: 5000, exponentialBackoff: true}, 1},
+		{fields{maxRetryTime: 17000, initialRetryInterval: 1000, exponentialBackoff: true}, 4},
+		{fields{maxRetryTime: 60000, initialRetryInterval: 5000, exponentialBackoff: true}, 4},
+		{fields{maxRetryTime: 300000, initialRetryInterval: 500, exponentialBackoff: true}, 9},
+		{fields{maxRetryTime: 300000, initialRetryInterval: 500, exponentialBackoff: false}, 600},
+		{fields{maxRetryTime: 10000, initialRetryInterval: 5000, exponentialBackoff: false}, 2},
 	}
 
 	// Create A Test Logger
@@ -193,7 +196,7 @@ func TestHttpClient_calculateNumberOfRetries(t *testing.T) {
 
 	// Loop Over All The Tests
 	for _, test := range tests {
-		t.Run(fmt.Sprintf("%d max retry, initial interval %d", test.fields.maxRetryTime, test.fields.initialRetryInterval), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d max retry, initial interval %d, exponential backoff %t", test.fields.maxRetryTime, test.fields.initialRetryInterval, test.fields.exponentialBackoff), func(t *testing.T) {
 
 			// Create A New Dispatcher
 			dispatcherConfig := DispatcherConfig{
