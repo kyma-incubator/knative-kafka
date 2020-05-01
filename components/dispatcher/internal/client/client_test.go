@@ -43,7 +43,7 @@ func TestHttpClient_Dispatch(t *testing.T) {
 		},
 		{
 			"Test all retries fail",
-			4,
+			11,
 			false,
 			func(w http.ResponseWriter, r *http.Request, callCount int) {
 				w.WriteHeader(http.StatusNotFound)
