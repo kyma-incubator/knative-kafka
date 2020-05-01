@@ -87,7 +87,14 @@ func (d *Dispatcher) logResponse(err error) error {
 	} else {
 		statusCode := d.parseHttpStatusCodeFromError(err)
 		logger := d.Logger.With(zap.Error(err), zap.Int("StatusCode", statusCode))
-		if statusCode >= 500 || statusCode == 404 || statusCode == 429 {
+
+		//
+		// Note - Normally we would NOT want to retry 400 responses, BUT the knative-eventing
+		//        filter handler (due to CloudEvents SDK V1 usage) is swallowing the actual
+		//        status codes from the subscriber and returning 400s instead.  Once this has,
+		//        been resolved we can remove 400 from the list of codes to retry.
+		//
+		if statusCode >= 500 || statusCode == 400 || statusCode == 404 || statusCode == 429 {
 			logger.Warn("Failed to send message to subscriber service, retrying")
 			return errors.New("Server returned a bad response code")
 		} else if statusCode >= 300 {

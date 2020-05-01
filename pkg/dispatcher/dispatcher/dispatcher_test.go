@@ -206,7 +206,7 @@ func verifyConfigMapValue(t *testing.T, configMap *kafka.ConfigMap, key string, 
 func getHttpServer(t *testing.T, callCount *int) *httptest.Server {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		switch request.Method {
-		case "POST":
+		case http.MethodPost:
 
 			// Update The Number Of Calls (Async Safe)
 			*callCount++

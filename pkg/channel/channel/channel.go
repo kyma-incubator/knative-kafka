@@ -74,7 +74,7 @@ func InitializeKafkaChannelLister(ctx context.Context, masterUrl string, kubecon
 func ValidateKafkaChannel(channelReference eventingChannel.ChannelReference) error {
 
 	// Validate The Specified Channel Reference
-	if len(channelReference.Name) <= 0 || len(channelReference.Namespace) <= 0 {
+	if channelReference.Name == "" || channelReference.Namespace == "" {
 		logger.Warn("Invalid KafkaChannel - Invalid ChannelReference")
 		return errors.New("invalid ChannelReference specified")
 	}

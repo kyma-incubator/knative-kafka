@@ -13,8 +13,8 @@ import (
 	"testing"
 )
 
-// Test The InitializeProducer Functionality
-func TestInitializeProducer(t *testing.T) {
+// Test The NewProducer Constructor
+func TestNewProducer(t *testing.T) {
 
 	// Test Data
 	brokers := "TestBrokers"
@@ -32,15 +32,15 @@ func TestInitializeProducer(t *testing.T) {
 
 	// Perform The Test
 	healthServer := channelhealth.NewChannelHealthServer("12345")
-	err := InitializeProducer(logger, brokers, username, password, prometheus.NewMetricsServer(logger, "8888", "/metrics"), healthServer)
+	producer, err := NewProducer(logger, brokers, username, password, prometheus.NewMetricsServer(logger, "8888", "/metrics"), healthServer)
 
 	// Verify The Results
 	assert.Nil(t, err)
-	assert.Equal(t, mockProducer, kafkaProducer)
+	assert.Equal(t, mockProducer, producer.kafkaProducer)
 	assert.Equal(t, true, healthServer.ProducerReady())
 
 	// Close The Producer (Or Subsequent Tests Will Fail Because processProducerEvents() GO Routine Is Still Running)
-	Close()
+	producer.Close()
 }
 
 // Test The ProduceKafkaMessage() Functionality
@@ -49,13 +49,13 @@ func TestProduceKafkaMessage(t *testing.T) {
 	// Test Data
 	cloudEvent := test.CreateCloudEvent(cloudevents.VersionV1)
 	channelReference := test.CreateChannelReference(test.ChannelName, test.ChannelNamespace)
-
-	// Replace The Package Singleton With A Mock Producer
 	mockProducer := test.NewMockProducer(test.TopicName)
-	kafkaProducer = mockProducer
+
+	// Create A Test Producer
+	producer := createTestProducer(t, mockProducer)
 
 	// Perform The Test & Verify Results
-	err := ProduceKafkaMessage(cloudEvent, channelReference)
+	err := producer.ProduceKafkaMessage(cloudEvent, channelReference)
 	assert.Nil(t, err)
 
 	// Block On The MockProducer's Channel & Verify Event Was Produced
@@ -82,21 +82,38 @@ func TestClose(t *testing.T) {
 
 	// Replace The Package Singleton With A Mock Producer
 	mockProducer := test.NewMockProducer(test.TopicName)
-	kafkaProducer = mockProducer
 
-	// Reset The Stop Channels
-	stopChannel = make(chan struct{})
-	stoppedChannel = make(chan struct{})
+	// Create A Test Producer
+	producer := createTestProducer(t, mockProducer)
 
 	// Block On The StopChannel & Close The StoppedChannel (Play the part of processProducerEvents())
 	go func() {
-		<-stopChannel
-		close(stoppedChannel)
+		<-producer.stopChannel
+		close(producer.stoppedChannel)
 	}()
 
 	// Perform The Test
-	Close()
+	producer.Close()
 
 	// Verify The Mock Producer Was Closed
 	assert.True(t, mockProducer.Closed())
+}
+
+// Create A Test Producer For Testing
+func createTestProducer(t *testing.T, kafkaProducer kafkaproducer.ProducerInterface) *Producer {
+
+	// Create A Test Logger
+	logger := logtesting.TestLogger(t).Desugar()
+
+	// Create A Test Producer
+	producer := &Producer{
+		logger:         logger,
+		kafkaProducer:  kafkaProducer,
+		stopChannel:    make(chan struct{}),
+		stoppedChannel: make(chan struct{}),
+		metrics:        prometheus.NewMetricsServer(logger, "8888", "/metrics"),
+	}
+
+	// Return The Test Producer
+	return producer
 }

@@ -51,11 +51,26 @@ func TestHttpClient_Dispatch(t *testing.T) {
 			},
 		},
 		{
-			"Test don't retry on 400",
+			"Test don't retry on 401",
 			1,
 			true,
 			func(w http.ResponseWriter, r *http.Request, callCount int) {
-				w.WriteHeader(http.StatusBadRequest)
+				w.WriteHeader(http.StatusUnauthorized)
+			},
+		},
+		{
+			// NOTE: We had to retry on 400 to workaround a knative-eventing bug
+			// where the filter service does not passthrough the correct status code
+
+			"Test do retry on 400",
+			2,
+			true,
+			func(w http.ResponseWriter, r *http.Request, callCount int) {
+				if callCount == 1 {
+					w.WriteHeader(http.StatusBadRequest)
+				} else {
+					w.WriteHeader(http.StatusCreated)
+				}
 			},
 		},
 		{
@@ -234,7 +249,7 @@ func TestLogResponse(t *testing.T) {
 		{errIn: errors.New("301"), errOut: nil},
 		{errIn: errors.New("399"), errOut: nil},
 
-		{errIn: errors.New("400"), errOut: nil},
+		{errIn: errors.New("400"), errOut: badResponseError},
 		{errIn: errors.New("401"), errOut: nil},
 		{errIn: errors.New("499"), errOut: nil},
 
