@@ -2,7 +2,7 @@ package producer
 
 import (
 	"errors"
-	"github.com/cloudevents/sdk-go/v1/cloudevents"
+	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kyma-incubator/knative-kafka/pkg/channel/health"
 	"github.com/kyma-incubator/knative-kafka/pkg/channel/message"
@@ -62,7 +62,7 @@ var createProducerFunctionWrapper = func(brokers string, username string, passwo
 }
 
 // Produce A KafkaMessage From The Specified CloudEvent To The Specified Topic And Wait For The Delivery Report
-func (p *Producer) ProduceKafkaMessage(event cloudevents.Event, channelReference eventingChannel.ChannelReference) error {
+func (p *Producer) ProduceKafkaMessage(event *event.Event, channelReference eventingChannel.ChannelReference) error {
 
 	// Validate The Kafka Producer (Must Be Pre-Initialized)
 	if p.kafkaProducer == nil {
