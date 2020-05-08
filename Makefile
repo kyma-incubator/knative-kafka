@@ -19,7 +19,7 @@ BUILD_TESTS:=true
 APP_PATH=eu.gcr.io/kyma-project/incubator
 
 # Application Docker Container Version
-APP_VERSION=v0.14.0
+APP_VERSION=latest
 
 # Application Docker Container Names
 CHANNEL_APP_NAME='knative-kafka-channel'

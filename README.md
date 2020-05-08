@@ -1,3 +1,13 @@
+
+# NOTICE - Project Deprecation !!!
+
+The [knative-kafka](https://github.com/kyma-incubator/knative-kafka) project is no longer being maintained 
+in the [kyma-incubator](https://github.com/kyma-incubator) repository.  The `v0.14.0` release is the final
+release from this repository.  The project has been moved to a new [knative-sandbox](https://github.com/knative-sandbox) 
+repository called [eventing-kafka](https://github.com/knative-sandbox/eventing-kafka).  
+
+<br><hr><br>
+
 # Knative Kafka
 
 This project is a Knative Eventing implementation of a Kafka backed channel 
