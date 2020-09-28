@@ -10,7 +10,7 @@ BUILD_DIR:=$(BUILD_ROOT)/build
 
 # Application Names (Align With Knative Eventing Version)
 APP_NAME=knative-kafka-common
-APP_VERSION=v0.12.2
+APP_VERSION=v0.12.3
 
 # Build / Packaging / Deployment Configuration
 APP_TAG=$(APP_NAME):$(APP_VERSION)
