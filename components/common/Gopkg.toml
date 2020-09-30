@@ -44,6 +44,10 @@
   name = "github.com/Azure/azure-event-hubs-go"
   version = "v1.3.1"
 
+[[override]]
+  name = "golang.org/x/text"
+  version = "v0.3.3"
+
 [prune]
   go-tests = true
   unused-packages = true

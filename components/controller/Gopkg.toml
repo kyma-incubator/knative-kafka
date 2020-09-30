@@ -138,6 +138,10 @@ required = [
   source = "https://github.com/fsnotify/fsnotify.git"
   version="v1.4.7"
 
+[[override]]
+  name = "golang.org/x/text"
+  version = "v0.3.3"
+
 [[constraint]]
    name = "github.com/kyma-incubator/knative-kafka"
    branch = "release-0.12"
