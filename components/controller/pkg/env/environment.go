@@ -35,7 +35,7 @@ const (
 	MaxRetryTimeEnvVarKey         = "MAX_RETRY_TIME"
 
 	// Default Values To Use If Not Available In Env Variables
-	DefaultSyncPeriodMinutes               = "60"
+	DefaultSyncPeriodMinutes               = "240"
 	DefaultKafkaOffsetCommitMessageCount   = "100"
 	DefaultKafkaOffsetCommitDurationMillis = "5000"
 
