@@ -12,9 +12,10 @@ import (
 // Package Constants
 const (
 	// Knative-Kafka Configuration
-	ServiceAccountEnvVarKey = "SERVICE_ACCOUNT"
-	MetricsPortEnvVarKey    = "METRICS_PORT"
-	HealthPortEnvVarKey     = "HEALTH_PORT"
+	SyncPeriodMinutesEnvVarKey = "SYNC_PERIOD_MINUTES"
+	ServiceAccountEnvVarKey    = "SERVICE_ACCOUNT"
+	MetricsPortEnvVarKey       = "METRICS_PORT"
+	HealthPortEnvVarKey        = "HEALTH_PORT"
 
 	// Kafka Authorization
 	KafkaBrokerEnvVarKey   = "KAFKA_BROKERS"
@@ -34,6 +35,7 @@ const (
 	MaxRetryTimeEnvVarKey         = "MAX_RETRY_TIME"
 
 	// Default Values To Use If Not Available In Env Variables
+	DefaultSyncPeriodMinutes               = "240"
 	DefaultKafkaOffsetCommitMessageCount   = "100"
 	DefaultKafkaOffsetCommitDurationMillis = "5000"
 
@@ -79,8 +81,9 @@ const (
 type Environment struct {
 
 	// Knative-Kafka Configuration
-	ServiceAccount string // Required
-	MetricsPort    int    // Required
+	SyncPeriodMinutes int    // Optional
+	ServiceAccount    string // Required
+	MetricsPort       int    // Required
 
 	// Kafka Configuration / Authorization
 	KafkaProvider                   string // Required
@@ -122,6 +125,14 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 
 	// The ControllerConfig Reference
 	environment := &Environment{}
+
+	// Get The Optional SyncPeriodMinutes Config Value - Default To 4 Hours If Not Specified
+	syncPeriodMinutesString := getOptionalConfigValue(logger, SyncPeriodMinutesEnvVarKey, DefaultSyncPeriodMinutes)
+	environment.SyncPeriodMinutes, err = strconv.Atoi(syncPeriodMinutesString)
+	if err != nil {
+		logger.Error("Invalid SyncPeriodMinutes (Non Integer)", zap.String("Value", syncPeriodMinutesString), zap.Error(err))
+		return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", syncPeriodMinutesString, SyncPeriodMinutesEnvVarKey)
+	}
 
 	// Get The Required K8S ServiceAccount Config Value
 	environment.ServiceAccount, err = getRequiredConfigValue(logger, ServiceAccountEnvVarKey)
@@ -224,7 +235,7 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 	} else {
 		environment.DispatcherReplicas, err = strconv.Atoi(dispatcherReplicasString)
 		if err != nil {
-			logger.Error("Invalid DispatcherRepli	cas (Non Integer)", zap.String("Value", dispatcherReplicasString), zap.Error(err))
+			logger.Error("Invalid DispatcherReplicas (Non Integer)", zap.String("Value", dispatcherReplicasString), zap.Error(err))
 			return nil, fmt.Errorf("invalid (non-integer) value '%s' for environment variable '%s'", dispatcherReplicasString, DispatcherReplicasEnvVarKey)
 		}
 	}

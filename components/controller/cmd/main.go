@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"strconv"
+	"time"
 )
 
 // The Main Function (Go Command)
@@ -58,7 +59,8 @@ func main() {
 	// 		flag.Parse()
 	// 		mgr, err := manager.New(cfg, manager.Options{MetricsBindAddress: metricsAddr})
 	logger.Info("Creating Controller Manager")
-	mgr, err := manager.New(cfg, manager.Options{})
+	syncPeriod := time.Duration(environment.SyncPeriodMinutes) * time.Minute // Force Re-Reconciliation At Regular Intervals (Recovery)
+	mgr, err := manager.New(cfg, manager.Options{SyncPeriod: &syncPeriod})
 	if err != nil {
 		logger.Error("Failed To Create Controller Manager", zap.Error(err))
 		os.Exit(1)

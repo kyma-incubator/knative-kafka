@@ -12,9 +12,10 @@ import (
 
 // Test Constants
 const (
-	serviceAccount = "TestServiceAccount"
-	metricsPort    = "9999"
-	kafkaProvider  = "confluent"
+	syncPeriodMinutes = "11"
+	serviceAccount    = "TestServiceAccount"
+	metricsPort       = "9999"
+	kafkaProvider     = "confluent"
 
 	kafkaOffsetCommitMessageCount   = "500"
 	kafkaOffsetCommitDurationMillis = "2000"
@@ -45,6 +46,7 @@ const (
 // Define The TestCase Struct
 type TestCase struct {
 	name                                 string
+	syncPeriodMinutes                    string
 	serviceAccount                       string
 	metricsPort                          string
 	kafkaProvider                        string
@@ -81,6 +83,10 @@ func TestGetEnvironment(t *testing.T) {
 	// Define The TestCases
 	testCases := make([]TestCase, 0, 30)
 	testCase := getValidTestCase("Valid Complete Config")
+	testCases = append(testCases, testCase)
+
+	testCase = getValidTestCase("Missing Optional Config - SyncPeriodMinutes")
+	testCase.syncPeriodMinutes = ""
 	testCases = append(testCases, testCase)
 
 	testCase = getValidTestCase("Missing Required Config - ServiceAccount")
@@ -287,6 +293,7 @@ func TestGetEnvironment(t *testing.T) {
 
 		// (Re)Setup The Environment Variables From TestCase
 		os.Clearenv()
+		assert.Nil(t, os.Setenv(SyncPeriodMinutesEnvVarKey, testCase.syncPeriodMinutes))
 		assert.Nil(t, os.Setenv(ServiceAccountEnvVarKey, testCase.serviceAccount))
 		if len(testCase.metricsPort) > 0 {
 			assert.Nil(t, os.Setenv(MetricsPortEnvVarKey, testCase.metricsPort))
@@ -332,6 +339,13 @@ func TestGetEnvironment(t *testing.T) {
 
 			assert.Nil(t, err)
 			assert.NotNil(t, environment)
+
+			if len(testCase.syncPeriodMinutes) > 0 {
+				assert.Equal(t, testCase.syncPeriodMinutes, strconv.Itoa(environment.SyncPeriodMinutes))
+			} else {
+				assert.Equal(t, DefaultSyncPeriodMinutes, strconv.Itoa(environment.SyncPeriodMinutes))
+			}
+
 			assert.Equal(t, testCase.serviceAccount, environment.ServiceAccount)
 			assert.Equal(t, testCase.metricsPort, strconv.Itoa(environment.MetricsPort))
 			assert.Equal(t, testCase.channelImage, environment.ChannelImage)
@@ -390,6 +404,7 @@ func TestGetEnvironment(t *testing.T) {
 func getValidTestCase(name string) TestCase {
 	return TestCase{
 		name:                                 name,
+		syncPeriodMinutes:                    syncPeriodMinutes,
 		serviceAccount:                       serviceAccount,
 		metricsPort:                          metricsPort,
 		kafkaProvider:                        kafkaProvider,
