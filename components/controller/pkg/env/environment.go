@@ -126,7 +126,7 @@ func GetEnvironment(logger *zap.Logger) (*Environment, error) {
 	// The ControllerConfig Reference
 	environment := &Environment{}
 
-	// Get The Optional SyncPeriodMinutes Config Value - Default To 30 Minutes If Not Specified
+	// Get The Optional SyncPeriodMinutes Config Value - Default To 4 Hours If Not Specified
 	syncPeriodMinutesString := getOptionalConfigValue(logger, SyncPeriodMinutesEnvVarKey, DefaultSyncPeriodMinutes)
 	environment.SyncPeriodMinutes, err = strconv.Atoi(syncPeriodMinutesString)
 	if err != nil {
