@@ -41,7 +41,9 @@ RUN mkdir -p lib64 \
     && cp /lib64/ld-linux-x86-64.so.2 lib64/ld-linux-x86-64.so.2
 
 # Create Docker Container From Google's distroless base
-FROM gcr.io/distroless/base
+FROM gcr.io/distroless/base:nonroot
+
+USER 1000:1000
 
 # Manage malloc and os thread count that can execute go code.
 ENV MALLOC_ARENA_MAX=1 GOMAXPROCS=1
