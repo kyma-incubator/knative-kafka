@@ -11,7 +11,7 @@ BUILD_TESTS:=true
 
 # Application Names (Align With Knative Eventing Version)
 APP_NAME=kafka-channel-controller
-APP_VERSION=v0.12.3
+APP_VERSION=v0.12.5
 
 # Build / Packaging / Deployment Configuration
 APP_PATH=eu.gcr.io/kyma-project/incubator
